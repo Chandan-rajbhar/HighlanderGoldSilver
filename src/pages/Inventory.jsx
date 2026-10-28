@@ -1,0 +1,428 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { 
+  Plus, 
+  Layers, 
+  Coins, 
+  Award, 
+  Sparkles, 
+  DollarSign,
+  Download,
+  Eye,
+  Edit3,
+  Trash2,
+  ExternalLink
+} from 'lucide-react';
+import { inventoryService } from '../services/inventoryService';
+import { categoryService } from '../services/categoryService';
+import { DataTable } from '../components/ui/DataTable';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { CatalogItemFormDrawer } from '../components/forms/CatalogItemFormDrawer';
+import { ItemDetailModal } from '../components/forms/ItemDetailModal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useToast } from '../context/ToastContext';
+
+export const Inventory = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Query & Table State
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState(searchParams.get('category') || 'All');
+  const [metal, setMetal] = useState('All');
+  const [availability, setAvailability] = useState(searchParams.get('status') || 'All');
+  const [sortBy, setSortBy] = useState('lot_number');
+  const [sortAsc, setSortAsc] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Categories list
+  const [categories, setCategories] = useState([]);
+
+  // Drawer & Modal state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState('create');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    categoryService.getCategories().then(setCategories).catch(console.error);
+  }, []);
+
+  const fetchItems = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await inventoryService.getInventory({
+        page,
+        pageSize,
+        search,
+        category: category !== 'All' ? category : '',
+        metal: metal !== 'All' ? metal : '',
+        stockStatus: '',
+        storefrontStatus: availability !== 'All' ? availability : '',
+        sortBy,
+        sortAsc
+      });
+      setItems(res.data);
+      setTotal(res.total);
+      setTotalPages(res.totalPages);
+    } catch (err) {
+      console.error('Error fetching inventory:', err);
+      toast.error('Failed to load inventory lots.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, pageSize, search, category, metal, availability, sortBy, sortAsc, toast]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  const handleSort = (columnKey) => {
+    if (sortBy === columnKey) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(columnKey);
+      setSortAsc(true);
+    }
+  };
+
+  // CRUD Handlers
+  const handleAddNew = () => {
+    setSelectedItem(null);
+    setDrawerMode('create');
+    setIsDrawerOpen(true);
+  };
+
+  const handleEdit = (item) => {
+    setSelectedItem(item);
+    setDrawerMode('edit');
+    setIsDrawerOpen(true);
+  };
+
+  const handleView = (item) => {
+    setSelectedItem(item);
+    setIsDetailOpen(true);
+  };
+
+  const handleDeletePrompt = (item) => {
+    setSelectedItem(item);
+    setIsConfirmOpen(true);
+  };
+
+  const handleSaveItem = async (formData) => {
+    setIsSaving(true);
+    try {
+      if (drawerMode === 'edit' && selectedItem) {
+        const updated = await inventoryService.updateItem(selectedItem.id, formData);
+        setItems(prev => prev.map(item => item.id === updated.id ? updated : item));
+        toast.success(`Item #${updated.lot_number} "${updated.title}" updated!`);
+      } else {
+        const created = await inventoryService.createItem(formData);
+        setItems(prev => [created, ...prev]);
+        setTotal(prev => prev + 1);
+        toast.success(`Product Item #${created.lot_number} "${created.title}" added!`);
+      }
+      setIsDrawerOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Error saving item:', err);
+      toast.error('Error saving product.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedItem) return;
+    setIsSaving(true);
+    try {
+      await inventoryService.deleteItem(selectedItem.id);
+      setItems(prev => prev.filter(i => i.id !== selectedItem.id));
+      setTotal(prev => Math.max(0, prev - 1));
+      toast.success(`Item #${selectedItem.lot_number} deleted from inventory.`);
+      setIsConfirmOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      toast.error('Failed to delete item.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const exportCatalogCSV = () => {
+    const headers = 'Item #,Product Name,Category,Metal Type,Grade,Price,Inventory,Status\n';
+    const rows = items.map(i => {
+      const base = Number(i.price) || 0;
+      return `"${i.lot_number}","${i.title.replace(/"/g, '""')}","${i.category}","${i.metal}","${i.grade || ''}",${base},${i.inventory || 1},"${i.storefront_status || i.status}"`;
+    }).join('\n');
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `highlander-inventory-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Inventory exported to CSV');
+  };
+
+  // Table columns matching BeautyOasis reference & Highlander luxury design
+  const columns = [
+    {
+      header: 'PRODUCT NAME',
+      accessor: 'title',
+      className: 'min-w-[240px]',
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-lg bg-[#F8F6F1] border border-[#E4E0D8] overflow-hidden flex items-center justify-center relative shrink-0 shadow-xs">
+            <img
+              src={row.featured_image || 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg'}
+              alt={row.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg';
+              }}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span 
+              className="font-bold text-[#0B2348] text-xs sm:text-sm font-serif hover:text-[#C9A23A] cursor-pointer block truncate leading-tight"
+              onClick={() => handleView(row)}
+              title={row.title}
+            >
+              {row.title}
+            </span>
+            <span className="text-[11px] text-[#6F6C67] block mt-0.5 truncate uppercase tracking-tight">
+              {row.grade ? `${row.grade} • ` : ''}{row.metal || 'Gold'}{row.purity ? ` (${row.purity})` : ''}
+            </span>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'CATEGORY',
+      accessor: 'category',
+      className: 'whitespace-nowrap',
+      render: (row) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F0F8] text-[#0B2348] border border-[#0B2348]/10 whitespace-nowrap">
+          {row.category}
+        </span>
+      )
+    },
+    {
+      header: 'SKU',
+      accessor: 'sku',
+      className: 'font-mono text-xs whitespace-nowrap text-slate-600',
+      render: (row) => (
+        <span className="font-mono text-xs text-slate-600 whitespace-nowrap">
+          {row.sku || `HGS-LOT-${row.lot_number}`}
+        </span>
+      )
+    },
+    {
+      header: 'PRICE',
+      accessor: 'price',
+      className: 'font-mono whitespace-nowrap',
+      render: (row) => {
+        const base = Number(row.price) || 0;
+        return (
+          <div className="whitespace-nowrap">
+            <span className="font-bold text-[#0B2348] text-xs sm:text-sm block">
+              ${base.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10px] text-[#C9A23A] font-sans block">
+              Fee: ${(base * 1.15).toFixed(2)}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      header: 'INVENTORY STOCK',
+      accessor: 'inventory',
+      className: 'font-mono whitespace-nowrap',
+      render: (row) => {
+        const qty = row.inventory ?? row.stock_quantity ?? 1;
+        return (
+          <span className="text-xs font-semibold text-slate-700 font-mono whitespace-nowrap">
+            {qty} {qty === 1 ? 'unit' : 'units'}
+          </span>
+        );
+      }
+    },
+    {
+      header: 'STATUS',
+      accessor: 'storefront_status',
+      className: 'whitespace-nowrap',
+      render: (row) => {
+        const qty = row.inventory ?? row.stock_quantity ?? 1;
+        const isInStock = qty > 0 && (row.storefront_status || row.status) !== 'Sold';
+        return (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+            isInStock 
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+              : 'bg-rose-50 text-rose-700 border border-rose-200'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isInStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+            {isInStock ? 'In Stock' : 'Sold Out'}
+          </span>
+        );
+      }
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#111827] tracking-tight">
+            Product Catalog
+          </h2>
+          <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+            Manage collectible coins, precious metals, inventory, pricing, and storefront listings.
+          </p>
+        </div>
+
+        {/* Header Actions */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => navigate('/categories')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] text-[#111827] text-xs font-semibold hover:bg-[#F5F8FC] transition-colors shadow-2xs cursor-pointer"
+          >
+            <Layers className="w-3.5 h-3.5 text-[#D6AD45]" />
+            Manage Categories
+          </button>
+
+          <button
+            onClick={exportCatalogCSV}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] text-[#111827] text-xs font-semibold hover:bg-[#F5F8FC] transition-colors shadow-2xs hidden md:inline-flex cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-[#64748B]" />
+            Export CSV
+          </button>
+
+          <button
+            onClick={handleAddNew}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D6AD45] hover:bg-[#BF952E] text-[#111827] text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-[#111827]" />
+            Add Catalog Item
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic Data Table */}
+      <DataTable
+        columns={columns}
+        data={items}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        sortBy={sortBy}
+        sortAsc={sortAsc}
+        onSort={handleSort}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search products by title, category, SKU..."
+        isLoading={isLoading}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDeletePrompt}
+        editLabel="Edit Product"
+        emptyTitle="No products found"
+        emptyDescription="Try adjusting your category or stock status filters."
+        filterComponent={
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Category Filter */}
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setPage(1);
+              }}
+              className="bg-white border border-[#DCE5F0] text-[#111827] text-xs rounded-xl px-3 py-2 focus:ring-1 focus:ring-[#D6AD45] focus:border-[#D6AD45] focus:outline-none font-medium cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id || c.name} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Stock Status Filter */}
+            <select
+              value={availability}
+              onChange={(e) => {
+                setAvailability(e.target.value);
+                setPage(1);
+              }}
+              className="bg-white border border-[#DCE5F0] text-[#111827] text-xs rounded-xl px-3 py-2 focus:ring-1 focus:ring-[#D6AD45] focus:border-[#D6AD45] focus:outline-none font-medium cursor-pointer"
+            >
+              <option value="All">All Stock Status</option>
+              <option value="Active">In Stock</option>
+              <option value="Sold">Sold Out</option>
+              <option value="Draft">Draft</option>
+            </select>
+          </div>
+        }
+      />
+
+      {/* Slide-over Drawer for Add/Edit Product */}
+      <CatalogItemFormDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedItem(null);
+        }}
+        onSave={handleSaveItem}
+        mode={drawerMode}
+        item={selectedItem}
+        categories={categories}
+        isLoading={isSaving}
+      />
+
+      {/* Client-Side Storefront Product Dossier Modal */}
+      <ItemDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedItem(null);
+        }}
+        item={selectedItem}
+        onEdit={(itemToEdit) => {
+          setIsDetailOpen(false);
+          handleEdit(itemToEdit);
+        }}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => {
+          setIsConfirmOpen(false);
+          setSelectedItem(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Inventory Item"
+        message={`Are you sure you want to permanently delete Item #${selectedItem?.lot_number}: "${selectedItem?.title}" from the inventory?`}
+        confirmText="Delete Product"
+        isLoading={isSaving}
+      />
+    </div>
+  );
+};

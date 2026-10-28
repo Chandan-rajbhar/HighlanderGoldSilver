@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary-navy: #111827;
+    --color-secondary-text: #64748B;
+    --color-main-bg: #F5F8FC;
+    --color-card-bg: #FFFFFF;
+    --color-card-border: #DCE5F0;
+    --color-luxury-gold: #D6AD45;
+    --color-gold-hover: #BF952E;
+    --color-sidebar-from: #5B82A6;
+    --color-sidebar-via: #497094;
+    --color-sidebar-to: #355C80;
+    --color-success: #10B981;
+    --color-error: #EF4444;
+  }
+
+  body {
+    background-color: #F5F8FC;
+    color: #111827;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F8FC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Glassmorphism UI Effects - Highlander Premium Design */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #DCE5F0;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.glass-header {
+  background: rgba(245, 248, 252, 0.92);
+  border-bottom: 1px solid #DCE5F0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.glass-overlay {
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
