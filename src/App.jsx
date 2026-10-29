@@ -4,6 +4,7 @@ import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SpotPriceProvider } from './context/SpotPriceContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { LoadingScreen } from './components/ui/LoadingScreen';
 
 // Direct imports for instant, 0ms route transitions with zero network buffering
 import { Login } from './pages/Login';
@@ -24,7 +25,10 @@ import { NotFound } from './pages/NotFound';
 
 // Protected route guard for console administration
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoadingAuth } = useAuth();
+  if (isLoadingAuth) {
+    return <LoadingScreen fullScreen={true} message="Authenticating session..." />;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

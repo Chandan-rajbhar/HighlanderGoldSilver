@@ -2,6 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { LoadingScreen } from '../ui/LoadingScreen';
 
 export const DashboardLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -28,13 +29,7 @@ export const DashboardLayout = () => {
 
         {/* Dynamic page content routed by React Router DOM */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto bg-white">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center min-h-[350px]">
-                <div className="w-8 h-8 border-2 border-slate-200 border-t-[#D6AD45] rounded-full animate-spin" />
-              </div>
-            }
-          >
+          <Suspense fallback={<LoadingScreen fullScreen={false} message="Loading module..." />}>
             <Outlet />
           </Suspense>
         </main>
