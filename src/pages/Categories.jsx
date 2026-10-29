@@ -8,8 +8,8 @@ import { useToast } from '../context/ToastContext';
 
 export const Categories = () => {
   const { toast } = useToast();
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState(() => categoryService.getCategoriesSync?.() || []);
+  const [isLoading, setIsLoading] = useState(() => (!categories || categories.length === 0));
   const [search, setSearch] = useState('');
 
   // Modals
@@ -18,8 +18,8 @@ export const Categories = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchCategories = async () => {
-    setIsLoading(true);
+  const fetchCategories = async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
     try {
       const data = await categoryService.getCategories();
       setCategories(data);
@@ -32,7 +32,7 @@ export const Categories = () => {
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchCategories(categories.length === 0);
   }, []);
 
   const handleAddNew = () => {
@@ -99,54 +99,70 @@ export const Categories = () => {
 
   const columns = [
     {
+      key: 'name',
       header: 'Category Name',
-      accessor: 'name',
-      className: 'font-semibold text-slate-900 font-serif',
+      className: 'font-medium text-slate-900',
       render: (row) => (
-        <div>
-          <span className="font-bold text-slate-900 text-sm block">{row.name}</span>
+        <div className="flex flex-col">
+          <span className="font-serif font-bold text-slate-900 text-sm tracking-wide uppercase">
+            {row.name}
+          </span>
           {row.description && (
-            <span className="text-[11px] text-slate-500 line-clamp-1">{row.description}</span>
+            <span className="text-[11px] text-slate-500 line-clamp-1 max-w-sm mt-0.5">
+              {row.description}
+            </span>
           )}
         </div>
       )
     },
     {
+      key: 'slug',
       header: 'Slug',
-      accessor: 'slug',
+      className: 'font-mono text-xs text-slate-600',
       render: (row) => (
-        <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-          /{row.slug}
+        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
+          {row.slug || `/${row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
         </span>
       )
     },
     {
+      key: 'metal_type',
       header: 'Metal Type',
-      accessor: 'metal_type',
-      render: (row) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold-surface text-gold-dark border border-gold-border">
-          {row.metal_type || 'Precious Metals'}
-        </span>
-      )
+      render: (row) => {
+        const metal = row.metal_type || 'Unspecified';
+        const isGold = metal.toLowerCase().includes('gold');
+        const isSilver = metal.toLowerCase().includes('silver');
+        const isPlatinum = metal.toLowerCase().includes('platinum');
+
+        const badgeColor = isGold 
+          ? 'bg-amber-50 text-amber-800 border-amber-200'
+          : isSilver
+          ? 'bg-slate-100 text-slate-800 border-slate-300'
+          : isPlatinum
+          ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+          : 'bg-gray-100 text-gray-700 border-gray-200';
+
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeColor}`}>
+            {metal}
+          </span>
+        );
+      }
     },
     {
+      key: 'item_count',
       header: 'Total Items',
-      accessor: 'item_count',
-      className: 'font-mono text-center',
-      render: (row) => (
-        <span className="font-bold text-slate-800">
-          {row.item_count || 0}
-        </span>
-      )
+      className: 'text-center font-mono font-semibold text-slate-900',
+      render: (row) => row.item_count ?? 0
     },
     {
+      key: 'is_active',
       header: 'Visibility',
-      accessor: 'is_active',
       render: (row) => (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
           row.is_active 
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-            : 'bg-slate-100 text-slate-500 border-slate-200'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+            : 'bg-slate-100 text-slate-600 border-slate-200'
         }`}>
           <span className={`w-1.5 h-1.5 rounded-full ${row.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
           {row.is_active ? 'Visible' : 'Hidden'}
@@ -169,7 +185,7 @@ export const Categories = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4 text-gold" />
           Add Category

@@ -34,8 +34,8 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { spots, refreshPrices, lastUpdated } = useSpotPrices();
 
-  const [summary, setSummary] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [summary, setSummary] = useState(() => dashboardService.getDashboardSummarySync());
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -50,7 +50,7 @@ export const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(false);
   }, []);
 
   return (

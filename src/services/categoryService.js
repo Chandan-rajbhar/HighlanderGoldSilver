@@ -3,7 +3,31 @@ import { localDB } from './storageService';
 
 const LIST_COLUMNS = 'id, name, slug, description, metal_type, item_count, total_valuation, is_active, display_order, created_at';
 
+let _cachedCategories = null;
+
+const computeLocalCategories = () => {
+  const cats = localDB.getCategories();
+  const items = localDB.getInventory();
+  return cats.map(cat => {
+    const catItems = items.filter(i => i.category === cat.name);
+    const val = catItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
+    return {
+      ...cat,
+      item_count: catItems.length,
+      total_valuation: val
+    };
+  });
+};
+
 export const categoryService = {
+  // Synchronous cache for instant 0ms initial render
+  getCategoriesSync() {
+    if (!_cachedCategories) {
+      _cachedCategories = computeLocalCategories();
+    }
+    return _cachedCategories;
+  },
+
   async getCategories() {
     if (isSupabaseConfigured()) {
       try {
@@ -12,24 +36,15 @@ export const categoryService = {
           .select(LIST_COLUMNS)
           .order('display_order', { ascending: true });
         if (error) throw error;
-        return data || [];
+        _cachedCategories = data || [];
+        return _cachedCategories;
       } catch (err) {
         console.error('Supabase getCategories error:', err);
       }
     }
 
-    const cats = localDB.getCategories();
-    // Update dynamically calculated item counts and valuations from current inventory
-    const items = localDB.getInventory();
-    return cats.map(cat => {
-      const catItems = items.filter(i => i.category === cat.name);
-      const val = catItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
-      return {
-        ...cat,
-        item_count: catItems.length,
-        total_valuation: val
-      };
-    });
+    _cachedCategories = computeLocalCategories();
+    return _cachedCategories;
   },
 
   async createCategory(catData) {
@@ -49,6 +64,7 @@ export const categoryService = {
           .select()
           .single();
         if (error) throw error;
+        _cachedCategories = null;
         return data;
       } catch (err) {
         console.error('Supabase createCategory error:', err);
@@ -59,6 +75,7 @@ export const categoryService = {
     const cats = localDB.getCategories();
     const updated = [...cats, newCat];
     localDB.setCategories(updated);
+    _cachedCategories = null;
     return newCat;
   },
 
@@ -72,6 +89,7 @@ export const categoryService = {
           .select()
           .single();
         if (error) throw error;
+        _cachedCategories = null;
         return data;
       } catch (err) {
         console.error('Supabase updateCategory error:', err);
@@ -84,6 +102,7 @@ export const categoryService = {
     if (index === -1) throw new Error('Category not found');
     cats[index] = { ...cats[index], ...catData };
     localDB.setCategories([...cats]);
+    _cachedCategories = null;
     return cats[index];
   },
 
@@ -95,6 +114,7 @@ export const categoryService = {
           .delete()
           .eq('id', id);
         if (error) throw error;
+        _cachedCategories = null;
         return true;
       } catch (err) {
         console.error('Supabase deleteCategory error:', err);
@@ -105,7 +125,7 @@ export const categoryService = {
     const cats = localDB.getCategories();
     const filtered = cats.filter(c => c.id !== id);
     localDB.setCategories(filtered);
+    _cachedCategories = null;
     return true;
   }
 };
-

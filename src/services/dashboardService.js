@@ -1,7 +1,94 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 
+const computeLocalSummary = () => {
+  const items = localDB.getInventory();
+  const categories = localDB.getCategories();
+  const customers = localDB.getCustomers();
+  const orders = localDB.getOrders();
+  const payments = localDB.getPayments();
+  const inquiries = localDB.getInquiries();
+
+  const totalItems = items.length;
+  const activeItems = items.filter(i => 
+    (i.storefront_status === 'Active' || i.status === 'Available') && 
+    i.show_on_storefront !== false
+  ).length;
+  const lowStockItems = items.filter(i => 
+    i.stock_status === 'Out of Stock' || 
+    i.stock_status === 'Low Stock' || 
+    i.status === 'Unavailable' || 
+    (i.stock_quantity ?? 1) <= 1
+  ).length;
+
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total_settlement) || 0), 0);
+  const pendingPayments = payments.filter(p => p.payment_status === 'Pending' || p.payment_status === 'Pending Wire').length ||
+    orders.filter(o => o.payment_status === 'Pending' || o.payment_status === 'Pending Wire').length;
+
+  const baseCatalogValue = items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+  const buyerPremiumTotal = baseCatalogValue * 0.15;
+  const totalSettlementValuation = baseCatalogValue + buyerPremiumTotal;
+
+  const categoryMap = {};
+  items.forEach(item => {
+    const cat = item.category || 'Other';
+    if (!categoryMap[cat]) categoryMap[cat] = { count: 0, value: 0 };
+    categoryMap[cat].count += 1;
+    categoryMap[cat].value += (Number(item.price) || 0);
+  });
+
+  const categoryBreakdown = Object.keys(categoryMap).map(name => ({
+    name,
+    count: categoryMap[name].count,
+    value: categoryMap[name].value
+  }));
+
+  const metalMap = {};
+  items.forEach(item => {
+    const m = item.metal || 'Other';
+    metalMap[m] = (metalMap[m] || 0) + 1;
+  });
+
+  const metalBreakdown = Object.keys(metalMap).map(metal => ({
+    name: metal,
+    count: metalMap[metal]
+  }));
+
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+
+  const totalInquiries = inquiries.length;
+  const newInquiries = inquiries.filter(i => i.status === 'New').length;
+
+  return {
+    totalItems,
+    activeItems,
+    totalCategories: categories.length,
+    totalCustomers: customers.length,
+    totalOrders,
+    totalRevenue,
+    pendingPayments,
+    lowStockItems,
+    lowStockOrUnavailable: lowStockItems,
+    totalInquiries,
+    newInquiries,
+    baseCatalogValue,
+    buyerPremiumTotal,
+    totalSettlementValuation,
+    recentOrders,
+    categoryBreakdown,
+    metalBreakdown,
+    isLiveConnected: isSupabaseConfigured()
+  };
+};
+
 export const dashboardService = {
+  getDashboardSummarySync() {
+    return computeLocalSummary();
+  },
+
   /**
    * Fetches unified dashboard metrics in a single aggregated operation
    * Egress optimization: avoids separate network queries
@@ -108,87 +195,6 @@ export const dashboardService = {
     }
 
     // Local DB calculation
-    const items = localDB.getInventory();
-    const categories = localDB.getCategories();
-    const customers = localDB.getCustomers();
-    const orders = localDB.getOrders();
-    const payments = localDB.getPayments();
-    const inquiries = localDB.getInquiries();
-
-    const totalItems = items.length;
-    const activeItems = items.filter(i => 
-      (i.storefront_status === 'Active' || i.status === 'Available') && 
-      i.show_on_storefront !== false
-    ).length;
-    const lowStockItems = items.filter(i => 
-      i.stock_status === 'Out of Stock' || 
-      i.stock_status === 'Low Stock' || 
-      i.status === 'Unavailable' || 
-      (i.stock_quantity ?? 1) <= 1
-    ).length;
-
-    const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total_settlement) || 0), 0);
-    const pendingPayments = payments.filter(p => p.payment_status === 'Pending' || p.payment_status === 'Pending Wire').length ||
-      orders.filter(o => o.payment_status === 'Pending' || o.payment_status === 'Pending Wire').length;
-
-    const baseCatalogValue = items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-    const buyerPremiumTotal = baseCatalogValue * 0.15;
-    const totalSettlementValuation = baseCatalogValue + buyerPremiumTotal;
-
-    // Categories
-    const categoryMap = {};
-    items.forEach(item => {
-      const cat = item.category || 'Other';
-      if (!categoryMap[cat]) categoryMap[cat] = { count: 0, value: 0 };
-      categoryMap[cat].count += 1;
-      categoryMap[cat].value += (Number(item.price) || 0);
-    });
-
-    const categoryBreakdown = Object.keys(categoryMap).map(name => ({
-      name,
-      count: categoryMap[name].count,
-      value: categoryMap[name].value
-    }));
-
-    // Metals
-    const metalMap = {};
-    items.forEach(item => {
-      const m = item.metal || 'Other';
-      metalMap[m] = (metalMap[m] || 0) + 1;
-    });
-
-    const metalBreakdown = Object.keys(metalMap).map(metal => ({
-      name: metal,
-      count: metalMap[metal]
-    }));
-
-    // Recent orders
-    const recentOrders = [...orders]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 5);
-
-    const newInquiries = inquiries.filter(i => i.status === 'New').length;
-
-    return {
-      totalItems,
-      activeItems,
-      totalCategories: categories.length,
-      totalCustomers: customers.length,
-      totalOrders,
-      totalRevenue,
-      pendingPayments,
-      lowStockItems,
-      lowStockOrUnavailable: lowStockItems,
-      totalInquiries,
-      newInquiries,
-      baseCatalogValue,
-      buyerPremiumTotal,
-      totalSettlementValuation,
-      recentOrders,
-      categoryBreakdown,
-      metalBreakdown,
-      isLiveConnected: isSupabaseConfigured()
-    };
+    return computeLocalSummary();
   }
 };

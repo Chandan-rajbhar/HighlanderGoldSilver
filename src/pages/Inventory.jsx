@@ -27,10 +27,19 @@ export const Inventory = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const initialInv = inventoryService.getInventorySync({
+    page: 1,
+    pageSize: 10,
+    category: searchParams.get('category') || '',
+    availability: searchParams.get('status') || '',
+    sortBy: 'lot_number',
+    sortAsc: true
+  });
+
   // Query & Table State
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [items, setItems] = useState(initialInv.data);
+  const [total, setTotal] = useState(initialInv.total);
+  const [totalPages, setTotalPages] = useState(initialInv.totalPages);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
@@ -39,10 +48,10 @@ export const Inventory = () => {
   const [availability, setAvailability] = useState(searchParams.get('status') || 'All');
   const [sortBy, setSortBy] = useState('lot_number');
   const [sortAsc, setSortAsc] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => initialInv.data.length === 0);
 
   // Categories list
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(() => categoryService.getCategoriesSync?.() || []);
 
   // Drawer & Modal state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -82,7 +91,7 @@ export const Inventory = () => {
   }, [page, pageSize, search, category, metal, availability, sortBy, sortAsc, toast]);
 
   useEffect(() => {
-    fetchItems();
+    fetchItems(items.length === 0);
   }, [fetchItems]);
 
   const handleSort = (columnKey) => {

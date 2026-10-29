@@ -11,7 +11,6 @@ import {
   Settings,
   ChevronLeft, 
   ChevronRight,
-  ExternalLink,
   X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -212,19 +211,7 @@ export const Sidebar = ({
             </div>
           ))}
 
-          {/* View Public Storefront Link under System */}
-          <div className="space-y-1 pt-1">
-            <a
-              href="https://highlander-goldandsilver.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View Public Storefront"
-              className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-[#F5B52E] transition-colors border border-transparent"
-            >
-              <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F5B52E]" />
-              {!isCollapsed && <span className="flex-1 truncate tracking-tight">View Public Storefront</span>}
-            </a>
-          </div>
+
         </div>
 
         {/* Admin User Footer on Navy Sidebar */}
