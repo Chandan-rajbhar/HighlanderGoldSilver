@@ -784,7 +784,7 @@ export const initialInquiries = [
   {
     id: "inq-001",
     lot_number: "1",
-    lot_title: "1876 George T. Morgan Proposed $100 Gold Union™",
+    lot_title: "1876 Morgan $100 Gold Union",
     inquirer_name: "Col. Harrison Bradley",
     email: "hbradley.ret@montanaweb.com",
     phone: "(406) 837-5120",
@@ -796,7 +796,7 @@ export const initialInquiries = [
   {
     id: "inq-002",
     lot_number: "153",
-    lot_title: "1897 Morgan Silver Dollar MS-65 PL",
+    lot_title: "1897 Morgan Silver Dollar",
     inquirer_name: "Sarah Lindquist",
     email: "slindquist@numisguild.org",
     phone: "(208) 664-8890",
@@ -808,7 +808,7 @@ export const initialInquiries = [
   {
     id: "inq-003",
     lot_number: null,
-    lot_title: "Precious Metals Liquidation / Buyback",
+    lot_title: "Precious Metals & Bullion Buyback",
     inquirer_name: "David K. Campbell",
     email: "dcampbell@flatheadholdings.com",
     phone: "(406) 261-3344",

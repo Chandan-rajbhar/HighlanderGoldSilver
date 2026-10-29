@@ -59,6 +59,10 @@ const computeLocalSummary = () => {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5);
 
+  const recentInquiries = [...inquiries]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+
   const totalInquiries = inquiries.length;
   const newInquiries = inquiries.filter(i => i.status === 'New').length;
 
@@ -78,6 +82,7 @@ const computeLocalSummary = () => {
     buyerPremiumTotal,
     totalSettlementValuation,
     recentOrders,
+    recentInquiries,
     categoryBreakdown,
     metalBreakdown,
     isLiveConnected: isSupabaseConfigured()
@@ -107,7 +112,7 @@ export const dashboardService = {
           supabase.from('inventory').select('id, price, status, stock_status, storefront_status, show_on_storefront, category, metal, stock_quantity'),
           supabase.from('orders').select('id, order_number, customer_name, total_settlement, payment_status, created_at').order('created_at', { ascending: false }),
           supabase.from('customers').select('id, total_spent', { count: 'exact' }),
-          supabase.from('inquiries').select('id, status', { count: 'exact' }),
+          supabase.from('inquiries').select('id, lot_number, lot_title, inquirer_name, email, phone, inquiry_type, message, status, created_at', { count: 'exact' }).order('created_at', { ascending: false }),
           supabase.from('categories').select('id, name'),
           supabase.from('payments').select('id, amount, payment_status')
         ]);
@@ -116,8 +121,10 @@ export const dashboardService = {
         const allOrders = ordersRes.data || [];
         const recentOrders = allOrders.slice(0, 5);
         const customersCount = customersRes.count || 0;
-        const totalInquiries = inquiriesRes.count || 0;
-        const newInquiries = (inquiriesRes.data || []).filter(i => i.status === 'New').length;
+        const allInquiries = inquiriesRes.data || [];
+        const totalInquiries = inquiriesRes.count ?? allInquiries.length;
+        const newInquiries = allInquiries.filter(i => i.status === 'New').length;
+        const recentInquiries = allInquiries.slice(0, 5);
         const payments = paymentsRes.data || [];
 
         const totalItems = items.length;
@@ -185,6 +192,7 @@ export const dashboardService = {
           buyerPremiumTotal,
           totalSettlementValuation,
           recentOrders,
+          recentInquiries,
           categoryBreakdown,
           metalBreakdown,
           isLiveConnected: true

@@ -84,6 +84,28 @@ export const inquiryService = {
     };
   },
 
+  async getInquiryStats() {
+    let inqs = [];
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase.from('inquiries').select('id, status');
+        inqs = data || [];
+      } catch (err) {
+        console.error('Supabase getInquiryStats error, using localDB fallback:', err);
+        inqs = localDB.getInquiries();
+      }
+    } else {
+      inqs = localDB.getInquiries();
+    }
+
+    return {
+      total: inqs.length,
+      newCount: inqs.filter(i => i.status === 'New').length,
+      inProgressCount: inqs.filter(i => i.status === 'In Progress').length,
+      repliedCount: inqs.filter(i => i.status === 'Replied' || i.status === 'Closed').length
+    };
+  },
+
   async updateInquiryStatus(id, newStatus) {
     if (isSupabaseConfigured()) {
       try {
