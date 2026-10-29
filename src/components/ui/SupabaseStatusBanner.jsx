@@ -9,12 +9,16 @@ export const SupabaseStatusBanner = () => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const envSample = `VITE_SUPABASE_URL=https://your-project.supabase.co\nVITE_SUPABASE_ANON_KEY=your-anon-public-key`;
+  const configSample = `// Centralized configuration in src/lib/supabaseConfig.js
+export const SUPABASE_CONFIG = {
+  url: 'https://azibnvfxnsrocmobzswt.supabase.co',
+  anonKey: 'sb_publishable_uNLQLczI2qACWRJDxAJTVg_mWyfHUJZ'
+};`;
 
   const copyEnv = () => {
-    navigator.clipboard.writeText(envSample);
+    navigator.clipboard.writeText(configSample);
     setCopied(true);
-    toast.success('Sample environment variables copied to clipboard');
+    toast.success('Centralized configuration copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -55,7 +59,7 @@ export const SupabaseStatusBanner = () => {
             <p className="text-slate-600 mt-0.5">
               {isConfigured
                 ? 'All queries are running against your Supabase tables with server-side range pagination and column egress optimization.'
-                : 'Using local database persistence for Highlander Gold & Silver. Add your VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY whenever ready.'}
+                : 'Using local database persistence for Highlander Gold & Silver. Configured centrally in src/lib/supabaseConfig.js.'}
             </p>
           </div>
         </div>
@@ -77,22 +81,19 @@ export const SupabaseStatusBanner = () => {
       {isExpanded && !isConfigured && (
         <div className="mt-3 pt-3 border-t border-amber-200/70 space-y-2">
           <p className="text-slate-700">
-            <strong>3 Easy Steps to Connect Supabase:</strong>
+            <strong>Centralized Supabase Configuration:</strong>
           </p>
           <ol className="list-decimal list-inside space-y-1 text-slate-700 ml-1">
             <li>
-              Run the SQL migration located at <code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono text-[11px]">src/lib/schema.sql</code> in your Supabase SQL Editor.
+              Supabase project connection is configured in <code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono text-[11px]">src/lib/supabaseConfig.js</code>.
             </li>
             <li>
-              Copy the environment template below into your root <code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono text-[11px]">.env</code> file.
-            </li>
-            <li>
-              Restart the dev server (<code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono text-[11px]">npm run dev</code>). The dashboard automatically connects with zero code changes!
+              No <code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono text-[11px]">.env</code> file is required for new developers cloning this repository.
             </li>
           </ol>
 
           <div className="relative mt-2 p-2.5 bg-slate-900 text-slate-100 rounded-lg font-mono text-[11px]">
-            <pre className="overflow-x-auto">{envSample}</pre>
+            <pre className="overflow-x-auto">{configSample}</pre>
             <button
               onClick={copyEnv}
               className="absolute top-2 right-2 p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
