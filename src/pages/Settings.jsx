@@ -122,10 +122,10 @@ export const Settings = () => {
             <strong>How Supabase Integration Works:</strong>
           </p>
           <p>
-            The entire dashboard is built on a modular service layer (<code className="font-mono bg-white px-1 py-0.5 border rounded">src/services/*</code>) and centralized Supabase client (<code className="font-mono bg-white px-1 py-0.5 border rounded">src/lib/supabaseClient.js</code>).
+            The entire dashboard is built on a modular service layer (<code className="font-mono bg-white px-1 py-0.5 border rounded">src/services/*</code>) and centralized Supabase configuration (<code className="font-mono bg-white px-1 py-0.5 border rounded">src/lib/supabaseConfig.js</code>).
           </p>
           <p>
-            When you provide <code className="font-mono bg-white px-1 py-0.5 border rounded">VITE_SUPABASE_URL</code> and <code className="font-mono bg-white px-1 py-0.5 border rounded">VITE_SUPABASE_ANON_KEY</code> in your environment, all CRUD operations instantly switch to Supabase with server-side pagination, range queries, and column-selective egress optimization. No UI or component changes required!
+            The Supabase client is preconfigured out of the box with the Highlander Gold & Silver project URL and public publishable key. All CRUD operations run against Supabase with server-side pagination, range queries, and column-selective egress optimization. No manual <code className="font-mono bg-white px-1 py-0.5 border rounded">.env</code> setup is required when sharing the codebase!
           </p>
         </div>
       </div>

@@ -1,22 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_CONFIG } from './supabaseConfig';
 
-// Environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Centralized credentials with optional environment override (no .env required)
+const supabaseUrl = (import.meta?.env?.VITE_SUPABASE_URL || SUPABASE_CONFIG.url || '').trim();
+const supabaseAnonKey = (import.meta?.env?.VITE_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey || '').trim();
 
 // Check if credentials are properly configured
 export const isSupabaseConfigured = () => {
   return Boolean(
     supabaseUrl && 
     supabaseAnonKey && 
-    supabaseUrl.trim() !== '' && 
-    supabaseAnonKey.trim() !== '' &&
+    supabaseUrl !== '' && 
+    supabaseAnonKey !== '' &&
     !supabaseUrl.includes('placeholder') &&
     !supabaseUrl.includes('your-project')
   );
 };
 
-// Supabase client instance or null
+// Centralized Supabase singleton client
 export const supabase = isSupabaseConfigured()
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -37,3 +38,4 @@ export const getSupabaseStatus = () => {
   };
 };
 
+export { SUPABASE_CONFIG };
