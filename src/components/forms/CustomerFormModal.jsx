@@ -110,7 +110,10 @@ export const CustomerFormModal = ({
         <div className="w-screen max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
           
           {/* Header */}
-          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+          <div 
+            className="px-6 py-5 text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0"
+            style={{ background: 'linear-gradient(135deg, #0B2B4E 0%, #114275 100%)' }}
+          >
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">

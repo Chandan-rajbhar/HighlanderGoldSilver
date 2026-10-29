@@ -30,11 +30,17 @@ export const OrderDetailDrawer = ({
   const [currentStatus, setCurrentStatus] = useState(order.order_status || order.fulfillment_status || 'Processing');
   const [isUpdating, setIsUpdating] = useState(false);
 
+  React.useEffect(() => {
+    if (order) {
+      setCurrentStatus(order.order_status || order.fulfillment_status || 'Processing');
+    }
+  }, [order]);
+
   const handleStatusSelect = (status) => {
     setCurrentStatus(status);
     if (onUpdateStatus) {
       setIsUpdating(true);
-      onUpdateStatus(order.id, status).finally(() => setIsUpdating(false));
+      onUpdateStatus(order, status).finally(() => setIsUpdating(false));
     }
   };
 
@@ -60,7 +66,8 @@ export const OrderDetailDrawer = ({
         <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300">
           
           {/* Header */}
-          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+          <div className="px-6 py-5 text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0"
+            style={{ background: 'linear-gradient(135deg, #0B2B4E 0%, #114275 100%)' }}>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">

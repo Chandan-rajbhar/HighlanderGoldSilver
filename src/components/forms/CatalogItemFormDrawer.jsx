@@ -250,7 +250,8 @@ export const CatalogItemFormDrawer = ({
         <div className="w-screen max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
           
           {/* Header */}
-          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+          <div className="px-6 py-5 text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0"
+            style={{ background: 'linear-gradient(135deg, #0B2B4E 0%, #114275 100%)' }}>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
@@ -355,25 +356,7 @@ export const CatalogItemFormDrawer = ({
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={imageUrlInput}
-                          onChange={(e) => setImageUrlInput(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrlImage(); } }}
-                          placeholder="Or paste image URL / asset path to add more..."
-                          className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white font-mono text-slate-600 focus:outline-none focus:border-[#C9A23A]"
-                        />
-                        {imageUrlInput.trim() && (
-                          <button
-                            type="button"
-                            onClick={handleAddUrlImage}
-                            className="px-2.5 py-1.5 bg-[#0B2348] text-white text-xs rounded-lg font-medium hover:bg-[#071A35] cursor-pointer"
-                          >
-                            Add
-                          </button>
-                        )}
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
@@ -451,24 +434,7 @@ export const CatalogItemFormDrawer = ({
                     </button>
                   </div>
 
-                  {/* Add URL input */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={imageUrlInput}
-                      onChange={(e) => setImageUrlInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrlImage(); } }}
-                      placeholder="Or enter direct image URL / path and press Add..."
-                      className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white font-mono text-slate-600 focus:outline-none focus:border-[#C9A23A]"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddUrlImage}
-                      className="px-3 py-1.5 bg-[#0B2348] text-white text-xs rounded-lg font-medium hover:bg-[#071A35] transition-colors cursor-pointer"
-                    >
-                      Add URL
-                    </button>
-                  </div>
+                  
                 </div>
               ) : (
                 /* Case C: 0 Images (Empty state) */
@@ -537,18 +503,9 @@ export const CatalogItemFormDrawer = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider">
-                      Item Code
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleRegenerateSKU}
-                      className="text-[10px] text-[#C9A23A] hover:underline flex items-center gap-1 font-mono"
-                    >
-                      <RefreshCw className="w-3 h-3" /> Regenerate Code
-                    </button>
-                  </div>
+                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                    Item Code
+                  </label>
                   <input
                     type="text"
                     value={formData.sku}

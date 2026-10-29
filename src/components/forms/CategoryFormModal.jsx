@@ -102,7 +102,10 @@ export const CategoryFormModal = ({
         <div className="w-screen max-w-md md:max-w-lg bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
           
           {/* Drawer Header */}
-          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+          <div 
+            className="px-6 py-5 text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0"
+            style={{ background: 'linear-gradient(135deg, #0B2B4E 0%, #114275 100%)' }}
+          >
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
@@ -120,7 +123,7 @@ export const CategoryFormModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-slate-300 hover:text-white hover:bg-[#0B2348] rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
               aria-label="Close drawer"
             >
               <X className="w-5 h-5" />

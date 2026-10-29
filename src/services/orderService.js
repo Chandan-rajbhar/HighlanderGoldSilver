@@ -175,7 +175,7 @@ export const orderService = {
     }
 
     const orders = localDB.getOrders();
-    const index = orders.findIndex(o => o.id === id);
+    const index = orders.findIndex(o => o.id === id || o.order_id === id || o.order_number === id);
     if (index === -1) throw new Error('Order not found');
     orders[index] = { ...orders[index], ...orderData };
     localDB.setOrders([...orders]);

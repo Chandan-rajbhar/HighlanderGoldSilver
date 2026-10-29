@@ -100,7 +100,7 @@ export const Categories = () => {
     {
       key: 'name',
       header: 'Category Name',
-      className: 'font-medium text-slate-900',
+      className: 'font-medium text-slate-900 min-w-[260px]',
       render: (row) => (
         <div className="flex flex-col">
           <span className="font-semibold text-slate-900 text-sm font-sans tracking-normal">
@@ -117,6 +117,7 @@ export const Categories = () => {
     {
       key: 'metal_type',
       header: 'Metal Type',
+      className: 'w-48 text-left',
       render: (row) => {
         const metal = row.metal_type || 'Unspecified';
         const isGold = metal.toLowerCase().includes('gold');
@@ -141,12 +142,17 @@ export const Categories = () => {
     {
       key: 'item_count',
       header: 'Total Items',
-      className: 'text-center font-mono font-semibold text-slate-900',
-      render: (row) => row.item_count ?? 0
+      className: 'w-36 text-left',
+      render: (row) => (
+        <span className="font-mono font-bold text-slate-900 text-xs block pl-1">
+          {row.item_count ?? 0}
+        </span>
+      )
     },
     {
       key: 'is_active',
       header: 'Visibility',
+      className: 'w-36 text-left',
       render: (row) => (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
           row.is_active 
@@ -174,9 +180,9 @@ export const Categories = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-gold" />
+          <Plus className="w-4 h-4 text-[#C9A23A]" />
           Add Category
         </button>
       </div>

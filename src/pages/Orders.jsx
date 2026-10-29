@@ -105,18 +105,19 @@ export const Orders = () => {
     setIsConfirmOpen(true);
   };
 
-  const handleUpdateStatus = async (order, newStatus) => {
-    const orderId = order.id || order.order_id;
+  const handleUpdateStatus = async (orderOrId, newStatus) => {
+    const orderId = typeof orderOrId === 'object' ? (orderOrId.id || orderOrId.order_id || orderOrId.order_number) : orderOrId;
+    const orderNum = typeof orderOrId === 'object' ? (orderOrId.order_number || orderOrId.order_id || orderId) : orderId;
     try {
       const updated = await orderService.updateOrder(orderId, { 
         order_status: newStatus,
         fulfillment_status: newStatus
       });
-      setOrders(prev => prev.map(o => (o.id === updated.id || o.order_id === orderId) ? { ...o, ...updated, fulfillment_status: newStatus, order_status: newStatus } : o));
-      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.order_id === orderId)) {
+      setOrders(prev => prev.map(o => (o.id === updated.id || o.order_id === orderId || o.order_number === orderId) ? { ...o, ...updated, fulfillment_status: newStatus, order_status: newStatus } : o));
+      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.order_id === orderId || selectedOrder.order_number === orderId)) {
         setSelectedOrder(prev => ({ ...prev, ...updated, fulfillment_status: newStatus, order_status: newStatus }));
       }
-      toast.success(`Order #${order.order_number || order.order_id} marked as ${newStatus}`);
+      toast.success(`Order #${orderNum} marked as ${newStatus}`);
     } catch (err) {
       console.error('Error updating order:', err);
       toast.error('Failed to update status.');
