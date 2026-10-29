@@ -261,7 +261,7 @@ export const OrderFormModal = ({
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               
-              {/* Patient / Customer Information Card */}
+              {/* Customer Information Card */}
               <div className="rounded-2xl border border-[#DCE5F0] p-4 bg-white space-y-3.5">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 uppercase tracking-wider">
                   <User className="w-4 h-4 text-[#071A35]" />

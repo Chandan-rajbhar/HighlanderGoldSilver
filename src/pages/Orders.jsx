@@ -208,7 +208,7 @@ export const Orders = () => {
       )
     },
     {
-      header: 'CLIENT / PATIENT',
+      header: 'NAME',
       accessor: 'customer_name',
       render: (row) => (
         <div>
@@ -315,7 +315,7 @@ export const Orders = () => {
         onPageSizeChange={setPageSize}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by order ID, client name, tracking number..."
+        searchPlaceholder="Search by order ID, name, tracking number..."
         isLoading={isLoading}
         onRowClick={handleView}
         onView={handleView}
