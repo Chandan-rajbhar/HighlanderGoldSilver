@@ -225,7 +225,6 @@ export const CatalogItemFormDrawer = ({
       ...formData,
       featured_image: finalImages[0],
       additional_images: finalImages,
-      images: finalImages,
       price: Number(formData.price),
       inventory: Number(formData.inventory),
       stock_quantity: Number(formData.inventory),
