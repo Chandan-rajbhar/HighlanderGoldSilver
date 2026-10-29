@@ -14,10 +14,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { LoadingScreen } from '../components/ui/LoadingScreen';
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { login, requestPasswordReset, isAuthenticated } = useAuth();
+  const { login, requestPasswordReset, isAuthenticated, isLoadingAuth } = useAuth();
   const { toast } = useToast();
 
   // Sign In Form State
@@ -37,10 +38,14 @@ export const Login = () => {
 
   // If already authenticated, redirect to admin dashboard
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isLoadingAuth && isAuthenticated) {
       navigate('/', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoadingAuth, navigate]);
+
+  if (isLoadingAuth) {
+    return <LoadingScreen fullScreen={true} message="Verifying administrator session..." />;
+  }
 
   // Sign In Submit Handler
   const handleSignInSubmit = async (e) => {
@@ -58,7 +63,7 @@ export const Login = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await login(email.trim(), password);
+      const result = await login(email.trim(), password, rememberMe);
       if (result.success) {
         toast.success('Authenticated successfully. Welcome to Highlander Admin.');
         navigate('/', { replace: true });
