@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Sparkles, DollarSign, Image, Check, AlertCircle } from 'lucide-react';
@@ -160,15 +161,12 @@ export const ItemFormModal = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Category *
             </label>
-            <select
+            <Select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+              options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -192,15 +190,12 @@ export const ItemFormModal = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Metal *
             </label>
-            <select
+            <Select
               value={formData.metal}
               onChange={(e) => setFormData({ ...formData, metal: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
-            >
-              {METALS.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+              options={METALS.map(m => ({ value: m, label: m }))}
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -358,15 +353,12 @@ export const ItemFormModal = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Availability Status
             </label>
-            <select
+            <Select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              options={STATUSES.map(s => ({ value: s, label: s }))}
+              className="w-full"
+            />
           </div>
 
           <div>

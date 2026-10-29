@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState } from 'react';
 import { TrendingUp, RefreshCw, Calculator, DollarSign, Scale, ArrowUpRight, ArrowDownRight, ShieldCheck } from 'lucide-react';
 import { useSpotPrices } from '../context/SpotPriceContext';
@@ -179,15 +180,16 @@ export const SpotPrices = () => {
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Metal Type
               </label>
-              <select
+              <Select
                 value={selectedMetal}
                 onChange={(e) => setSelectedMetal(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white font-semibold"
-              >
-                <option value="gold">Gold (AU)</option>
-                <option value="silver">Silver (AG)</option>
-                <option value="platinum">Platinum (PT)</option>
-              </select>
+                options={[
+                  { value: 'gold', label: 'Gold (AU)' },
+                  { value: 'silver', label: 'Silver (AG)' },
+                  { value: 'platinum', label: 'Platinum (PT)' }
+                ]}
+                className="w-full"
+              />
             </div>
 
             <div>

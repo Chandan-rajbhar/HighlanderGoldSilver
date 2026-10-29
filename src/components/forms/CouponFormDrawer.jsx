@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { X, Tag, DollarSign, Percent, Check, AlertCircle } from 'lucide-react';
 
@@ -152,14 +153,15 @@ export const CouponFormDrawer = ({
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Discount Type
                 </label>
-                <select
+                <Select
                   value={formData.discount_type}
                   onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none"
-                >
-                  <option value="Percentage">Percentage (%)</option>
-                  <option value="Fixed">Fixed Amount ($)</option>
-                </select>
+                  options={[
+                    { value: 'Percentage', label: 'Percentage (%)' },
+                    { value: 'Fixed', label: 'Fixed Amount ($)' }
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div>
@@ -236,15 +238,16 @@ export const CouponFormDrawer = ({
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                 Status
               </label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none"
-              >
-                <option value="Active">Active</option>
-                <option value="Disabled">Disabled</option>
-                <option value="Expired">Expired</option>
-              </select>
+                options={[
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Disabled', label: 'Disabled' },
+                  { value: 'Expired', label: 'Expired' }
+                ]}
+                className="w-full"
+              />
             </div>
           </form>
 

@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Check } from 'lucide-react';
@@ -121,7 +122,7 @@ export const CustomerFormModal = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Account Role *
             </label>
-            <select
+            <Select
               value={formData.role}
               onChange={(e) => {
                 const newRole = e.target.value;
@@ -131,26 +132,24 @@ export const CustomerFormModal = ({
                   customer_id: newRole === 'Admin' ? `STAFF-${Math.floor(100 + Math.random() * 900)}` : `CUST-${Math.floor(1000 + Math.random() * 9000)}`
                 }));
               }}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white font-medium focus:outline-none"
-            >
-              <option value="Customer">Customer (User)</option>
-              <option value="Admin">Admin (Staff)</option>
-            </select>
+              options={[
+                { value: 'Customer', label: 'Customer (User)' },
+                { value: 'Admin', label: 'Admin (Staff)' }
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Account Status *
             </label>
-            <select
+            <Select
               value={formData.account_status}
               onChange={(e) => setFormData({ ...formData, account_status: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none"
-            >
-              {ACCOUNT_STATUSES.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              options={ACCOUNT_STATUSES.map(s => ({ value: s, label: s }))}
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -176,16 +175,17 @@ export const CustomerFormModal = ({
               <label className="block text-xs font-semibold text-purple-900 uppercase tracking-wider mb-1">
                 Admin Staff Role
               </label>
-              <select
+              <Select
                 value={formData.admin_role}
                 onChange={(e) => setFormData({ ...formData, admin_role: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-purple-200 bg-white text-slate-800 focus:outline-none"
-              >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Inventory Manager">Inventory Manager</option>
-                <option value="Order Manager">Order Manager</option>
-                <option value="Vault Staff">Vault Staff</option>
-              </select>
+                options={[
+                  { value: 'Super Admin', label: 'Super Admin' },
+                  { value: 'Inventory Manager', label: 'Inventory Manager' },
+                  { value: 'Order Manager', label: 'Order Manager' },
+                  { value: 'Vault Staff', label: 'Vault Staff' }
+                ]}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-purple-900 uppercase tracking-wider mb-1">

@@ -17,7 +17,7 @@ export const Select = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
-  // Parse options if passed as children (<option value="X">Label</option>)
+  // Parse options if passed as children (<option value="X">Label</option>) or via options prop
   const parsedOptions = React.useMemo(() => {
     if (options && options.length > 0) {
       return options.map(opt => {
@@ -31,10 +31,10 @@ export const Select = ({
     if (children) {
       const opts = [];
       React.Children.forEach(children, child => {
-        if (React.isValidElement(child) && child.type === 'option') {
+        if (React.isValidElement(child) && child.props && child.props.value !== undefined) {
           opts.push({
             value: child.props.value,
-            label: child.props.children
+            label: child.props.children || child.props.value
           });
         }
       });
@@ -66,7 +66,6 @@ export const Select = ({
     if (disabled) return;
     setIsOpen(false);
     if (onChange) {
-      // Support both direct value and synthetic event { target: { value: val, name: name } }
       const syntheticEvent = {
         target: { value: val, name: name || id },
         currentTarget: { value: val, name: name || id },
@@ -77,8 +76,10 @@ export const Select = ({
     }
   };
 
+  const isFullWidth = className.includes('w-full');
+
   return (
-    <div ref={containerRef} className={`relative inline-block text-left ${className}`}>
+    <div ref={containerRef} className={`relative text-left ${isFullWidth ? 'w-full block' : 'inline-block'} ${className}`}>
       {/* Trigger Button - Shadcn Style */}
       <button
         type="button"
@@ -86,7 +87,9 @@ export const Select = ({
         name={name}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`inline-flex items-center justify-between gap-2.5 px-3 py-2 bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-xl shadow-xs hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-[#071A35]/10 focus:border-[#071A35] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${triggerClassName}`}
+        className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-800 text-xs font-semibold rounded-xl shadow-2xs hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-[#071A35]/10 focus:border-[#071A35] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+          isFullWidth ? 'w-full' : ''
+        } ${triggerClassName}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -113,7 +116,7 @@ export const Select = ({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => handleSelect(opt.value)}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
                   isSelected 
                     ? 'bg-[#F5F8FC] text-slate-900 font-bold shadow-2xs' 
                     : 'text-slate-600 hover:bg-[#F5F8FC] hover:text-slate-900'
@@ -131,4 +134,3 @@ export const Select = ({
     </div>
   );
 };
-

@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -286,17 +287,18 @@ export const SignUp = () => {
                   <label className="block text-[11px] font-bold text-[#0F1E32] uppercase tracking-wider mb-1.5">
                     ASSIGNED ROLE *
                   </label>
-                  <select
+                  <Select
                     name="role"
                     value={formData.role}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-[#F5B52E] focus:ring-2 focus:ring-[#F5B52E]/20 transition-all shadow-xs cursor-pointer"
-                  >
-                    <option value="Super Admin">Super Admin</option>
-                    <option value="Inventory Manager">Inventory Manager</option>
-                    <option value="Order Specialist">Order Specialist</option>
-                    <option value="Staff Numismatist">Staff Numismatist</option>
-                  </select>
+                    options={[
+                      { value: 'Super Admin', label: 'Super Admin' },
+                      { value: 'Inventory Manager', label: 'Inventory Manager' },
+                      { value: 'Order Specialist', label: 'Order Specialist' },
+                      { value: 'Staff Numismatist', label: 'Staff Numismatist' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
 
                 <div>

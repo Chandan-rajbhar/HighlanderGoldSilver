@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 
@@ -149,15 +150,12 @@ export const CategoryFormModal = ({
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                   Primary Metal
                 </label>
-                <select
+                <Select
                   value={formData.metal_type}
                   onChange={(e) => setFormData({ ...formData, metal_type: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all cursor-pointer"
-                >
-                  {METALS.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+                  options={METALS.map(m => ({ value: m, label: m }))}
+                  className="w-full"
+                />
               </div>
 
               <div>

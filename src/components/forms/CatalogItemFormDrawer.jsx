@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
@@ -362,31 +363,27 @@ export const CatalogItemFormDrawer = ({
                   <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
                     Category *
                   </label>
-                  <select
+                  <Select
                     value={formData.category}
                     onChange={(e) => updateField('category', e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
-                  >
-                    {categories.map(c => {
-                      const name = typeof c === 'string' ? c : c.name;
-                      return <option key={name} value={name}>{name}</option>;
+                    options={categories.map(cat => {
+                      const name = typeof cat === 'string' ? cat : cat.name;
+                      return { value: name, label: name };
                     })}
-                  </select>
+                    className="w-full"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
                     Metal Type *
                   </label>
-                  <select
+                  <Select
                     value={formData.metal}
                     onChange={(e) => updateField('metal', e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
-                  >
-                    {METALS.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                    options={METALS.map(m => ({ value: m, label: m }))}
+                    className="w-full"
+                  />
                 </div>
 
                 <div>
@@ -431,15 +428,12 @@ export const CatalogItemFormDrawer = ({
                   <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
                     Certification
                   </label>
-                  <select
+                  <Select
                     value={formData.cert_company}
                     onChange={(e) => updateField('cert_company', e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
-                  >
-                    {CERTIFICATIONS.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    options={CERTIFICATIONS.map(cert => ({ value: cert, label: cert }))}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -521,15 +515,12 @@ export const CatalogItemFormDrawer = ({
                   <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
                     Product Status
                   </label>
-                  <select
+                  <Select
                     value={formData.storefront_status}
                     onChange={(e) => updateField('storefront_status', e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
-                  >
-                    {STATUSES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                    options={STATUSES.map(s => ({ value: s, label: s }))}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { ShieldCheck, Check } from 'lucide-react';
@@ -108,30 +109,24 @@ export const AdminUserFormModal = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Role Permission
             </label>
-            <select
+            <Select
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none"
-            >
-              {ROLES.map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+              options={ROLES.map(r => ({ value: r, label: r }))}
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
               Account Status
             </label>
-            <select
+            <Select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none"
-            >
-              {STATUSES.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              options={STATUSES.map(s => ({ value: s, label: s }))}
+              className="w-full"
+            />
           </div>
         </div>
 
