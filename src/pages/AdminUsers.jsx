@@ -215,14 +215,14 @@ export const AdminUsers = () => {
           <Select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-          >
-            <option value="All">All Roles</option>
-            <option value="Super Admin">Super Admin</option>
-            <option value="Admin">Admin</option>
-            <option value="Inventory Manager">Inventory Manager</option>
-            <option value="Order Manager">Order Manager</option>
-          </Select>
+            options={[
+              { value: 'All', label: 'All Roles' },
+              { value: 'Super Admin', label: 'Super Admin' },
+              { value: 'Admin', label: 'Admin' },
+              { value: 'Inventory Manager', label: 'Inventory Manager' },
+              { value: 'Order Manager', label: 'Order Manager' }
+            ]}
+          />
         }
       />
 

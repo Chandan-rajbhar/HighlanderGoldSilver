@@ -319,13 +319,13 @@ export const Coupons = () => {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Disabled">Disabled</option>
-            <option value="Expired">Expired</option>
-          </Select>
+            options={[
+              { value: 'All', label: 'All Statuses' },
+              { value: 'Active', label: 'Active' },
+              { value: 'Disabled', label: 'Disabled' },
+              { value: 'Expired', label: 'Expired' }
+            ]}
+          />
         }
       />
 

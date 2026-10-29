@@ -363,15 +363,11 @@ export const Inventory = () => {
                 setCategory(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-[#DCE5F0] text-[#111827] text-xs rounded-xl px-3 py-2 focus:ring-1 focus:ring-[#D6AD45] focus:border-[#D6AD45] focus:outline-none font-medium cursor-pointer"
-            >
-              <option value="All">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id || c.name} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: 'All', label: 'All Categories' },
+                ...categories.map((c) => ({ value: c.name, label: c.name }))
+              ]}
+            />
 
             {/* Stock Status Filter */}
             <Select
@@ -380,13 +376,13 @@ export const Inventory = () => {
                 setAvailability(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-[#DCE5F0] text-[#111827] text-xs rounded-xl px-3 py-2 focus:ring-1 focus:ring-[#D6AD45] focus:border-[#D6AD45] focus:outline-none font-medium cursor-pointer"
-            >
-              <option value="All">All Stock Status</option>
-              <option value="Active">In Stock</option>
-              <option value="Sold">Sold Out</option>
-              <option value="Draft">Draft</option>
-            </Select>
+              options={[
+                { value: 'All', label: 'All Stock Status' },
+                { value: 'Active', label: 'In Stock' },
+                { value: 'Sold', label: 'Sold Out' },
+                { value: 'Draft', label: 'Draft' }
+              ]}
+            />
           </div>
         }
       />
