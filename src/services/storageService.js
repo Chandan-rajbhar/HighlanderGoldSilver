@@ -52,7 +52,20 @@ function setStoredItem(key, value) {
 
 // Local mock storage operations when Supabase is in dev mode
 export const localDB = {
-  getInventory: () => getStoredItem(STORAGE_KEYS.INVENTORY, initialInventory),
+  getInventory: () => {
+    const raw = getStoredItem(STORAGE_KEYS.INVENTORY, initialInventory);
+    // Auto-heal: sanitize any broken hardcoded domains from existing browser localStorage
+    const cleaned = raw.map(item => ({
+      ...item,
+      featured_image: typeof item.featured_image === 'string'
+        ? item.featured_image.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/')
+        : item.featured_image,
+      images: Array.isArray(item.images)
+        ? item.images.map(img => typeof img === 'string' ? img.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/') : img)
+        : item.images
+    }));
+    return cleaned;
+  },
   setInventory: (items) => setStoredItem(STORAGE_KEYS.INVENTORY, items),
 
   getCategories: () => getStoredItem(STORAGE_KEYS.CATEGORIES, initialCategories),

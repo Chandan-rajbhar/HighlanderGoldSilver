@@ -129,7 +129,7 @@ export const Login = () => {
               alt="Highlander Gold & Silver"
               className="w-full h-full object-contain filter drop-shadow"
               onError={(e) => {
-                e.currentTarget.src = "https://highlander-goldandsilver.vercel.app/assets/brand/highlander_crest_favicon.png";
+                e.currentTarget.src = "/assets/brand/highlander_crest_favicon.png";
               }}
             />
           </div>
@@ -145,7 +145,7 @@ export const Login = () => {
 
         {/* Public Storefront Pill Button */}
         <a
-          href="https://highlander-goldandsilver.vercel.app/"
+          href="https://highlander-gold-silver.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/70 hover:bg-white text-[#0F1E32] border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-semibold tracking-wider uppercase transition-all backdrop-blur-md hover:shadow-md"

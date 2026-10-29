@@ -53,7 +53,7 @@ export const CatalogItemFormDrawer = ({
     inventory: 1,
     description: '',
     storefront_status: 'Active',
-    featured_image: 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg',
+    featured_image: '/assets/items/lot1_morgan_gold_gem.jpg',
   };
 
   const [formData, setFormData] = useState(defaultFormData);
@@ -78,7 +78,7 @@ export const CatalogItemFormDrawer = ({
           inventory: item.inventory ?? item.stock_quantity ?? 1,
           description: item.description || '',
           storefront_status: item.storefront_status || item.status || 'Active',
-          featured_image: item.featured_image || 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg',
+          featured_image: item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg',
         });
       } else {
         const randomNum = Math.floor(1 + Math.random() * 99);
@@ -245,7 +245,7 @@ export const CatalogItemFormDrawer = ({
                       src={formData.featured_image} 
                       alt="Product preview" 
                       className="w-full h-full object-cover" 
-                      onError={(e) => { e.currentTarget.src = 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg'; }}
+                      onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
                     />
                   ) : (
                     <ImageIcon className="w-8 h-8 text-slate-300" />

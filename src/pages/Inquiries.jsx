@@ -182,7 +182,7 @@ export const Inquiries = () => {
         onView={handleView}
         onDelete={handleDeletePrompt}
         emptyTitle="No inquiries received"
-        emptyDescription="When visitors submit questions or wire acquisition requests on highlander-goldandsilver.vercel.app, they will appear here."
+        emptyDescription="When visitors submit questions or wire acquisition requests on highlander-gold-silver.vercel.app, they will appear here."
         filterComponent={
           <select
             value={status}

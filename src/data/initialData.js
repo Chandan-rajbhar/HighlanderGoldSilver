@@ -1,6 +1,6 @@
 // Initial seed data reflecting Highlander Gold & Silver's real website entities
 // Business: Highlander Gold & Silver, Bigfork, MT (119 Jewel Basin Ct. B3)
-// Website: https://highlander-goldandsilver.vercel.app/
+// Website: https://highlander-gold-silver.vercel.app/
 
 export const initialInventory = [
   {
@@ -35,10 +35,10 @@ export const initialInventory = [
     is_featured: true,
     estimate_range: "$4,250.00 – $5,700.00 USD",
     payment_note: "High-value acquisition: Direct bank wire payment preferred with HGS wire credit applied on settlement.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg",
+    featured_image: "/assets/items/lot1_morgan_gold_gem.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg",
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_rev.jpg"
+      "/assets/items/lot1_morgan_gold_gem.jpg",
+      "/assets/items/lot1_morgan_gold_rev.jpg"
     ],
     created_at: "2026-10-20T10:00:00Z"
   },
@@ -74,10 +74,10 @@ export const initialInventory = [
     is_featured: true,
     estimate_range: "$630.00 – $3,250.00 USD",
     payment_note: "Direct checkout via PayPal. Orders processed and dispatched within 24 hours.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot153_morgan_1897_gem.jpg",
+    featured_image: "/assets/items/lot153_morgan_1897_gem.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot153_morgan_1897_gem.jpg",
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot153_morgan_1897_rev.jpg"
+      "/assets/items/lot153_morgan_1897_gem.jpg",
+      "/assets/items/lot153_morgan_1897_rev.jpg"
     ],
     created_at: "2026-10-18T14:30:00Z"
   },
@@ -113,10 +113,10 @@ export const initialInventory = [
     is_featured: true,
     estimate_range: "$290.00 – $420.00 USD",
     payment_note: "Direct checkout or bank wire.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot9_pilgrim_1921_gem.jpg",
+    featured_image: "/assets/items/lot9_pilgrim_1921_gem.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot9_pilgrim_1921_gem.jpg",
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot9_pilgrim_1921_rev.jpg"
+      "/assets/items/lot9_pilgrim_1921_gem.jpg",
+      "/assets/items/lot9_pilgrim_1921_rev.jpg"
     ],
     created_at: "2026-10-16T09:15:00Z"
   },
@@ -152,9 +152,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$250.00 – $360.00 USD",
     payment_note: "Direct checkout via PayPal.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot203_peace_dollar_gem.jpg",
+    featured_image: "/assets/items/lot203_peace_dollar_gem.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot203_peace_dollar_gem.jpg"
+      "/assets/items/lot203_peace_dollar_gem.jpg"
     ],
     created_at: "2026-10-15T11:00:00Z"
   },
@@ -190,9 +190,9 @@ export const initialInventory = [
     is_featured: true,
     estimate_range: "$350.00 – $430.00 USD",
     payment_note: "Direct PayPal checkout or Bank Wire for multi-bar quantities.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot170_scottsdale_10oz_bar.jpg",
+    featured_image: "/assets/items/lot170_scottsdale_10oz_bar.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot170_scottsdale_10oz_bar.jpg"
+      "/assets/items/lot170_scottsdale_10oz_bar.jpg"
     ],
     created_at: "2026-10-14T16:45:00Z"
   },
@@ -228,9 +228,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$450.00 – $600.00 USD",
     payment_note: "Direct PayPal or bank wire.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot12_burundi_gold_5000f.jpg",
+    featured_image: "/assets/items/lot12_burundi_gold_5000f.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot12_burundi_gold_5000f.jpg"
+      "/assets/items/lot12_burundi_gold_5000f.jpg"
     ],
     created_at: "2026-10-12T13:20:00Z"
   },
@@ -266,9 +266,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$195.00 – $280.00 USD",
     payment_note: "Direct PayPal checkout.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot28_liberia_shinkansen_silver.jpg",
+    featured_image: "/assets/items/lot28_liberia_shinkansen_silver.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot28_liberia_shinkansen_silver.jpg"
+      "/assets/items/lot28_liberia_shinkansen_silver.jpg"
     ],
     created_at: "2026-10-10T15:30:00Z"
   },
@@ -304,9 +304,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$400.00 – $580.00 USD",
     payment_note: "Direct checkout via PayPal.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot44_morgan_1902_o_ms66.jpg",
+    featured_image: "/assets/items/lot44_morgan_1902_o_ms66.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot44_morgan_1902_o_ms66.jpg"
+      "/assets/items/lot44_morgan_1902_o_ms66.jpg"
     ],
     created_at: "2026-10-08T12:00:00Z"
   },
@@ -342,9 +342,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$195.00 – $310.00 USD",
     payment_note: "Direct checkout via PayPal or Wire.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot77_elymais_silver_drachm.jpg",
+    featured_image: "/assets/items/lot77_elymais_silver_drachm.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot77_elymais_silver_drachm.jpg"
+      "/assets/items/lot77_elymais_silver_drachm.jpg"
     ],
     created_at: "2026-10-05T09:40:00Z"
   },
@@ -380,9 +380,9 @@ export const initialInventory = [
     is_featured: false,
     estimate_range: "$230.00 – $350.00 USD",
     payment_note: "Direct checkout via PayPal.",
-    featured_image: "https://highlander-goldandsilver.vercel.app/assets/items/lot62_morgan_1883_gem.jpg",
+    featured_image: "/assets/items/lot62_morgan_1883_gem.jpg",
     additional_images: [
-      "https://highlander-goldandsilver.vercel.app/assets/items/lot62_morgan_1883_gem.jpg"
+      "/assets/items/lot62_morgan_1883_gem.jpg"
     ],
     created_at: "2026-10-02T14:10:00Z"
   }

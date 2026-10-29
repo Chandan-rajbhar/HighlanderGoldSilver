@@ -77,7 +77,7 @@ export const ItemFormModal = ({
         price: 950,
         estimate_range: '$850.00 – $1,100.00 USD',
         payment_note: 'Direct bank wire or PayPal checkout.',
-        featured_image: 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg',
+        featured_image: '/assets/items/lot1_morgan_gold_gem.jpg',
         is_featured: false,
         status: 'Available',
         stock_quantity: 1,

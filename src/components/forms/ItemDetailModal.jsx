@@ -23,9 +23,9 @@ export const ItemDetailModal = ({
   const settlementFee = (basePrice * 1.15).toFixed(2);
   const images = Array.isArray(item.additional_images) && item.additional_images.length > 0
     ? item.additional_images
-    : [item.featured_image || 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg'];
+    : [item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'];
 
-  const activeImage = images[activeImageIndex] || item.featured_image || 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg';
+  const activeImage = images[activeImageIndex] || item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -60,7 +60,7 @@ export const ItemDetailModal = ({
                     alt={item.title}
                     className="w-full h-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg';
+                      e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg';
                     }}
                   />
                 </div>

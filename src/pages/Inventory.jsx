@@ -195,11 +195,11 @@ export const Inventory = () => {
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-lg bg-[#F8F6F1] border border-[#E4E0D8] overflow-hidden flex items-center justify-center relative shrink-0 shadow-xs">
             <img
-              src={row.featured_image || 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg'}
+              src={row.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'}
               alt={row.title}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.currentTarget.src = 'https://highlander-goldandsilver.vercel.app/assets/items/lot1_morgan_gold_gem.jpg';
+                e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg';
               }}
             />
           </div>
