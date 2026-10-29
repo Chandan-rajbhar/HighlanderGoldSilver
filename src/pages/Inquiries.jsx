@@ -191,14 +191,14 @@ export const Inquiries = () => {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:ring-1 focus:ring-aubergine focus:outline-none"
-          >
-            <option value="All">All Statuses</option>
-            <option value="New">New</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Replied">Replied</option>
-            <option value="Closed">Closed</option>
-          </Select>
+            options={[
+              { value: 'All', label: 'All Statuses' },
+              { value: 'New', label: 'New' },
+              { value: 'In Progress', label: 'In Progress' },
+              { value: 'Replied', label: 'Replied' },
+              { value: 'Closed', label: 'Closed' }
+            ]}
+          />
         }
       />
 

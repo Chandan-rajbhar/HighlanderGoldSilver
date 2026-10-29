@@ -78,16 +78,22 @@ export const Select = ({
 
   const isFullWidth = className.includes('w-full');
 
+  // Strip border, padding, background, and rounded classes from outer wrapper to prevent any double-border nesting
+  const wrapperLayoutClass = className
+    .split(/\s+/)
+    .filter(c => !/^(border|bg-|rounded|p-|px-|py-|shadow|ring|focus:)/.test(c))
+    .join(' ');
+
   return (
-    <div ref={containerRef} className={`relative text-left ${isFullWidth ? 'w-full block' : 'inline-block'} ${className}`}>
-      {/* Trigger Button - Shadcn Style */}
+    <div ref={containerRef} className={`relative text-left ${isFullWidth ? 'w-full block' : 'inline-block'} ${wrapperLayoutClass}`}>
+      {/* Trigger Button - Single crisp border Shadcn Style */}
       <button
         type="button"
         id={id}
         name={name}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-800 text-xs font-semibold rounded-xl shadow-2xs hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-[#071A35]/10 focus:border-[#071A35] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`flex items-center justify-between gap-2.5 px-3.5 py-2 bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-800 text-xs font-semibold rounded-xl shadow-2xs hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-[#071A35]/10 focus:border-[#071A35] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
           isFullWidth ? 'w-full' : ''
         } ${triggerClassName}`}
         aria-haspopup="listbox"
