@@ -16,6 +16,7 @@ import {
 import { inventoryService } from '../services/inventoryService';
 import { categoryService } from '../services/categoryService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { CatalogItemFormDrawer } from '../components/forms/CatalogItemFormDrawer';
 import { ItemDetailModal } from '../components/forms/ItemDetailModal';
@@ -190,14 +191,18 @@ export const Inventory = () => {
     {
       header: 'PRODUCT NAME',
       accessor: 'title',
-      className: 'min-w-[240px]',
+      className: 'min-w-[260px]',
       render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-[#F8F6F1] border border-[#E4E0D8] overflow-hidden flex items-center justify-center relative shrink-0 shadow-xs">
+        <div className="flex items-center gap-3 py-0.5">
+          <div 
+            onClick={() => handleView(row)}
+            className="w-11 h-11 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0 shadow-xs cursor-pointer hover:border-[#C9A23A] hover:shadow-sm transition-all group/img"
+            title={`View details for ${row.title}`}
+          >
             <img
               src={row.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'}
               alt={row.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-200"
               onError={(e) => {
                 e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg';
               }}
@@ -205,13 +210,13 @@ export const Inventory = () => {
           </div>
           <div className="min-w-0 flex-1">
             <span 
-              className="font-bold text-[#0B2348] text-xs sm:text-sm font-serif hover:text-[#C9A23A] cursor-pointer block truncate leading-tight"
+              className="font-semibold text-slate-900 text-sm hover:text-[#C9A23A] cursor-pointer block truncate leading-snug font-sans transition-colors"
               onClick={() => handleView(row)}
               title={row.title}
             >
               {row.title}
             </span>
-            <span className="text-[11px] text-[#6F6C67] block mt-0.5 truncate uppercase tracking-tight">
+            <span className="text-xs text-slate-500 block mt-0.5 truncate font-sans font-normal">
               {row.grade ? `${row.grade} • ` : ''}{row.metal || 'Gold'}{row.purity ? ` (${row.purity})` : ''}
             </span>
           </div>
@@ -223,17 +228,17 @@ export const Inventory = () => {
       accessor: 'category',
       className: 'whitespace-nowrap',
       render: (row) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F0F8] text-[#0B2348] border border-[#0B2348]/10 whitespace-nowrap">
-          {row.category}
+        <span className="text-sm font-medium text-slate-700 font-sans">
+          {row.category || '—'}
         </span>
       )
     },
     {
-      header: 'SKU',
+      header: 'ITEM CODE',
       accessor: 'sku',
-      className: 'font-mono text-xs whitespace-nowrap text-slate-600',
+      className: 'whitespace-nowrap',
       render: (row) => (
-        <span className="font-mono text-xs text-slate-600 whitespace-nowrap">
+        <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-mono font-medium tracking-wide">
           {row.sku || `HGS-LOT-${row.lot_number}`}
         </span>
       )
@@ -241,29 +246,24 @@ export const Inventory = () => {
     {
       header: 'PRICE',
       accessor: 'price',
-      className: 'font-mono whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (row) => {
         const base = Number(row.price) || 0;
         return (
-          <div className="whitespace-nowrap">
-            <span className="font-bold text-[#0B2348] text-xs sm:text-sm block">
-              ${base.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-[#C9A23A] font-sans block">
-              Fee: ${(base * 1.15).toFixed(2)}
-            </span>
-          </div>
+          <span className="font-semibold text-slate-900 text-sm whitespace-nowrap font-sans">
+            ${base.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
         );
       }
     },
     {
       header: 'INVENTORY STOCK',
       accessor: 'inventory',
-      className: 'font-mono whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (row) => {
         const qty = row.inventory ?? row.stock_quantity ?? 1;
         return (
-          <span className="text-xs font-semibold text-slate-700 font-mono whitespace-nowrap">
+          <span className="text-sm text-slate-700 whitespace-nowrap font-sans font-medium">
             {qty} {qty === 1 ? 'unit' : 'units'}
           </span>
         );
@@ -295,7 +295,7 @@ export const Inventory = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#111827] tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-[#111827] tracking-tight">
             Product Catalog
           </h2>
           <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
@@ -323,7 +323,7 @@ export const Inventory = () => {
 
           <button
             onClick={handleAddNew}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D6AD45] hover:bg-[#BF952E] text-[#111827] text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D6AD45] hover:bg-[#BF952E] text-[#111827] text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 text-[#111827]" />
             Add Catalog Item
@@ -346,7 +346,7 @@ export const Inventory = () => {
         onPageSizeChange={setPageSize}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search products by title, category, SKU..."
+        searchPlaceholder="Search products by title, category, item code..."
         isLoading={isLoading}
         onView={handleView}
         onEdit={handleEdit}
@@ -357,7 +357,7 @@ export const Inventory = () => {
         filterComponent={
           <div className="flex flex-wrap items-center gap-2">
             {/* Category Filter */}
-            <select
+            <Select
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
@@ -371,10 +371,10 @@ export const Inventory = () => {
                   {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
 
             {/* Stock Status Filter */}
-            <select
+            <Select
               value={availability}
               onChange={(e) => {
                 setAvailability(e.target.value);
@@ -386,7 +386,7 @@ export const Inventory = () => {
               <option value="Active">In Stock</option>
               <option value="Sold">Sold Out</option>
               <option value="Draft">Draft</option>
-            </select>
+            </Select>
           </div>
         }
       />

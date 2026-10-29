@@ -56,7 +56,7 @@ export const Notifications = () => {
     <div className="space-y-6 max-w-4xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Notifications & System Alerts
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -113,7 +113,7 @@ export const Notifications = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 text-sm font-serif">{n.title}</span>
+                      <span className="font-bold text-slate-900 text-sm font-sans">{n.title}</span>
                       {!n.read && (
                         <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                       )}

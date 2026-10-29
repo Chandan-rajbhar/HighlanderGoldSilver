@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import React, { useState } from 'react';
 import { 
   X, 
@@ -59,24 +60,24 @@ export const OrderDetailDrawer = ({
         <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300">
           
           {/* Header */}
-          <div className="px-6 py-5 bg-gradient-to-r from-aubergine-dark to-aubergine text-white flex items-center justify-between border-b border-aubergine-light shrink-0">
+          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-gold font-bold px-2 py-0.5 rounded bg-gold/15 border border-gold/30">
+                <span className="font-mono text-xs text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">
                   {order.order_id || order.order_number}
                 </span>
                 <span className="text-xs text-slate-300">
                   {new Date(order.created_at).toLocaleDateString()}
                 </span>
               </div>
-              <h2 className="text-base font-bold font-serif tracking-wide text-white mt-1">
-                Order & Settlement Dossier
+              <h2 className="text-base font-bold font-sans tracking-wide text-white mt-1">
+                Order Dossier
               </h2>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-300 hover:text-white hover:bg-aubergine-light/60 rounded-xl transition-colors"
+              className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -97,16 +98,13 @@ export const OrderDetailDrawer = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <select
+                <Select
                   value={currentStatus}
                   onChange={(e) => handleStatusSelect(e.target.value)}
                   disabled={isUpdating}
-                  className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-aubergine focus:outline-none"
-                >
-                  {ORDER_STATUSES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                  options={ORDER_STATUSES.map(s => ({ value: s, label: s }))}
+                  triggerClassName="px-2.5 py-1.5 text-xs font-semibold"
+                />
 
                 <button
                   onClick={handlePrint}
@@ -122,12 +120,12 @@ export const OrderDetailDrawer = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-aubergine border-b border-slate-100 pb-1.5">
                 <User className="w-4 h-4 text-gold" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-serif">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-sans">
                   Collector & Buyer
                 </h3>
               </div>
               <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs space-y-1">
-                <p className="font-bold text-slate-900 text-sm font-serif">{order.customer_name}</p>
+                <p className="font-bold text-slate-900 text-sm font-sans">{order.customer_name}</p>
                 <p className="text-slate-600 font-mono">{order.customer_email}</p>
                 <p className="text-slate-500">{order.customer_id || 'Storefront Registered Collector'}</p>
               </div>
@@ -137,7 +135,7 @@ export const OrderDetailDrawer = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-aubergine border-b border-slate-100 pb-1.5">
                 <ShoppingBag className="w-4 h-4 text-gold" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-serif">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-sans">
                   Purchased Items & Lots ({items.length})
                 </h3>
               </div>
@@ -146,7 +144,7 @@ export const OrderDetailDrawer = ({
                 {items.map((it, idx) => (
                   <div key={idx} className="p-3.5 bg-white flex items-center justify-between gap-3 text-xs">
                     <div>
-                      <span className="font-bold font-serif text-slate-900 block">
+                      <span className="font-bold font-sans text-slate-900 block">
                         {it.title || `Lot #${it.lot_number || idx + 1}`}
                       </span>
                       <span className="text-[11px] text-slate-500 font-mono">
@@ -168,7 +166,7 @@ export const OrderDetailDrawer = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-aubergine border-b border-slate-100 pb-1.5">
                 <DollarSign className="w-4 h-4 text-gold" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-serif">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-sans">
                   Settlement & Payment Details
                 </h3>
               </div>
@@ -200,7 +198,7 @@ export const OrderDetailDrawer = ({
 
             {/* Order Timeline */}
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-serif block">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-sans block">
                 Fulfillment Timeline
               </span>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">

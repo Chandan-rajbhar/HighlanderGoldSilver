@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MessageSquareQuote, Mail, Phone, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { inquiryService } from '../services/inquiryService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { InquiryDetailModal } from '../components/forms/InquiryDetailModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -126,7 +127,7 @@ export const Inquiries = () => {
       className: 'min-w-[220px]',
       render: (row) => (
         <div className="flex flex-col">
-          <span className="font-medium text-slate-800 text-xs font-serif">
+          <span className="font-medium text-slate-800 text-xs font-sans">
             {row.lot_number ? `Lot #${row.lot_number}: ` : ''}{row.lot_title}
           </span>
           <span className="text-[11px] text-slate-400">
@@ -155,7 +156,7 @@ export const Inquiries = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+        <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
           Acquisition Inquiries & Buybacks
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -184,7 +185,7 @@ export const Inquiries = () => {
         emptyTitle="No inquiries received"
         emptyDescription="When visitors submit questions or wire acquisition requests on highlander-gold-silver.vercel.app, they will appear here."
         filterComponent={
-          <select
+          <Select
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -197,7 +198,7 @@ export const Inquiries = () => {
             <option value="In Progress">In Progress</option>
             <option value="Replied">Replied</option>
             <option value="Closed">Closed</option>
-          </select>
+          </Select>
         }
       />
 

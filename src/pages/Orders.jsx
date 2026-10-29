@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   ShoppingBag, 
-  DollarSign, 
-  Download, 
+  SlidersHorizontal,
+  Copy,
   Eye, 
   Edit3, 
   Trash2,
@@ -13,6 +13,7 @@ import {
 import { orderService } from '../services/orderService';
 import { inventoryService } from '../services/inventoryService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { OrderFormModal } from '../components/forms/OrderFormModal';
 import { OrderDetailDrawer } from '../components/forms/OrderDetailDrawer';
@@ -104,17 +105,18 @@ export const Orders = () => {
     setIsConfirmOpen(true);
   };
 
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  const handleUpdateStatus = async (order, newStatus) => {
+    const orderId = order.id || order.order_id;
     try {
       const updated = await orderService.updateOrder(orderId, { 
         order_status: newStatus,
         fulfillment_status: newStatus
       });
-      setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder(updated);
+      setOrders(prev => prev.map(o => (o.id === updated.id || o.order_id === orderId) ? { ...o, ...updated, fulfillment_status: newStatus, order_status: newStatus } : o));
+      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.order_id === orderId)) {
+        setSelectedOrder(prev => ({ ...prev, ...updated, fulfillment_status: newStatus, order_status: newStatus }));
       }
-      toast.success(`Order status updated to ${newStatus}`);
+      toast.success(`Order #${order.order_number || order.order_id} marked as ${newStatus}`);
     } catch (err) {
       console.error('Error updating order:', err);
       toast.error('Failed to update status.');
@@ -122,7 +124,7 @@ export const Orders = () => {
   };
 
   const handleCancelOrder = async (orderId) => {
-    await handleUpdateStatus(orderId, 'Cancelled');
+    await handleUpdateStatus({ id: orderId }, 'Cancelled');
   };
 
   const handleSaveOrder = async (formData) => {
@@ -166,62 +168,61 @@ export const Orders = () => {
     }
   };
 
-  const exportCSV = () => {
-    const headers = 'Order ID,Customer,Email,Total,Payment Method,Payment Status,Order Status,Date\n';
-    const rows = orders.map(o => 
-      `"${o.order_number || o.order_id}","${o.customer_name}","${o.customer_email}",${o.total_settlement || o.total_amount},"${o.payment_method}","${o.payment_status}","${o.fulfillment_status || o.order_status}","${o.created_at}"`
-    ).join('\n');
-
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `hgs-orders-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Orders exported to CSV');
-  };
-
-  // Columns inspired by BeautyOasis Orders reference
+  // Columns layout matching user reference
   const columns = [
     {
-      header: 'Order ID',
+      header: 'ORDER ID',
       accessor: 'order_number',
-      className: 'font-mono font-bold text-slate-900',
+      className: 'font-mono text-slate-900',
       render: (row) => (
-        <span 
-          className="font-mono font-bold text-slate-900 text-xs hover:text-aubergine cursor-pointer"
-          onClick={() => handleView(row)}
-        >
-          {row.order_number || row.order_id}
-        </span>
+        <div className="flex items-center gap-1.5 font-mono">
+          <span 
+            className="font-mono text-xs font-bold text-slate-900 hover:text-[#C9A23A] transition-colors cursor-pointer"
+            onClick={() => handleView(row)}
+          >
+            #{row.order_number || row.order_id}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard?.writeText(row.order_number || row.order_id);
+              toast.success('Order ID copied');
+            }}
+            className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
+            title="Copy ID"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
       )
     },
     {
-      header: 'Customer',
+      header: 'CLIENT / PATIENT',
       accessor: 'customer_name',
       render: (row) => (
         <div>
-          <span className="font-semibold text-slate-900 text-sm block font-serif">{row.customer_name}</span>
+          <span className="font-bold text-slate-900 text-sm block font-sans">{row.customer_name}</span>
           <span className="text-[11px] text-slate-500 font-mono">{row.customer_email}</span>
         </div>
       )
     },
     {
-      header: 'Purchased Items',
+      header: 'PURCHASED ITEMS',
       accessor: 'items',
-      className: 'min-w-[180px]',
+      className: 'min-w-[200px]',
       render: (row) => {
         const items = row.items || [];
-        if (items.length === 0) return <span className="text-slate-400 text-xs">Standard Lot</span>;
+        if (items.length === 0) return <span className="text-slate-400 text-xs">1x Rare Coin Specimen</span>;
+        const first = items[0];
+        const firstTitle = first.title || first.name || `Lot #${first.lot_number || 1}`;
         return (
           <div className="flex flex-col text-xs">
-            <span className="font-medium text-slate-800 truncate max-w-xs">
-              {items[0].title || `Lot #${items[0].lot_number}`}
+            <span className="font-medium text-slate-800 truncate max-w-[220px]">
+              {first.quantity || 1}x {firstTitle}
             </span>
             {items.length > 1 && (
-              <span className="text-[10px] text-gold-dark font-medium font-mono">
+              <span className="text-[10px] text-[#C9A23A] font-semibold font-mono mt-0.5">
                 +{items.length - 1} additional item(s)
               </span>
             )}
@@ -230,33 +231,30 @@ export const Orders = () => {
       }
     },
     {
-      header: 'Order Date',
-      accessor: 'created_at',
-      className: 'text-xs text-slate-500 font-mono whitespace-nowrap',
-      render: (row) => <span>{new Date(row.created_at).toLocaleDateString()}</span>
-    },
-    {
-      header: 'Total Amount',
+      header: 'TOTAL AMOUNT',
       accessor: 'total_settlement',
-      className: 'font-mono text-right',
+      className: 'font-mono text-left',
       render: (row) => (
-        <div className="text-right">
-          <span className="font-bold text-aubergine font-mono text-sm block">
-            ${Number(row.total_settlement || row.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </span>
-          <span className="text-[10px] text-slate-400">incl. 15% BP</span>
-        </div>
+        <span className="font-bold text-emerald-600 font-mono text-sm">
+          ${Number(row.total_settlement || row.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        </span>
       )
     },
     {
-      header: 'Payment Status',
+      header: 'PAYMENT STATUS',
       accessor: 'payment_status',
       render: (row) => <StatusBadge status={row.payment_status} />
     },
     {
-      header: 'Order Status',
+      header: 'ORDER STATUS',
       accessor: 'fulfillment_status',
       render: (row) => <StatusBadge status={row.fulfillment_status || row.order_status || 'Processing'} />
+    },
+    {
+      header: 'DATE',
+      accessor: 'created_at',
+      className: 'text-xs text-slate-600 font-mono whitespace-nowrap',
+      render: (row) => <span>{new Date(row.created_at).toISOString().split('T')[0]}</span>
     }
   ];
 
@@ -265,29 +263,29 @@ export const Orders = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
-            Orders & Settlements
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
+            Orders
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manage collector acquisitions, wire invoices, PayPal settlements, and order dispatching.
+            Fulfill online customer orders, review line items, and manage customer shipments.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-sm"
+            onClick={() => toast.info('Order status pipeline: Processing → Shipped → Delivered')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            Export CSV
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+            Manage Statuses
           </button>
 
           <button
             onClick={handleAddNew}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-gold" />
-            Record Order
+            <Plus className="w-4 h-4 text-[#C9A23A]" />
+            Add Order
           </button>
         </div>
       </div>
@@ -307,45 +305,47 @@ export const Orders = () => {
         onPageSizeChange={setPageSize}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search order ID, customer name, or email..."
+        searchPlaceholder="Search by order ID, client name, tracking number..."
         isLoading={isLoading}
+        onRowClick={handleView}
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDeletePrompt}
+        viewLabel="View Order Details"
         editLabel="Edit Order"
+        deleteLabel="Delete Order"
         emptyTitle="No orders found"
         emptyDescription="Customer orders and wire transactions will appear here."
         filterComponent={
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={orderStatus}
               onChange={(e) => {
                 setOrderStatus(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-            >
-              <option value="All">All Order Statuses</option>
-              <option value="Processing">Processing</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Vault Dispatch">Vault Dispatch</option>
-              <option value="Pending">Pending</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
+              options={[
+                { value: 'All', label: 'All Order Status' },
+                { value: 'Processing', label: 'Processing' },
+                { value: 'Shipped', label: 'Shipped' },
+                { value: 'Delivered', label: 'Delivered' },
+                { value: 'Cancelled', label: 'Cancelled' }
+              ]}
+            />
 
-            <select
+            <Select
               value={paymentStatus}
               onChange={(e) => {
                 setPaymentStatus(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-            >
-              <option value="All">All Payment Statuses</option>
-              <option value="Settled">Settled</option>
-              <option value="Pending Wire">Pending Wire</option>
-              <option value="Refunded">Refunded</option>
-            </select>
+              options={[
+                { value: 'All', label: 'All Payment Status' },
+                { value: 'Settled', label: 'Settled' },
+                { value: 'Pending', label: 'Pending' },
+                { value: 'Refunded', label: 'Refunded' }
+              ]}
+            />
           </div>
         }
       />

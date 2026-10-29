@@ -7,6 +7,10 @@ import {
   Eye, 
   Edit3, 
   Trash2, 
+  Check,
+  Truck,
+  ChevronDown,
+  RefreshCw,
   Inbox,
   AlertCircle
 } from 'lucide-react';
@@ -35,12 +39,20 @@ export const DataTable = ({
   onView,
   onEdit,
   onDelete,
+  onChangeStatus = null,
+  statusOptions = ['Completed', 'Pending', 'Refunded'],
+  statusField = 'payment_status',
+  viewLabel = 'View Details',
   editLabel = 'Edit Product',
+  statusLabel = 'Change Status',
+  deleteLabel = 'Delete',
+  onRowClick = null,
   emptyTitle = 'No records found',
   emptyDescription = 'Try adjusting your search or filters to find what you are looking for.',
   idField = 'id'
 }) => {
   const [openActionId, setOpenActionId] = useState(null);
+  const [statusMenuOpenRowId, setStatusMenuOpenRowId] = useState(null);
 
   return (
     <div className="bg-white rounded-2xl border border-[#DCE5F0] shadow-xs overflow-hidden">
@@ -97,24 +109,11 @@ export const DataTable = ({
                   >
                     <div className="flex items-center gap-1.5">
                       <span>{col.header}</span>
-                      {isSortable && (
-                        <span className="text-[#64748B]">
-                          {isCurrentSort ? (
-                            sortAsc ? (
-                              <ArrowUp className="w-3.5 h-3.5 text-[#111827] font-bold" />
-                            ) : (
-                              <ArrowDown className="w-3.5 h-3.5 text-[#111827] font-bold" />
-                            )
-                          ) : (
-                            <ArrowUpDown className="w-3 h-3 opacity-40 hover:opacity-100" />
-                          )}
-                        </span>
-                      )}
                     </div>
                   </th>
                 );
               })}
-              {(onView || onEdit || onDelete) && (
+              {(onView || onEdit || onDelete || onChangeStatus) && (
                 <th className="px-4 py-3.5 text-right w-16 uppercase text-[#64748B] font-semibold text-xs tracking-wider">
                   ACTIONS
                 </th>
@@ -136,7 +135,7 @@ export const DataTable = ({
                       />
                     </td>
                   ))}
-                  {(onView || onEdit || onDelete) && (
+                  {(onView || onEdit || onDelete || onChangeStatus) && (
                     <td className="px-4 py-4 text-right">
                       <div className="w-6 h-6 bg-slate-200/80 rounded-full ml-auto" />
                     </td>
@@ -147,14 +146,14 @@ export const DataTable = ({
               // Empty State
               <tr>
                 <td
-                  colSpan={columns.length + ((onView || onEdit || onDelete) ? 1 : 0)}
+                  colSpan={columns.length + ((onView || onEdit || onDelete || onChangeStatus) ? 1 : 0)}
                   className="py-16 text-center"
                 >
                   <div className="max-w-sm mx-auto flex flex-col items-center">
                     <div className="w-14 h-14 rounded-full bg-[#F5F8FC] border border-[#DCE5F0] flex items-center justify-center text-[#64748B] mb-3">
                       <Inbox className="w-7 h-7" />
                     </div>
-                    <h4 className="text-base font-semibold text-[#111827] font-serif">{emptyTitle}</h4>
+                    <h4 className="text-base font-semibold text-[#111827] font-sans">{emptyTitle}</h4>
                     <p className="text-xs text-[#64748B] mt-1 max-w-xs">{emptyDescription}</p>
                   </div>
                 </td>
@@ -164,11 +163,13 @@ export const DataTable = ({
               data.map((row, rowIdx) => {
                 const rowKey = row[idField] || rowIdx;
                 const isMenuOpen = openActionId === rowKey;
+                const isDropup = rowIdx >= Math.max(0, data.length - 2);
 
                 return (
                   <tr
                     key={rowKey}
-                    className="hover:bg-[#F5F8FC]/60 transition-colors group"
+                    onClick={() => onRowClick && onRowClick(row)}
+                    className={`hover:bg-[#F5F8FC]/60 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
                   >
                     {columns.map((col) => {
                       const cellValue = col.accessor ? row[col.accessor] : null;
@@ -183,7 +184,7 @@ export const DataTable = ({
                     })}
 
                     {/* Actions Column with Three-Dots Popover */}
-                    {(onView || onEdit || onDelete) && (
+                    {(onView || onEdit || onDelete || onChangeStatus) && (
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
                         <div className="relative inline-block text-left">
                           <button
@@ -191,6 +192,7 @@ export const DataTable = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenActionId(isMenuOpen ? null : rowKey);
+                              setStatusMenuOpenRowId(null);
                             }}
                             className="p-1.5 text-[#64748B] hover:text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
                             aria-label="Actions menu"
@@ -206,11 +208,12 @@ export const DataTable = ({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setOpenActionId(null);
+                                  setStatusMenuOpenRowId(null);
                                 }} 
                               />
 
                               {/* Three-dots Dropdown Menu */}
-                              <div className="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-elevated border border-[#DCE5F0] py-1.5 z-40 text-xs animate-in fade-in zoom-in-95 duration-100 text-left">
+                              <div className={`absolute right-0 ${isDropup ? "bottom-full mb-1 origin-bottom-right" : "top-full mt-1 origin-top-right"} w-48 bg-white rounded-xl shadow-elevated border border-[#DCE5F0] py-1.5 z-40 text-xs animate-in fade-in zoom-in-95 duration-100 text-left`}>
                                 {onView && (
                                   <button
                                     type="button"
@@ -222,7 +225,7 @@ export const DataTable = ({
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-[#111827] hover:bg-[#F5F8FC] transition-colors font-medium text-left cursor-pointer"
                                   >
                                     <Eye className="w-4 h-4 text-[#64748B] shrink-0" />
-                                    <span>View Details</span>
+                                    <span>{viewLabel}</span>
                                   </button>
                                 )}
 
@@ -241,6 +244,65 @@ export const DataTable = ({
                                   </button>
                                 )}
 
+                                {onChangeStatus && (
+                                  <div className="border-t border-[#DCE5F0] my-1 pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setStatusMenuOpenRowId(statusMenuOpenRowId === rowKey ? null : rowKey);
+                                      }}
+                                      className="w-full flex items-center justify-between px-3 py-2 text-[#111827] hover:bg-[#F5F8FC] transition-colors font-medium text-left cursor-pointer rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {statusLabel.toLowerCase().includes('order') ? (
+                                          <Truck className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
+                                        ) : (
+                                          <RefreshCw className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
+                                        )}
+                                        <span>{statusLabel}</span>
+                                      </div>
+                                      <ChevronDown className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-200 ${statusMenuOpenRowId === rowKey ? 'rotate-180 text-[#071A35]' : ''}`} />
+                                    </button>
+
+                                    {statusMenuOpenRowId === rowKey && (
+                                      <div className="mt-1 mx-1 p-1 bg-[#F8FAFC] rounded-lg border border-[#DCE5F0] space-y-0.5 animate-in fade-in duration-150">
+                                        {statusOptions.map((status) => {
+                                          const currentVal = row[statusField] || row.status || row.payment_status;
+                                          const isSelected = currentVal === status;
+                                          return (
+                                            <button
+                                              key={status}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenActionId(null);
+                                                setStatusMenuOpenRowId(null);
+                                                onChangeStatus(row, status);
+                                              }}
+                                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors font-medium text-left cursor-pointer ${
+                                                isSelected ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600 hover:bg-white hover:text-slate-900'
+                                              }`}
+                                            >
+                                              <span className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${
+                                                  status === 'Completed' || status === 'Active' || status === 'Delivered' ? 'bg-emerald-500' :
+                                                  status === 'Pending' || status === 'Processing' ? 'bg-amber-500' :
+                                                  'bg-rose-500'
+                                                }`} />
+                                                {status}
+                                              </span>
+                                              {isSelected && (
+                                                <Check className="w-3.5 h-3.5 text-slate-700" />
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
                                 {onDelete && (
                                   <button
                                     type="button"
@@ -252,7 +314,7 @@ export const DataTable = ({
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left cursor-pointer border-t border-[#DCE5F0]"
                                   >
                                     <Trash2 className="w-4 h-4 shrink-0" />
-                                    <span>Delete</span>
+                                    <span>{deleteLabel}</span>
                                   </button>
                                 )}
                               </div>

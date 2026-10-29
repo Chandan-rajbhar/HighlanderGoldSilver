@@ -20,19 +20,47 @@ const STATUS_CONFIGS = {
   },
 
   // Payment status
+  Paid: {
+    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  Placed: {
+    bg: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  Processing: {
+    bg: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  Shipped: {
+    bg: 'bg-sky-50 text-sky-700 border-sky-200',
+    dot: 'bg-sky-500',
+  },
+  Completed: {
+    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
   Settled: {
     bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dot: 'bg-emerald-500',
+  },
+  Pending: {
+    bg: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
   },
   'Pending Wire': {
     bg: 'bg-amber-50 text-amber-700 border-amber-200',
     dot: 'bg-amber-500',
   },
   Refunded: {
-    bg: 'bg-purple-50 text-purple-700 border-purple-200',
-    dot: 'bg-purple-500',
+    bg: 'bg-rose-50 text-rose-700 border-rose-200',
+    dot: 'bg-rose-500',
   },
   Cancelled: {
+    bg: 'bg-rose-50 text-rose-700 border-rose-200',
+    dot: 'bg-rose-500',
+  },
+  Failed: {
     bg: 'bg-rose-50 text-rose-700 border-rose-200',
     dot: 'bg-rose-500',
   },
@@ -89,7 +117,8 @@ const STATUS_CONFIGS = {
 };
 
 export const StatusBadge = ({ status, className = '' }) => {
-  const config = STATUS_CONFIGS[status] || {
+  const displayStatus = status === 'Pending Wire' ? 'Pending' : status;
+  const config = STATUS_CONFIGS[displayStatus] || STATUS_CONFIGS[status] || {
     bg: 'bg-slate-100 text-slate-700 border-slate-200',
     dot: 'bg-slate-400',
   };
@@ -99,7 +128,7 @@ export const StatusBadge = ({ status, className = '' }) => {
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.bg} ${className}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-      {status || 'Unknown'}
+      {displayStatus || 'Unknown'}
     </span>
   );
 };

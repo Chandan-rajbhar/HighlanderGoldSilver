@@ -107,7 +107,7 @@ export const CouponFormDrawer = ({
               <span className="text-xs font-mono uppercase tracking-wider text-gold font-bold px-2 py-0.5 rounded bg-gold/15 border border-gold/30">
                 {isEdit ? 'Edit Coupon' : 'Create Promotion'}
               </span>
-              <h2 className="text-lg font-bold font-serif tracking-wide text-white mt-1">
+              <h2 className="text-lg font-bold font-sans tracking-wide text-white mt-1">
                 {isEdit ? `Coupon: ${formData.code}` : 'New Discount Code'}
               </h2>
             </div>
@@ -263,7 +263,7 @@ export const CouponFormDrawer = ({
               type="submit"
               form="coupon-drawer-form"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold font-serif uppercase tracking-wider text-white bg-aubergine hover:bg-aubergine-light rounded-xl shadow-md transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold font-sans uppercase tracking-wider text-white bg-aubergine hover:bg-aubergine-light rounded-xl shadow-md transition-all disabled:opacity-50"
             >
               <Check className="w-4 h-4 text-gold" />
               {isEdit ? 'Save Changes' : 'Create Coupon'}

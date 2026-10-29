@@ -53,7 +53,12 @@ export const orderService = {
     let orders = localDB.getOrders();
 
     if (paymentStatus && paymentStatus !== 'All') {
-      orders = orders.filter(o => o.payment_status === paymentStatus);
+      orders = orders.filter(o => {
+        if (paymentStatus === 'Pending') {
+          return o.payment_status === 'Pending' || o.payment_status === 'Pending Wire';
+        }
+        return o.payment_status === paymentStatus;
+      });
     }
     if (fulfillmentStatus && fulfillmentStatus !== 'All') {
       orders = orders.filter(o => o.fulfillment_status === fulfillmentStatus);
@@ -126,7 +131,7 @@ export const orderService = {
       base_subtotal: baseSubtotal,
       buyers_premium_total: buyersPremiumTotal,
       total_settlement: totalSettlement,
-      payment_status: orderData.payment_status || 'Pending Wire',
+      payment_status: orderData.payment_status || 'Pending',
       fulfillment_status: orderData.fulfillment_status || 'Awaiting Payment',
       created_at: new Date().toISOString()
     };

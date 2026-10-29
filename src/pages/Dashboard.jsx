@@ -63,7 +63,7 @@ export const Dashboard = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xs sm:text-sm font-bold text-[#0F1E32] font-serif tracking-wider">
+              <h2 className="text-xs sm:text-sm font-bold text-[#0F1E32] font-sans tracking-wider">
                 LIVE PRECIOUS METALS SPOT BENCHMARK
               </h2>
               <span className="flex h-2 w-2 relative">
@@ -217,7 +217,7 @@ export const Dashboard = () => {
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
             <div>
-              <p className="text-xs font-bold font-serif">Vault Stock Notice</p>
+              <p className="text-xs font-bold font-sans">Vault Stock Notice</p>
               <p className="text-xs text-amber-800">
                 {summary.lowStockItems} lot item(s) are low stock or unavailable in the storefront catalog.
               </p>
@@ -239,7 +239,7 @@ export const Dashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h3 className="text-sm font-bold text-[#0F1E32] font-serif uppercase tracking-widest">
+                <h3 className="text-sm font-bold text-[#0F1E32] font-sans uppercase tracking-widest">
                   CATALOG VALUATION BY CATEGORY
                 </h3>
                 <p className="text-xs text-slate-400 font-sans mt-0.5">
@@ -293,7 +293,7 @@ export const Dashboard = () => {
                   <div className="w-14 h-14 rounded-2xl bg-[#FFF9ED] border border-[#FBE3B5] flex items-center justify-center text-[#F5B52E] shadow-xs">
                     <BarChart3 className="w-7 h-7 text-[#F5B52E]" />
                   </div>
-                  <h4 className="font-serif font-bold text-slate-900 text-sm sm:text-base mt-3">
+                  <h4 className="font-sans font-bold text-slate-900 text-sm sm:text-base mt-3">
                     No Inventory Valuations Logged
                   </h4>
                   <p className="text-xs text-slate-500 max-w-sm mt-1 leading-relaxed font-sans">
@@ -320,7 +320,7 @@ export const Dashboard = () => {
         {/* Precious Metal Holdings Card */}
         <div className="lg:col-span-4 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-bold text-[#0F1E32] font-serif tracking-widest uppercase">
+            <h3 className="text-sm font-bold text-[#0F1E32] font-sans tracking-widest uppercase">
               PRECIOUS METAL HOLDINGS
             </h3>
             <p className="text-xs text-slate-400 mb-3 font-sans mt-0.5">
@@ -383,7 +383,7 @@ export const Dashboard = () => {
         <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-[#0F1E32] font-serif">
+              <h3 className="text-sm font-bold text-[#0F1E32] font-sans">
                 Recent Orders & Wire Settlements
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -439,7 +439,7 @@ export const Dashboard = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-[#F5B52E]" />
-              <h3 className="text-sm font-bold font-serif tracking-wide text-white">
+              <h3 className="text-sm font-bold font-sans tracking-wide text-white">
                 Storefront Control Center
               </h3>
             </div>

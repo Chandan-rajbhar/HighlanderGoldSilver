@@ -21,7 +21,7 @@ export const ConfirmDialog = ({
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-base font-bold text-slate-900 font-serif">{title}</h4>
+            <h4 className="text-base font-bold text-slate-900 font-sans">{title}</h4>
             <p className="text-xs text-slate-500 mt-0.5">Highlander Gold & Silver Administrative Verification</p>
           </div>
         </div>

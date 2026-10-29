@@ -137,6 +137,27 @@ export const paymentService = {
     const updated = [newTxn, ...txns];
     localDB.setPayments(updated);
     return newTxn;
+  },
+
+  async updatePaymentStatus(id, newStatus) {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .update({ payment_status: newStatus })
+          .or(`id.eq.${id},transaction_id.eq.${id}`)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error('Supabase updatePaymentStatus error, using local fallback:', err);
+      }
+    }
+
+    const txns = localDB.getPayments();
+    const updated = txns.map(t => (t.id === id || t.transaction_id === id) ? { ...t, payment_status: newStatus } : t);
+    localDB.setPayments(updated);
+    return updated.find(t => t.id === id || t.transaction_id === id);
   }
 };
-

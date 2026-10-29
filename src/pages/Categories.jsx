@@ -93,7 +93,6 @@ export const Categories = () => {
   const filteredCategories = categories.filter(c => 
     !search || 
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.slug && c.slug.toLowerCase().includes(search.toLowerCase())) ||
     (c.metal_type && c.metal_type.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -104,7 +103,7 @@ export const Categories = () => {
       className: 'font-medium text-slate-900',
       render: (row) => (
         <div className="flex flex-col">
-          <span className="font-serif font-bold text-slate-900 text-sm tracking-wide uppercase">
+          <span className="font-semibold text-slate-900 text-sm font-sans tracking-normal">
             {row.name}
           </span>
           {row.description && (
@@ -113,16 +112,6 @@ export const Categories = () => {
             </span>
           )}
         </div>
-      )
-    },
-    {
-      key: 'slug',
-      header: 'Slug',
-      className: 'font-mono text-xs text-slate-600',
-      render: (row) => (
-        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
-          {row.slug || `/${row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-        </span>
       )
     },
     {
@@ -175,7 +164,7 @@ export const Categories = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Categories & Metals
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -185,7 +174,7 @@ export const Categories = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4 text-gold" />
           Add Category
@@ -198,7 +187,7 @@ export const Categories = () => {
         total={filteredCategories.length}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Filter categories by name, slug, or metal..."
+        searchPlaceholder="Filter categories by name or metal..."
         isLoading={isLoading}
         onEdit={handleEdit}
         onDelete={handleDeletePrompt}

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { couponService } from '../services/couponService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { KpiCard } from '../components/ui/KpiCard';
 import { CouponFormDrawer } from '../components/forms/CouponFormDrawer';
@@ -238,7 +239,7 @@ export const Coupons = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Coupons & Discounts
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -248,7 +249,7 @@ export const Coupons = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 text-gold" />
           Add Coupon
@@ -312,7 +313,7 @@ export const Coupons = () => {
         emptyTitle="No coupons created"
         emptyDescription="Create promotional discount codes for your precious metals storefront."
         filterComponent={
-          <select
+          <Select
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -324,7 +325,7 @@ export const Coupons = () => {
             <option value="Active">Active</option>
             <option value="Disabled">Disabled</option>
             <option value="Expired">Expired</option>
-          </select>
+          </Select>
         }
       />
 

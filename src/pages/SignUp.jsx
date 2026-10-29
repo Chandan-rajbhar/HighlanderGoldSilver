@@ -146,10 +146,10 @@ export const SignUp = () => {
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-serif font-bold text-sm tracking-[0.2em] text-[#0F1E32] group-hover:text-[#F5B52E] transition-colors uppercase leading-none">
+            <span className="font-sans font-bold text-sm tracking-[0.2em] text-[#0F1E32] group-hover:text-[#F5B52E] transition-colors uppercase leading-none">
               HIGHLANDER
             </span>
-            <span className="font-serif text-[#C9A23A] font-semibold text-[10px] tracking-[0.22em] uppercase leading-none mt-1">
+            <span className="font-sans text-[#C9A23A] font-semibold text-[10px] tracking-[0.22em] uppercase leading-none mt-1">
               GOLD & SILVER
             </span>
           </div>
@@ -177,9 +177,9 @@ export const SignUp = () => {
             <span className="tracking-wide">ENTERPRISE VAULT PORTAL • SSL SECURED</span>
           </div>
 
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-[54px] font-bold text-[#0F1E32] tracking-tight leading-[1.15]">
+          <h1 className="font-sans text-4xl sm:text-5xl lg:text-[54px] font-bold text-[#0F1E32] tracking-tight leading-[1.15]">
             Highlander Gold & Silver
-            <span className="block font-serif italic text-4xl sm:text-5xl lg:text-[54px] font-normal text-[#D4AF37] mt-1">
+            <span className="block font-sans italic text-4xl sm:text-5xl lg:text-[54px] font-normal text-[#D4AF37] mt-1">
               Admin Onboarding
             </span>
           </h1>
@@ -194,7 +194,7 @@ export const SignUp = () => {
                 <Star className="w-3.5 h-3.5 fill-[#D4AF37]" />
                 <span className="text-slate-500 font-sans">INVENTORY STATUS</span>
               </div>
-              <div className="font-serif font-bold text-slate-900 text-lg">
+              <div className="font-sans font-bold text-slate-900 text-lg">
                 NGC / PCGS
               </div>
               <div className="text-slate-500 text-xs mt-0.5 font-sans">
@@ -207,7 +207,7 @@ export const SignUp = () => {
                 <Lock className="w-3.5 h-3.5" />
                 <span className="text-slate-500 font-sans">VAULT ACCESS</span>
               </div>
-              <div className="font-serif font-bold text-slate-900 text-lg">
+              <div className="font-sans font-bold text-slate-900 text-lg">
                 Key Clearance
               </div>
               <div className="text-slate-500 text-xs mt-0.5 font-sans">
@@ -231,7 +231,7 @@ export const SignUp = () => {
               <UserPlus className="w-6 h-6 text-[#D4AF37]" />
             </div>
 
-            <h2 className="font-serif text-2xl font-bold tracking-wider text-[#0F1E32] text-center uppercase">
+            <h2 className="font-sans text-2xl font-bold tracking-wider text-[#0F1E32] text-center uppercase">
               ADMIN SIGN UP
             </h2>
             <p className="text-xs text-slate-500 text-center mt-1 mb-6">
@@ -401,7 +401,7 @@ export const SignUp = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full mt-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#F5B52E] via-[#F4B428] to-[#EAA61E] hover:from-[#F7C042] hover:to-[#E09C15] text-[#0F1E32] font-serif font-bold text-xs sm:text-sm tracking-widest uppercase transition-all shadow-[0_10px_25px_-5px_rgba(245,181,46,0.45)] hover:shadow-[0_12px_28px_-5px_rgba(245,181,46,0.6)] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                className="w-full mt-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#F5B52E] via-[#F4B428] to-[#EAA61E] hover:from-[#F7C042] hover:to-[#E09C15] text-[#0F1E32] font-sans font-bold text-xs sm:text-sm tracking-widest uppercase transition-all shadow-[0_10px_25px_-5px_rgba(245,181,46,0.45)] hover:shadow-[0_12px_28px_-5px_rgba(245,181,46,0.6)] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? (
                   <>

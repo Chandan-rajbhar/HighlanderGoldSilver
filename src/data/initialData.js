@@ -591,7 +591,7 @@ export const initialOrders = [
     customer_email: "t.macgregor@glacierranch.org",
     order_status: "Pending",
     fulfillment_status: "Awaiting Payment",
-    payment_status: "Pending Wire",
+    payment_status: "Pending",
     payment_method: "Bank Wire",
     items: [
       {

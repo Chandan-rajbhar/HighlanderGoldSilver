@@ -245,7 +245,7 @@ export const ItemFormModal = ({
 
         {/* Pricing & 15% Buyer's Premium calculation box */}
         <div className="p-4 rounded-xl bg-gold-surface border border-gold-border">
-          <div className="flex items-center gap-2 mb-3 text-gold-dark font-serif font-bold text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-2 mb-3 text-gold-dark font-sans font-bold text-xs uppercase tracking-wider">
             <DollarSign className="w-4 h-4" />
             Highlander Pricing & Settlement Matrix (15% Buyer's Premium)
           </div>

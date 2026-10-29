@@ -46,7 +46,7 @@ export const InquiryDetailModal = ({
             <StatusBadge status={selectedStatus} />
           </div>
 
-          <h3 className="text-base font-bold text-slate-900 font-serif">
+          <h3 className="text-base font-bold text-slate-900 font-sans">
             {inquiry.lot_number ? `Lot #${inquiry.lot_number}: ${inquiry.lot_title}` : (inquiry.lot_title || 'General Ingestion Request')}
           </h3>
 
@@ -70,7 +70,7 @@ export const InquiryDetailModal = ({
 
         {/* Client Message */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider font-serif mb-1.5">
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider font-sans mb-1.5">
             Client Message from Website
           </label>
           <div className="p-3.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-800 leading-relaxed">

@@ -73,7 +73,7 @@ export const Header = ({ onMobileMenuClick }) => {
 
         <div>
           {location.pathname === '/' ? (
-            <h1 className="text-xl font-bold font-serif text-[#111827] tracking-tight">
+            <h1 className="text-xl font-bold font-sans text-[#111827] tracking-tight">
               Dashboard
             </h1>
           ) : (
@@ -82,7 +82,7 @@ export const Header = ({ onMobileMenuClick }) => {
                 Dashboard
               </Link>
               <span className="text-slate-300">/</span>
-              <span className="text-[#111827] font-semibold font-serif">
+              <span className="text-[#111827] font-semibold font-sans">
                 {routeInfo.breadcrumb || routeInfo.title}
               </span>
             </div>
@@ -108,7 +108,7 @@ export const Header = ({ onMobileMenuClick }) => {
           {isNotifOpen && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-elevated border border-[#DCE5F0] p-0 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-4 py-3 border-b border-[#DCE5F0] flex items-center justify-between bg-[#F5F8FC]">
-                <span className="font-semibold text-xs text-[#111827] uppercase tracking-wider font-serif">
+                <span className="font-semibold text-xs text-[#111827] uppercase tracking-wider font-sans">
                   Notifications & Alerts
                 </span>
                 <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export const Header = ({ onMobileMenuClick }) => {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-[#F5F8FC] transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-serif">
+            <div className="w-8 h-8 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-sans">
               AM
             </div>
             <div className="hidden sm:flex flex-col text-left">
@@ -174,7 +174,7 @@ export const Header = ({ onMobileMenuClick }) => {
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-elevated border border-[#DCE5F0] p-2 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="p-3 border-b border-[#DCE5F0]">
-                <p className="text-xs font-bold text-[#111827] font-serif">{adminUser?.name || 'Alexander MacLeod'}</p>
+                <p className="text-xs font-bold text-[#111827] font-sans">{adminUser?.name || 'Alexander MacLeod'}</p>
                 <p className="text-[11px] text-[#64748B]">{adminUser?.email || 'admin@highlandergoldsilver.com'}</p>
                 <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5F8FC] text-[#111827] text-[10px] font-semibold border border-[#DCE5F0] font-sans">
                   <ShieldCheck className="w-3 h-3 text-[#D6AD45]" />

@@ -40,7 +40,7 @@ export const SpotPrices = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Precious Metals Spot Benchmark & Melt Calculator
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -50,7 +50,7 @@ export const SpotPrices = () => {
 
         <button
           onClick={handleRefresh}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
         >
           <RefreshCw className="w-3.5 h-3.5 text-gold" />
           Update Live Benchmark
@@ -146,7 +146,7 @@ export const SpotPrices = () => {
         <div className="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-5">
           <div className="flex items-center gap-2 text-aubergine">
             <Calculator className="w-5 h-5 text-gold" />
-            <h3 className="text-base font-bold font-serif text-slate-900">
+            <h3 className="text-base font-bold font-sans text-slate-900">
               Bullion & Numismatic Melt Value Calculator
             </h3>
           </div>

@@ -5,16 +5,19 @@ import {
   CheckCircle2, 
   Clock, 
   RotateCcw, 
-  Search, 
   Download,
-  Eye,
-  Filter
+  X,
+  User,
+  Calendar,
+  Hash,
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { KpiCard } from '../components/ui/KpiCard';
-import { Modal } from '../components/ui/Modal';
 import { useToast } from '../context/ToastContext';
 
 export const Payments = () => {
@@ -39,7 +42,7 @@ export const Payments = () => {
   const [sortAsc, setSortAsc] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Selected Transaction for Detail Modal
+  // Selected Transaction for Detail Slide-Over Drawer
   const [selectedTxn, setSelectedTxn] = useState(null);
 
   const fetchPayments = useCallback(async () => {
@@ -104,6 +107,20 @@ export const Payments = () => {
     toast.success('Transactions exported to CSV');
   };
 
+  const handleStatusChange = async (txn, newStatus) => {
+    try {
+      await paymentService.updatePaymentStatus(txn.id || txn.transaction_id, newStatus);
+      toast.success(`Transaction ${txn.transaction_id} marked as ${newStatus}`);
+      if (selectedTxn && (selectedTxn.id === txn.id || selectedTxn.transaction_id === txn.transaction_id)) {
+        setSelectedTxn(prev => ({ ...prev, payment_status: newStatus }));
+      }
+      fetchPayments();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      toast.error('Failed to update payment status');
+    }
+  };
+
   const columns = [
     {
       header: 'Transaction ID',
@@ -126,31 +143,21 @@ export const Payments = () => {
       )
     },
     {
-      header: 'Collector / Customer',
+      header: 'Customer Name',
       accessor: 'customer_name',
       render: (row) => (
-        <div>
-          <span className="font-bold text-slate-900 text-sm block font-serif">{row.customer_name}</span>
-          <span className="text-[11px] text-slate-500 font-mono">{row.customer_email}</span>
-        </div>
-      )
-    },
-    {
-      header: 'Settlement Amount',
-      accessor: 'amount',
-      className: 'font-mono text-right',
-      render: (row) => (
-        <span className="font-bold text-aubergine font-mono text-sm">
-          ${Number(row.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        <span className="font-bold text-slate-900 text-sm font-sans" title={row.customer_email}>
+          {row.customer_name}
         </span>
       )
     },
     {
-      header: 'Payment Method',
-      accessor: 'payment_method',
+      header: 'Amount',
+      accessor: 'amount',
+      className: 'font-mono text-left',
       render: (row) => (
-        <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-800">
-          {row.payment_method}
+        <span className="font-bold text-slate-900 font-mono text-sm">
+          ${Number(row.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </span>
       )
     },
@@ -158,12 +165,6 @@ export const Payments = () => {
       header: 'Status',
       accessor: 'payment_status',
       render: (row) => <StatusBadge status={row.payment_status} />
-    },
-    {
-      header: 'Date & Time',
-      accessor: 'created_at',
-      className: 'text-xs text-slate-500 font-mono whitespace-nowrap',
-      render: (row) => <span>{new Date(row.created_at).toLocaleString()}</span>
     }
   ];
 
@@ -172,7 +173,7 @@ export const Payments = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Payments & Transactions
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -180,13 +181,7 @@ export const Payments = () => {
           </p>
         </div>
 
-        <button
-          onClick={exportCSV}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-sm self-start sm:self-auto"
-        >
-          <Download className="w-3.5 h-3.5 text-slate-500" />
-          Export Ledger (CSV)
-        </button>
+        
       </div>
 
       {/* KPI Cards */}
@@ -242,100 +237,181 @@ export const Payments = () => {
         onPageSizeChange={setPageSize}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by transaction ID, order #, or collector..."
+        searchPlaceholder="Search by transaction ID, order #, or customer..."
         isLoading={isLoading}
+        onRowClick={handleView}
         onView={handleView}
+        onChangeStatus={handleStatusChange}
+        statusOptions={['Completed', 'Pending', 'Refunded']}
+        statusField="payment_status"
         emptyTitle="No transactions recorded"
         emptyDescription="Settlements and gateway payments will automatically register here."
         filterComponent={
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={paymentStatus}
               onChange={(e) => {
                 setPaymentStatus(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Completed">Completed</option>
-              <option value="Pending">Pending</option>
-              <option value="Refunded">Refunded</option>
-            </select>
+              options={[
+                { value: 'All', label: 'All Statuses' },
+                { value: 'Completed', label: 'Completed' },
+                { value: 'Pending', label: 'Pending' },
+                { value: 'Refunded', label: 'Refunded' }
+              ]}
+            />
 
-            <select
+            <Select
               value={paymentMethod}
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 setPage(1);
               }}
-              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
-            >
-              <option value="All">All Methods</option>
-              <option value="Bank Wire">Bank Wire</option>
-              <option value="PayPal">PayPal</option>
-              <option value="Vault Pickup">Vault Pickup</option>
-            </select>
+              options={[
+                { value: 'All', label: 'All Methods' },
+                { value: 'Bank Wire', label: 'Bank Wire' },
+                { value: 'PayPal', label: 'PayPal' },
+                { value: 'Vault Pickup', label: 'Vault Pickup' }
+              ]}
+            />
           </div>
         }
       />
 
-      {/* Transaction Dossier Modal */}
+      {/* Transaction Slide-Over Drawer from Right */}
       {selectedTxn && (
-        <Modal
-          isOpen={Boolean(selectedTxn)}
-          onClose={() => setSelectedTxn(null)}
-          title={`Transaction: ${selectedTxn.transaction_id}`}
-          subtitle="Highlander Settlement Gateway Record"
-          maxWidth="max-w-md"
-        >
-          <div className="space-y-4 text-xs">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Order ID:</span>
-                <span className="font-mono font-bold text-slate-900">{selectedTxn.order_id}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Collector:</span>
-                <span className="font-semibold text-slate-900">{selectedTxn.customer_name}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Amount Settled:</span>
-                <span className="font-mono font-bold text-base text-aubergine">
-                  ${Number(selectedTxn.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Payment Channel:</span>
-                <span className="font-medium text-slate-800">{selectedTxn.payment_method}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Gateway Ref:</span>
-                <span className="font-mono text-slate-600">{selectedTxn.gateway_reference || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Settled On:</span>
-                <span className="font-mono text-slate-600">{new Date(selectedTxn.created_at).toLocaleString()}</span>
-              </div>
-            </div>
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setSelectedTxn(null)}
+            aria-hidden="true"
+          />
 
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Verified and deposited into Highlander Gold & Silver escrow account.</span>
-            </div>
+          <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div className="w-screen max-w-md md:max-w-lg bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
+              
+              {/* Drawer Header */}
+              <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">
+                      {selectedTxn.transaction_id}
+                    </span>
+                    <span className="text-xs text-slate-300">
+                      Settlement Dossier
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold font-sans text-white mt-1">
+                    Payment Details
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTxn(null)}
+                  className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Close drawer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <button
-                onClick={() => setSelectedTxn(null)}
-                className="px-4 py-2 bg-aubergine text-white text-xs font-semibold rounded-lg"
-              >
-                Close Record
-              </button>
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                
+                {/* Amount Banner with Status Selector */}
+                <div className="p-5 rounded-2xl bg-[#F5F8FC] border border-[#DCE5F0] flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-slate-500 font-medium block">Amount</span>
+                    <span className="text-2xl font-bold font-mono text-[#071A35]">
+                      ${Number(selectedTxn.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <StatusBadge status={selectedTxn.payment_status} />
+                </div>
+
+                {/* Key Settlement Information */}
+                <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 bg-white">
+                  <div className="px-4 py-3 bg-slate-50/70">
+                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                      Transaction Summary
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-3 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Hash className="w-3.5 h-3.5 text-slate-400" />
+                      Order Reference
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                      {selectedTxn.order_id}
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-3 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                      Payment Method
+                    </span>
+                    <span className="font-semibold text-slate-900 px-2.5 py-0.5 rounded-md bg-slate-100 text-xs">
+                      {selectedTxn.payment_method || 'Bank Wire'}
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-3 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      Date & Time
+                    </span>
+                    <span className="font-mono text-slate-800 font-medium">
+                      {new Date(selectedTxn.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-3 flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Gateway Reference</span>
+                    <span className="font-mono text-slate-600">
+                      {selectedTxn.gateway_reference || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Customer Details Card */}
+                <div className="rounded-xl border border-slate-200 p-4 bg-white space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    <User className="w-4 h-4 text-slate-400" />
+                    Customer Details
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 font-sans">
+                      {selectedTxn.customer_name}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      {selectedTxn.customer_email}
+                    </p>
+                  </div>
+                </div>
+
+
+
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTxn(null)}
+                  className="px-5 py-2.5 bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                >
+                  Close Record
+                </button>
+              </div>
+
             </div>
           </div>
-        </Modal>
+        </div>
       )}
     </div>
   );
 };
-

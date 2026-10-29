@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../ui/Modal';
-import { Check } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 
 const METALS = ['Gold', 'Silver', 'Platinum', 'Mixed', 'Other'];
 
@@ -47,6 +46,18 @@ export const CategoryFormModal = ({
     setErrors({});
   }, [initialData, isOpen]);
 
+  // Lock background scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const handleNameChange = (name) => {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     setFormData(prev => ({
@@ -59,7 +70,6 @@ export const CategoryFormModal = ({
   const validate = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Category name is required';
-    if (!formData.slug.trim()) newErrors.slug = 'Slug is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -67,128 +77,143 @@ export const CategoryFormModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave(formData);
+    const autoSlug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    onSave({
+      ...formData,
+      slug: autoSlug,
+      is_active: formData.is_active ?? true
+    });
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEditing ? `Edit Category: ${formData.name}` : 'Create New Collection Category'}
-      subtitle="Highlander Precious Metals Classification"
-      maxWidth="max-w-md"
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            Category Name *
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="e.g. Morgan Dollars"
-            className={`w-full px-3 py-2 text-sm rounded-lg border ${
-              errors.name ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-white'
-            } focus:ring-2 focus:ring-aubergine-muted focus:outline-none`}
-          />
-          {errors.name && <p className="text-[11px] text-rose-500 mt-1">{errors.name}</p>}
-        </div>
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Dark backdrop overlay with blur */}
+      <div 
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            URL Slug *
-          </label>
-          <input
-            type="text"
-            value={formData.slug}
-            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-            placeholder="e.g. morgan-dollars"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white font-mono text-xs focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
-          />
-        </div>
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
+        {/* Slide-over Drawer Panel */}
+        <div className="w-screen max-w-md md:max-w-lg bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
+          
+          {/* Drawer Header */}
+          <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
+                  {isEditing ? 'Edit Category' : 'New Category'}
+                </span>
+              </div>
+              <h2 className="text-lg font-bold font-sans tracking-wide text-white mt-1">
+                {isEditing ? `Edit Category: ${formData.name}` : 'Create New Collection Category'}
+              </h2>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Highlander Precious Metals Classification
+              </p>
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Primary Metal
-            </label>
-            <select
-              value={formData.metal_type}
-              onChange={(e) => setFormData({ ...formData, metal_type: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-slate-300 hover:text-white hover:bg-[#0B2348] rounded-xl transition-colors cursor-pointer"
+              aria-label="Close drawer"
             >
-              {METALS.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Display Order
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.display_order}
-              onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white font-mono"
-            />
+          {/* Form Body - Scrollable */}
+          <form id="category-drawer-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Category Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="e.g. Morgan Dollars"
+                className={`w-full px-3.5 py-2.5 text-sm rounded-xl border ${
+                  errors.name ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-white'
+                } focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all`}
+              />
+              {errors.name && <p className="text-[11px] text-rose-500 mt-1">{errors.name}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Primary Metal
+                </label>
+                <select
+                  value={formData.metal_type}
+                  onChange={(e) => setFormData({ ...formData, metal_type: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all cursor-pointer"
+                >
+                  {METALS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Display Order
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
+                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white font-mono focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Description
+              </label>
+              <textarea
+                rows="4"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief scope of items in this category..."
+                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all resize-none"
+              />
+            </div>
+          </form>
+
+          {/* Sticky Footer */}
+          <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="category-drawer-form"
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-aubergine hover:bg-aubergine-light rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {isLoading ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Check className="w-4 h-4 text-gold" />
+              )}
+              {isEditing ? 'Save Changes' : 'Create Category'}
+            </button>
           </div>
         </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            Description
-          </label>
-          <textarea
-            rows="3"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Brief scope of items in this category..."
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
-          />
-        </div>
-
-        <div className="pt-2 flex items-center">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              className="w-4 h-4 rounded text-aubergine focus:ring-aubergine border-slate-300"
-            />
-            <span className="text-xs font-medium text-slate-700">
-              Active & Visible on Storefront
-            </span>
-          </label>
-        </div>
-
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-aubergine hover:bg-aubergine-light rounded-lg shadow-sm transition-colors disabled:opacity-50"
-          >
-            {isLoading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Check className="w-4 h-4 text-gold" />
-            )}
-            {isEditing ? 'Save Changes' : 'Create Category'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+      </div>
+    </div>
   );
 };
-

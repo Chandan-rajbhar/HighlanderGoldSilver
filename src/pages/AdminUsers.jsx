@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { adminUserService } from '../services/adminUserService';
 import { DataTable } from '../components/ui/DataTable';
+import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { AdminUserFormModal } from '../components/forms/AdminUserFormModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -108,14 +109,14 @@ export const AdminUsers = () => {
     {
       header: 'Staff Member',
       accessor: 'name',
-      className: 'font-serif font-semibold text-slate-900',
+      className: 'font-sans font-semibold text-slate-900',
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-aubergine text-gold font-bold text-xs flex items-center justify-center shrink-0 border border-gold/40 shadow-sm">
             {row.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </div>
           <div>
-            <span className="font-bold text-slate-900 text-sm block font-serif">{row.name}</span>
+            <span className="font-bold text-slate-900 text-sm block font-sans">{row.name}</span>
             <span className="text-[11px] text-slate-500 font-mono">{row.email}</span>
           </div>
         </div>
@@ -179,7 +180,7 @@ export const AdminUsers = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
             Admin Users & Roles
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -189,7 +190,7 @@ export const AdminUsers = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 text-gold" />
           Provision Staff Member
@@ -211,7 +212,7 @@ export const AdminUsers = () => {
         emptyTitle="No administrator records"
         emptyDescription="Provision staff accounts to assign inventory or order management roles."
         filterComponent={
-          <select
+          <Select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-2 focus:outline-none"
@@ -221,7 +222,7 @@ export const AdminUsers = () => {
             <option value="Admin">Admin</option>
             <option value="Inventory Manager">Inventory Manager</option>
             <option value="Order Manager">Order Manager</option>
-          </select>
+          </Select>
         }
       />
 

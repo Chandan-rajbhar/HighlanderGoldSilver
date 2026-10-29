@@ -85,7 +85,7 @@ export const ItemDetailModal = ({
 
               {/* Verified Vault Badge */}
               <div className="mt-6 p-3 rounded-xl bg-[#F5EFE6] border border-[#E5DAC8] text-center text-xs">
-                <div className="flex items-center justify-center gap-1.5 text-slate-800 font-bold font-serif">
+                <div className="flex items-center justify-center gap-1.5 text-slate-800 font-bold font-sans">
                   <ShieldCheck className="w-4 h-4 text-gold-dark" />
                   <span>Certified & Inspected by HGS</span>
                 </div>
@@ -100,10 +100,10 @@ export const ItemDetailModal = ({
               
               {/* Category Breadcrumb & Title */}
               <div>
-                <span className="text-xs font-bold font-serif uppercase tracking-widest text-gold-dark">
+                <span className="text-xs font-bold font-sans uppercase tracking-widest text-gold-dark">
                   ITEM #{item.lot_number} • {item.category || 'GOLD'}
                 </span>
-                <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900 uppercase tracking-tight mt-1 leading-snug">
+                <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900 uppercase tracking-tight mt-1 leading-snug">
                   {item.title}
                 </h2>
               </div>
@@ -111,7 +111,7 @@ export const ItemDetailModal = ({
               {/* Price Banner Card */}
               <div className="p-4 rounded-xl bg-[#FDFBF7] border border-[#EBE3D7] flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-serif">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-sans">
                     Storefront Price
                   </span>
                   <span className="text-xl font-bold font-mono text-slate-900 block">
@@ -123,7 +123,7 @@ export const ItemDetailModal = ({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-serif">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-sans">
                     Settlement with 15% Fee
                   </span>
                   <span className="text-xl font-bold font-mono text-gold-dark block">
@@ -193,7 +193,7 @@ export const ItemDetailModal = ({
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-aubergine text-white text-xs font-bold font-serif uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:bg-aubergine-light transition-colors"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-aubergine text-white text-xs font-bold font-sans uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:bg-aubergine-light transition-colors"
                 >
                   <ShoppingCart className="w-4 h-4 text-gold" />
                   Add to Cart (${basePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })})
@@ -203,7 +203,7 @@ export const ItemDetailModal = ({
                   href={`https://paypal.me/HighlanderGoldSilver/${settlementFee}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-gold hover:bg-gold-light text-aubergine-dark text-xs font-bold font-serif uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-colors"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gold hover:bg-gold-light text-aubergine-dark text-xs font-bold font-sans uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-colors"
                 >
                   <CreditCard className="w-4 h-4 text-aubergine-dark" />
                   Buy Now via PayPal

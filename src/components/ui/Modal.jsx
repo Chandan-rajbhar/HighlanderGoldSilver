@@ -48,7 +48,7 @@ export const Modal = ({
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/70">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 font-serif tracking-wide">{title}</h3>
+            <h3 className="text-lg font-bold text-slate-900 font-sans tracking-wide">{title}</h3>
             {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
           </div>
           {showClose && (

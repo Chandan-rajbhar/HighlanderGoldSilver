@@ -50,7 +50,7 @@ export const Sidebar = ({
         },
         {
           to: '/orders',
-          label: 'Orders & Settlements',
+          label: 'Orders',
           icon: ShoppingBag,
           badge: null
         },
@@ -217,12 +217,12 @@ export const Sidebar = ({
         {/* Admin User Footer on Navy Sidebar */}
         <div className="p-3.5 border-t border-white/10 bg-[#06111E]/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-[#12263F] border border-[#C9A23A]/70 flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs">
+            <div className="w-8 h-8 rounded-full bg-[#12263F] border border-[#C9A23A]/70 flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-sans shadow-xs">
               AM
             </div>
             {!isCollapsed && (
               <div className="flex flex-col truncate">
-                <span className="text-xs font-semibold text-white truncate font-serif">
+                <span className="text-xs font-semibold text-white truncate font-sans">
                   {adminUser?.name || 'Alexander MacLeod'}
                 </span>
                 <span className="text-[10px] text-slate-400 truncate font-sans">

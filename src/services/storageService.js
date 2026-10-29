@@ -74,7 +74,10 @@ export const localDB = {
   getCustomers: () => getStoredItem(STORAGE_KEYS.CUSTOMERS, initialCustomers),
   setCustomers: (custs) => setStoredItem(STORAGE_KEYS.CUSTOMERS, custs),
 
-  getOrders: () => getStoredItem(STORAGE_KEYS.ORDERS, initialOrders),
+  getOrders: () => {
+    const orders = getStoredItem(STORAGE_KEYS.ORDERS, initialOrders);
+    return (orders || []).map(o => o.payment_status === 'Pending Wire' ? { ...o, payment_status: 'Pending' } : o);
+  },
   setOrders: (ords) => setStoredItem(STORAGE_KEYS.ORDERS, ords),
 
   getPayments: () => getStoredItem(STORAGE_KEYS.PAYMENTS, initialPayments),

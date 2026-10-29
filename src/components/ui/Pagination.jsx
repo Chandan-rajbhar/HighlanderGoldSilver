@@ -1,3 +1,4 @@
+import { Select } from './Select';
 import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -52,17 +53,13 @@ export const Pagination = ({
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5 pl-2 border-l border-[#DCE5F0]">
             <span className="text-[#64748B]">Per page:</span>
-            <select
+            <Select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="bg-[#F5F8FC] border border-[#DCE5F0] text-[#111827] text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-[#D6AD45] focus:outline-none"
-            >
-              {pageSizeOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+              options={pageSizeOptions.map((opt) => ({ value: opt, label: String(opt) }))}
+              triggerClassName="py-1 px-2.5 h-7 rounded-lg bg-[#F5F8FC] border border-[#DCE5F0] text-xs font-semibold"
+              contentClassName="min-w-[70px] bottom-full mb-1.5 mt-0 origin-bottom"
+            />
           </div>
         )}
       </div>

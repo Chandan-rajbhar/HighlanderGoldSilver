@@ -197,7 +197,7 @@ export const CatalogItemFormDrawer = ({
           <div className="px-6 py-5 bg-[#071A35] text-white flex items-center justify-between border-b border-[#C9A23A]/25 shrink-0">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-serif">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
                   {isEdit ? 'Edit Product' : 'Add Product'}
                 </span>
                 {formData.lot_number && (
@@ -206,7 +206,7 @@ export const CatalogItemFormDrawer = ({
                   </span>
                 )}
               </div>
-              <h2 className="text-lg font-bold font-serif tracking-wide text-white mt-1">
+              <h2 className="text-lg font-bold font-sans tracking-wide text-white mt-1">
                 {isEdit ? 'Edit Product' : 'Add Product'}
               </h2>
               <p className="text-xs text-slate-300 mt-0.5">
@@ -233,7 +233,7 @@ export const CatalogItemFormDrawer = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
                 <ImageIcon className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-serif text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
                   Product Image
                 </h3>
               </div>
@@ -296,7 +296,7 @@ export const CatalogItemFormDrawer = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
                 <Coins className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-serif text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
                   Product Information
                 </h3>
               </div>
@@ -337,14 +337,14 @@ export const CatalogItemFormDrawer = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider">
-                      SKU
+                      Item Code
                     </label>
                     <button
                       type="button"
                       onClick={handleRegenerateSKU}
                       className="text-[10px] text-[#C9A23A] hover:underline flex items-center gap-1 font-mono"
                     >
-                      <RefreshCw className="w-3 h-3" /> Regenerate SKU
+                      <RefreshCw className="w-3 h-3" /> Regenerate Code
                     </button>
                   </div>
                   <input
@@ -408,7 +408,7 @@ export const CatalogItemFormDrawer = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
                 <Award className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-serif text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
                   Numismatic Specifications
                 </h3>
               </div>
@@ -476,7 +476,7 @@ export const CatalogItemFormDrawer = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
                 <DollarSign className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-serif text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
                   Price & Inventory
                 </h3>
               </div>
@@ -563,7 +563,7 @@ export const CatalogItemFormDrawer = ({
               type="submit"
               form="product-form-drawer"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9A23A] hover:bg-[#B58D27] text-[#071A35] text-xs font-bold font-serif uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9A23A] hover:bg-[#B58D27] text-[#071A35] text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="w-4 h-4 border-2 border-[#071A35]/30 border-t-[#071A35] rounded-full animate-spin" />
