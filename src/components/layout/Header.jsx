@@ -168,7 +168,7 @@ export const Header = ({ onMobileMenuClick }) => {
                 {adminUser?.role || 'Senior Numismatist & Vault Director'}
               </span>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-[#64748B] hidden sm:block" />
+            <ChevronDown className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isProfileOpen && (
@@ -183,6 +183,14 @@ export const Header = ({ onMobileMenuClick }) => {
               </div>
 
               <div className="py-1">
+                <Link
+                  to="/customers"
+                  onClick={() => setIsProfileOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#D6AD45]" />
+                  <span>View Admin Profile</span>
+                </Link>
                 <div className="px-3 py-1.5 text-[11px] text-[#64748B] flex items-center gap-2">
                   <Building className="w-3.5 h-3.5 text-[#D6AD45]" />
                   <span>Bigfork, MT Storefront</span>

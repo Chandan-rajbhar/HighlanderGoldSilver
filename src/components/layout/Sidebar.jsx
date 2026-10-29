@@ -141,7 +141,7 @@ export const Sidebar = ({
                   alt="Highlander Gold & Silver"
                   className="w-full max-w-[200px] h-auto object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
                   onError={(e) => {
-                    e.currentTarget.src = "/assets/brand/highlander_crest_favicon.png";
+                    e.currentTarget.src = "/highlander_original_logo.png";
                   }}
                 />
 
@@ -151,12 +151,15 @@ export const Sidebar = ({
                 </div>
               </div>
             ) : (
-              /* Collapsed view crest icon */
-              <div className="w-11 h-11 rounded-xl bg-white/10 p-2 border border-[#C9A23A]/50 shadow-md flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+              /* Collapsed view official mountain brand logo */
+              <div className="w-14 h-12 flex items-center justify-center p-1 rounded-xl bg-white/10 border border-[#C9A23A]/40 shadow-xs group-hover:scale-105 transition-transform duration-200">
                 <img
-                  src="/assets/brand/highlander_crest_favicon.png"
+                  src="/assets/brand/highlander_dashboard_logo.png"
                   alt="Highlander Gold & Silver"
                   className="w-full h-full object-contain filter drop-shadow"
+                  onError={(e) => {
+                    e.currentTarget.src = "/highlander_original_logo.png";
+                  }}
                 />
               </div>
             )}
@@ -233,31 +236,59 @@ export const Sidebar = ({
           </div>
 
         {/* Admin User Footer with subtle glass styling */}
-        <div className="relative z-10 p-3.5 border-t border-white/10 bg-[#071E38]/60 backdrop-blur-md flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-[#0F2D52] border border-[#D6AD43]/70 flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs">
-              AM
+        <div className={`relative z-10 border-t border-white/10 bg-[#071E38]/80 backdrop-blur-md flex items-center shrink-0 ${
+          isCollapsed ? 'p-2.5 justify-center' : 'p-3.5 justify-between'
+        }`}>
+          {isCollapsed ? (
+            /* Collapsed view: Perfectly centered avatar and expand arrow below without clipping */
+            <div className="flex flex-col items-center gap-2 w-full">
+              <Link
+                to="/customers"
+                className="w-10 h-10 rounded-full bg-[#0F2D52] border border-[#D6AD43] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs hover:ring-2 hover:ring-[#F5B52E]/30 transition-all cursor-pointer"
+                title={`${adminUser?.name || 'Alexander MacLeod'} (Senior Numismatist & Vault Director) - Click to view profile`}
+              >
+                AM
+              </Link>
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-4 h-4 text-[#F5B52E]" />
+              </button>
             </div>
-            {!isCollapsed && (
-              <div className="flex flex-col truncate">
-                <span className="text-xs font-semibold text-white truncate font-sans">
-                  {adminUser?.name || 'Alexander MacLeod'}
-                </span>
-                <span className="text-[10px] text-slate-300 truncate font-sans">
-                  {adminUser?.role || 'Senior Numismatist & Vault Director'}
-                </span>
-              </div>
-            )}
-          </div>
+          ) : (
+            /* Expanded view: Full profile with avatar, name, role and collapse arrow */
+            <>
+              <Link
+                to="/customers"
+                className="flex items-center gap-2.5 overflow-hidden group cursor-pointer flex-1 min-w-0 pr-2"
+                title="View Admin Profile"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#0F2D52] border border-[#D6AD43]/70 group-hover:border-[#F5B52E] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs transition-colors">
+                  AM
+                </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-xs font-semibold text-white truncate font-sans group-hover:text-[#F5B52E] transition-colors">
+                    {adminUser?.name || 'Alexander MacLeod'}
+                  </span>
+                  <span className="text-[10px] text-slate-300 truncate font-sans">
+                    {adminUser?.role || 'Senior Numismatist & Vault Director'}
+                  </span>
+                </div>
+              </Link>
 
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label="Toggle sidebar width"
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="hidden lg:flex p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>

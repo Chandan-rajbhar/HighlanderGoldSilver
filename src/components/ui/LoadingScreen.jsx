@@ -7,31 +7,25 @@ export const LoadingScreen = ({
 }) => {
   const containerClasses = fullScreen
     ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm'
-    : 'min-h-[450px] w-full flex flex-col items-center justify-center py-16 bg-transparent';
+    : 'min-h-[400px] w-full flex flex-col items-center justify-center py-16 bg-transparent';
 
   return (
     <div className={containerClasses} role="status" aria-live="polite">
       <div className="relative flex flex-col items-center justify-center text-center px-4 animate-in fade-in duration-300">
         
-        {/* Luxury Rotating Highlander Emblem */}
+        {/* Professional Luxury Loader Spinner - Pure Loader Without Any Logo */}
         <div className="relative flex items-center justify-center mb-5">
-          {/* Subtle Outer Glow */}
-          <div className="absolute w-20 h-20 rounded-full bg-[#C9A23A]/10 blur-xl animate-pulse" />
+          {/* Subtle Golden Glow */}
+          <div className="absolute w-20 h-20 rounded-full bg-[#C9A23A]/15 blur-xl animate-pulse" />
           
-          {/* Outer Spin Ring */}
-          <div className="w-16 h-16 rounded-full border-2 border-slate-100 border-t-[#C9A23A] border-r-[#C9A23A]/40 animate-spin" />
+          {/* Outer Main Spinner Ring */}
+          <div className="w-14 h-14 rounded-full border-[3px] border-slate-200 border-t-[#C9A23A] border-r-[#C9A23A]/50 animate-spin" />
           
-          {/* Center Logo Crest */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img
-              src="/assets/brand/highlander_crest_favicon.png"
-              alt="Highlander"
-              className="w-7 h-7 object-contain drop-shadow-xs"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
+          {/* Inner Counter-Spin Accent Ring */}
+          <div 
+            className="absolute w-8 h-8 rounded-full border-[2px] border-transparent border-t-[#0B2B4E] border-b-[#0B2B4E]/40 animate-spin" 
+            style={{ animationDirection: 'reverse', animationDuration: '1.2s' }} 
+          />
         </div>
 
         {/* Brand Details */}
