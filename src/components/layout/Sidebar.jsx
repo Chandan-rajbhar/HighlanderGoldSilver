@@ -230,20 +230,7 @@ export const Sidebar = ({
             </div>
           ))}
 
-          {/* View Public Storefront Link under System */}
-          <div className="space-y-1 pt-1">
-            <a
-              href="https://highlander-goldandsilver.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View Public Storefront"
-              className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-200 hover:bg-white/[0.12] hover:text-[#F5B52E] transition-all border border-transparent"
-            >
-              <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F5B52E] drop-shadow-xs" />
-              {!isCollapsed && <span className="flex-1 truncate tracking-tight">View Public Storefront</span>}
-            </a>
           </div>
-        </div>
 
         {/* Admin User Footer with subtle glass styling */}
         <div className="relative z-10 p-3.5 border-t border-white/10 bg-[#071E38]/60 backdrop-blur-md flex items-center justify-between shrink-0">

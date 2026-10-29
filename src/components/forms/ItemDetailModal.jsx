@@ -21,11 +21,13 @@ export const ItemDetailModal = ({
 
   const basePrice = Number(item.price) || 0;
   const settlementFee = (basePrice * 1.15).toFixed(2);
-  const images = Array.isArray(item.additional_images) && item.additional_images.length > 0
+  const rawImages = Array.isArray(item.additional_images) && item.additional_images.length > 0
     ? item.additional_images
-    : [item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'];
+    : (Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg']);
 
-  const activeImage = images[activeImageIndex] || item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg';
+  const cleanImg = (img) => typeof img === 'string' ? img.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/') : img;
+  const images = rawImages.map(cleanImg);
+  const activeImage = images[activeImageIndex] || cleanImg(item.featured_image) || '/assets/items/lot1_morgan_gold_gem.jpg';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -67,16 +69,27 @@ export const ItemDetailModal = ({
 
                 {/* Thumbnails */}
                 {images.length > 1 && (
-                  <div className="flex items-center justify-center gap-3">
-                    {images.slice(0, 4).map((img, idx) => (
+                  <div className="flex items-center justify-center gap-2.5">
+                    {images.slice(0, 6).map((img, idx) => (
                       <button
                         key={idx}
+                        type="button"
                         onClick={() => setActiveImageIndex(idx)}
-                        className={`w-14 h-14 rounded-lg overflow-hidden border-2 bg-white transition-all ${
-                          activeImageIndex === idx ? 'border-gold shadow-xs' : 'border-slate-200 opacity-70 hover:opacity-100'
+                        className={`w-14 h-14 rounded-lg overflow-hidden border-2 bg-white transition-all cursor-pointer ${
+                          activeImageIndex === idx 
+                            ? 'border-[#C9A23A] shadow-xs ring-2 ring-[#C9A23A]/20' 
+                            : 'border-slate-200 opacity-70 hover:opacity-100 hover:border-slate-300'
                         }`}
                       >
-                        <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
+                        <img 
+                          src={img} 
+                          alt={`Product view ${idx + 1}`} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg';
+                          }}
+                        />
                       </button>
                     ))}
                   </div>

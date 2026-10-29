@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 
 // Columns for list views - Egress Optimization: Never select('*') on lists!
-const LIST_COLUMNS = 'id, lot_number, sku, title, lead, category, metal, purity, grade, price, inventory, stock_quantity, stock_status, storefront_status, status, show_on_storefront, is_featured, featured_image, created_at';
+const LIST_COLUMNS = 'id, lot_number, sku, title, lead, description, category, metal, purity, grade, price, inventory, stock_quantity, stock_status, storefront_status, status, show_on_storefront, is_featured, featured_image, additional_images, weight, mintage, cert_company, cert_number, estimate_range, payment_note, created_at';
 
 // In-memory filter & pagination helper for instant sync reads
 const filterAndPaginateLocalInventory = ({

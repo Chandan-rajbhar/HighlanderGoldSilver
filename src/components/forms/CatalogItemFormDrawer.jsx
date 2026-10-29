@@ -12,7 +12,8 @@ import {
   Image as ImageIcon,
   ShieldCheck,
   Layers,
-  Sparkles
+  Sparkles,
+  Plus
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -60,10 +61,17 @@ export const CatalogItemFormDrawer = ({
   const [formData, setFormData] = useState(defaultFormData);
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
+  const [images, setImages] = useState([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       if (isEdit && item) {
+        const rawImgs = Array.isArray(item.additional_images) && item.additional_images.length > 0
+          ? item.additional_images
+          : (Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.featured_image ? [item.featured_image] : []));
+        const initialImgs = rawImgs.length > 0 ? rawImgs : ['/assets/items/lot1_morgan_gold_gem.jpg'];
+        setImages(initialImgs);
         setFormData({
           title: item.title || '',
           lot_number: item.lot_number || '',
@@ -79,14 +87,17 @@ export const CatalogItemFormDrawer = ({
           inventory: item.inventory ?? item.stock_quantity ?? 1,
           description: item.description || '',
           storefront_status: item.storefront_status || item.status || 'Active',
-          featured_image: item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg',
+          featured_image: initialImgs[0] || item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg',
         });
       } else {
         const randomNum = Math.floor(1 + Math.random() * 99);
+        const defaultImgs = ['/assets/items/lot1_morgan_gold_gem.jpg'];
+        setImages(defaultImgs);
         setFormData({
           ...defaultFormData,
           lot_number: String(randomNum),
-          sku: `HGS-GOLD-${randomNum}`
+          sku: `HGS-GOLD-${randomNum}`,
+          featured_image: defaultImgs[0]
         });
       }
       setErrors({});
@@ -136,19 +147,59 @@ export const CatalogItemFormDrawer = ({
     updateField('sku', `HGS-${cat}-${num}`);
   };
 
-  const handleImageFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateField('featured_image', reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleMultipleFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const readers = files.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then(newUrls => {
+      setImages(prev => {
+        const updated = [...prev, ...newUrls];
+        updateField('featured_image', updated[0]);
+        return updated;
+      });
+      setIsDirty(true);
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleRemoveImage = () => {
-    updateField('featured_image', '');
+  const handleAddUrlImage = () => {
+    if (!imageUrlInput.trim()) return;
+    setImages(prev => {
+      const updated = [...prev, imageUrlInput.trim()];
+      updateField('featured_image', updated[0]);
+      return updated;
+    });
+    setImageUrlInput('');
+    setIsDirty(true);
+  };
+
+  const handleRemoveImageIndex = (indexToRemove) => {
+    setImages(prev => {
+      const updated = prev.filter((_, idx) => idx !== indexToRemove);
+      updateField('featured_image', updated[0] || '');
+      return updated;
+    });
+    setIsDirty(true);
+  };
+
+  const handleSetPrimary = (index) => {
+    setImages(prev => {
+      if (index === 0) return prev;
+      const target = prev[index];
+      const rest = prev.filter((_, idx) => idx !== index);
+      const updated = [target, ...rest];
+      updateField('featured_image', updated[0]);
+      return updated;
+    });
+    setIsDirty(true);
   };
 
   const validate = () => {
@@ -169,8 +220,12 @@ export const CatalogItemFormDrawer = ({
     e.preventDefault();
     if (!validate()) return;
 
+    const finalImages = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : ['/assets/items/lot1_morgan_gold_gem.jpg']);
     onSave({
       ...formData,
+      featured_image: finalImages[0],
+      additional_images: finalImages,
+      images: finalImages,
       price: Number(formData.price),
       inventory: Number(formData.inventory),
       stock_quantity: Number(formData.inventory),
@@ -230,67 +285,213 @@ export const CatalogItemFormDrawer = ({
           {/* Form Body */}
           <form id="product-form-drawer" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
             
-            {/* 1. Product Image Section */}
+            {/* 1. Product Image Section (Multiple Photos Support) */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
-                <ImageIcon className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
-                  Product Image
-                </h3>
+              <div className="flex items-center justify-between border-b border-[#E4E0D8] pb-2">
+                <div className="flex items-center gap-2 text-[#0B2348]">
+                  <ImageIcon className="w-4 h-4 text-[#C9A23A]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
+                    Product Images &amp; Gallery ({images.length})
+                  </h3>
+                </div>
+                <span className="text-[11px] text-slate-400 font-sans">
+                  {images.length === 1 ? '1 Photo (Primary Cover)' : `${images.length} Photos Uploaded`}
+                </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-[#F8F6F1] border border-[#E4E0D8]">
-                <div className="w-24 h-24 rounded-xl bg-white border border-[#E4E0D8] overflow-hidden flex items-center justify-center relative shadow-sm shrink-0">
-                  {formData.featured_image ? (
-                    <img 
-                      src={formData.featured_image} 
-                      alt="Product preview" 
-                      className="w-full h-full object-cover" 
-                      onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
-                    />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-slate-300" />
-                  )}
-                </div>
+              {/* Hidden file input supporting multiple files */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleMultipleFilesChange}
+                className="hidden"
+              />
 
-                <div className="flex-1 space-y-2 text-center sm:text-left">
-                  <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+              {/* Case A: Exactly 1 Image (Looks clean, centered, and perfect) */}
+              {images.length === 1 ? (
+                <div className="p-4 rounded-xl bg-[#F8F6F1] border border-[#E4E0D8] space-y-3">
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="w-28 h-28 rounded-xl bg-white border border-[#E4E0D8] overflow-hidden flex items-center justify-center relative shadow-sm shrink-0 group">
+                      <img 
+                        src={images[0]} 
+                        alt="Product preview" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
+                      />
+                      <span className="absolute bottom-1 left-1 right-1 text-[9px] font-bold font-sans bg-[#071A35]/85 text-[#E5C365] py-0.5 rounded text-center tracking-wider uppercase">
+                        Cover Photo
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-2 text-center sm:text-left w-full">
+                      <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2348] hover:bg-[#071A35] text-white text-xs font-medium transition-colors shadow-xs cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
+                          Upload / Replace
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#0B2348]/20 hover:border-[#0B2348] text-[#0B2348] text-xs font-medium transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-[#C9A23A]" />
+                          + Add More Photos
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImageIndex(0)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={imageUrlInput}
+                          onChange={(e) => setImageUrlInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrlImage(); } }}
+                          placeholder="Or paste image URL / asset path to add more..."
+                          className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white font-mono text-slate-600 focus:outline-none focus:border-[#C9A23A]"
+                        />
+                        {imageUrlInput.trim() && (
+                          <button
+                            type="button"
+                            onClick={handleAddUrlImage}
+                            className="px-2.5 py-1.5 bg-[#0B2348] text-white text-xs rounded-lg font-medium hover:bg-[#071A35] cursor-pointer"
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : images.length > 1 ? (
+                /* Case B: Multiple Images */
+                <div className="p-4 rounded-xl bg-[#F8F6F1] border border-[#E4E0D8] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 font-sans">
+                      Gallery Photos (First image is the Primary Cover)
+                    </span>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2348] hover:bg-[#071A35] text-white text-xs font-medium transition-colors shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0B2348] text-white text-xs font-medium hover:bg-[#071A35] transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
-                      Upload Image
+                      + Upload More
                     </button>
-
-                    {formData.featured_image && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Remove Image
-                      </button>
-                    )}
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageFileChange}
-                    className="hidden"
-                  />
-                  <input
-                    type="text"
-                    value={formData.featured_image}
-                    onChange={(e) => updateField('featured_image', e.target.value)}
-                    placeholder="Or enter direct image URL..."
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white font-mono text-slate-600 focus:outline-none focus:border-[#C9A23A]"
-                  />
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {images.map((img, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`relative rounded-xl overflow-hidden border-2 bg-white aspect-square shadow-xs group transition-all ${
+                          idx === 0 ? 'border-[#C9A23A] ring-2 ring-[#C9A23A]/20' : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`Photo ${idx + 1}`} 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
+                        />
+
+                        {/* Tag */}
+                        {idx === 0 ? (
+                          <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#071A35]/90 text-[#E5C365] tracking-wider uppercase font-sans">
+                            ★ Primary
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimary(idx)}
+                            className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/90 hover:bg-[#071A35] hover:text-[#E5C365] text-slate-700 shadow-xs cursor-pointer font-sans"
+                          >
+                            Set Cover
+                          </button>
+                        )}
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImageIndex(idx)}
+                          className="absolute top-1 right-1 p-1 rounded-md bg-white/90 hover:bg-rose-600 hover:text-white text-slate-500 shadow-xs transition-colors cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.2 rounded text-[9px] font-mono bg-black/60 text-white">
+                          #{idx + 1}
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Add More Slot */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-xl border-2 border-dashed border-slate-300 hover:border-[#C9A23A] bg-white/50 hover:bg-white flex flex-col items-center justify-center p-3 text-slate-400 hover:text-[#0B2348] transition-all aspect-square cursor-pointer"
+                    >
+                      <Plus className="w-5 h-5 mb-1 text-[#C9A23A]" />
+                      <span className="text-[11px] font-medium font-sans">Add Photo</span>
+                    </button>
+                  </div>
+
+                  {/* Add URL input */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrlImage(); } }}
+                      placeholder="Or enter direct image URL / path and press Add..."
+                      className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white font-mono text-slate-600 focus:outline-none focus:border-[#C9A23A]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddUrlImage}
+                      className="px-3 py-1.5 bg-[#0B2348] text-white text-xs rounded-lg font-medium hover:bg-[#071A35] transition-colors cursor-pointer"
+                    >
+                      Add URL
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Case C: 0 Images (Empty state) */
+                <div className="p-6 rounded-xl bg-[#F8F6F1] border-2 border-dashed border-[#E4E0D8] text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-white border border-[#E4E0D8] mx-auto flex items-center justify-center text-slate-400 shadow-2xs">
+                    <ImageIcon className="w-6 h-6 text-[#C9A23A]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">No images added yet</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Upload single or multiple product photos</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2348] text-white text-xs font-medium hover:bg-[#071A35] shadow-xs cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
+                      Upload Photos
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. Core Product Information */}

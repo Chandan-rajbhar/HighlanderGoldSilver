@@ -55,15 +55,19 @@ export const localDB = {
   getInventory: () => {
     const raw = getStoredItem(STORAGE_KEYS.INVENTORY, initialInventory);
     // Auto-heal: sanitize any broken hardcoded domains from existing browser localStorage
-    const cleaned = raw.map(item => ({
-      ...item,
-      featured_image: typeof item.featured_image === 'string'
-        ? item.featured_image.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/')
-        : item.featured_image,
-      images: Array.isArray(item.images)
-        ? item.images.map(img => typeof img === 'string' ? img.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/') : img)
-        : item.images
-    }));
+    const cleaned = raw.map(item => {
+      const cleanImg = (img) => typeof img === 'string' ? img.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/') : img;
+      const featImg = cleanImg(item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg');
+      const addImgs = Array.isArray(item.additional_images) && item.additional_images.length > 0
+        ? item.additional_images.map(cleanImg)
+        : (Array.isArray(item.images) && item.images.length > 0 ? item.images.map(cleanImg) : [featImg]);
+      return {
+        ...item,
+        featured_image: featImg,
+        additional_images: addImgs,
+        images: addImgs
+      };
+    });
     return cleaned;
   },
   setInventory: (items) => setStoredItem(STORAGE_KEYS.INVENTORY, items),

@@ -57,7 +57,9 @@ export const App = () => {
               >
                 <Route index element={<Dashboard />} />
                 <Route path="products" element={<Inventory />} />
+                <Route path="products/:id" element={<Inventory />} />
                 <Route path="inventory" element={<Inventory />} />
+                <Route path="inventory/:id" element={<Inventory />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="payments" element={<Payments />} />
