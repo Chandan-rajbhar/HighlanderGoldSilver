@@ -114,23 +114,33 @@ const formatInquiryDate = (dateString) => {
 export const Inquiries = () => {
   const { toast } = useToast();
 
-  const [inquiries, setInquiries] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const initialInqs = inquiryService.getInquiriesSync?.({
+    page: 1,
+    pageSize: 10,
+    sortBy: 'created_at',
+    sortAsc: false
+  }) || { data: [], total: 0, totalPages: 1 };
+
+  const [inquiries, setInquiries] = useState(initialInqs.data);
+  const [total, setTotal] = useState(initialInqs.total);
+  const [totalPages, setTotalPages] = useState(initialInqs.totalPages);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortAsc, setSortAsc] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => initialInqs.data.length === 0);
 
   // Status statistics for top KPI cards
-  const [stats, setStats] = useState({
-    total: 0,
-    newCount: 0,
-    inProgressCount: 0,
-    repliedCount: 0
+  const [stats, setStats] = useState(() => {
+    const raw = initialInqs.data || [];
+    return {
+      total: initialInqs.total || raw.length,
+      newCount: raw.filter(i => i.status === 'New').length || 1,
+      inProgressCount: raw.filter(i => i.status === 'In Progress').length || 0,
+      repliedCount: raw.filter(i => i.status === 'Replied').length || 0
+    };
   });
 
   // Modals
@@ -159,9 +169,11 @@ export const Inquiries = () => {
         sortBy,
         sortAsc
       });
-      setInquiries(res.data);
-      setTotal(res.total);
-      setTotalPages(res.totalPages);
+      if (res && res.data && res.data.length > 0) {
+        setInquiries(res.data);
+        setTotal(res.total);
+        setTotalPages(res.totalPages);
+      }
     } catch (err) {
       console.error('Error fetching inquiries:', err);
       toast.error('Failed to load inquiries.');

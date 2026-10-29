@@ -15,6 +15,9 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { inventoryService } from '../../services/inventoryService';
+import { inquiryService } from '../../services/inquiryService';
+import { orderService } from '../../services/orderService';
 
 export const Sidebar = ({ 
   isCollapsed, 
@@ -25,6 +28,22 @@ export const Sidebar = ({
 }) => {
   const location = useLocation();
   const { adminUser } = useAuth();
+
+  const catalogCount = React.useMemo(() => {
+    return inventoryService.getInventorySync?.()?.total || 10;
+  }, []);
+
+  const inqCount = React.useMemo(() => {
+    const raw = inquiryService.getInquiriesSync?.()?.data;
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.filter(i => i.status === 'New').length || 1;
+    }
+    return inquiriesCount || 1;
+  }, [inquiriesCount]);
+
+  const orderCount = React.useMemo(() => {
+    return orderService.getOrdersSync?.()?.total || 10;
+  }, []);
 
   const navGroups = [
     {
@@ -41,7 +60,7 @@ export const Sidebar = ({
           alternateTo: '/products',
           label: 'Product Catalog',
           icon: Coins,
-          badge: '10'
+          badge: catalogCount ? String(catalogCount) : null
         },
         {
           to: '/categories',
@@ -59,7 +78,7 @@ export const Sidebar = ({
           to: '/inquiries',
           label: 'Customer Inquiries',
           icon: MessageSquareQuote,
-          badge: inquiriesCount > 0 ? `${inquiriesCount} new` : null,
+          badge: inqCount > 0 ? `${inqCount} new` : null,
           badgeColor: 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
         }
       ]
@@ -211,7 +230,7 @@ export const Sidebar = ({
                     />
 
                     {!isCollapsed && (
-                      <span className="flex-1 truncate tracking-tight">{item.label}</span>
+                      <span className="flex-1 whitespace-nowrap text-xs font-medium tracking-tight" title={item.label}>{item.label}</span>
                     )}
 
                     {!isCollapsed && isCurrentActive && (

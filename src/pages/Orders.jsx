@@ -23,9 +23,16 @@ import { useToast } from '../context/ToastContext';
 export const Orders = () => {
   const { toast } = useToast();
 
-  const [orders, setOrders] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const initialOrders = orderService.getOrdersSync?.({
+    page: 1,
+    pageSize: 10,
+    sortBy: 'created_at',
+    sortAsc: false
+  }) || { data: [], total: 0, totalPages: 1 };
+
+  const [orders, setOrders] = useState(initialOrders.data);
+  const [total, setTotal] = useState(initialOrders.total);
+  const [totalPages, setTotalPages] = useState(initialOrders.totalPages);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
@@ -33,7 +40,7 @@ export const Orders = () => {
   const [orderStatus, setOrderStatus] = useState('All');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortAsc, setSortAsc] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => initialOrders.data.length === 0);
 
   // Available inventory items for modal
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -61,9 +68,11 @@ export const Orders = () => {
         sortBy,
         sortAsc
       });
-      setOrders(res.data);
-      setTotal(res.total);
-      setTotalPages(res.totalPages);
+      if (res && res.data && res.data.length > 0) {
+        setOrders(res.data);
+        setTotal(res.total);
+        setTotalPages(res.totalPages);
+      }
     } catch (err) {
       console.error('Error fetching orders:', err);
       toast.error('Failed to load orders.');

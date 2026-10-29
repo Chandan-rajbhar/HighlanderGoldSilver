@@ -4,6 +4,64 @@ import { localDB } from './storageService';
 const LIST_COLUMNS = 'id, order_number, customer_id, customer_name, customer_email, base_subtotal, buyers_premium_total, total_settlement, payment_method, payment_status, fulfillment_status, created_at';
 
 export const orderService = {
+  // In-memory instant synchronous retrieval for 0ms page transitions
+  getOrdersSync({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    paymentStatus = '',
+    fulfillmentStatus = '',
+    sortBy = 'created_at',
+    sortAsc = false
+  } = {}) {
+    let orders = localDB.getOrders();
+
+    if (paymentStatus && paymentStatus !== 'All') {
+      orders = orders.filter(o => {
+        if (paymentStatus === 'Pending') {
+          return o.payment_status === 'Pending' || o.payment_status === 'Pending Wire';
+        }
+        return o.payment_status === paymentStatus;
+      });
+    }
+    if (fulfillmentStatus && fulfillmentStatus !== 'All') {
+      orders = orders.filter(o => o.fulfillment_status === fulfillmentStatus);
+    }
+    if (search && search.trim() !== '') {
+      const q = search.toLowerCase().trim();
+      orders = orders.filter(o => 
+        (o.order_number && o.order_number.toLowerCase().includes(q)) ||
+        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+        (o.customer_email && o.customer_email.toLowerCase().includes(q))
+      );
+    }
+
+    orders.sort((a, b) => {
+      let valA = a[sortBy];
+      let valB = b[sortBy];
+      if (sortBy === 'created_at') {
+        const dateA = new Date(valA).getTime();
+        const dateB = new Date(valB).getTime();
+        return sortAsc ? dateA - dateB : dateB - dateA;
+      }
+      if (typeof valA === 'number') {
+        return sortAsc ? valA - valB : valB - valA;
+      }
+      return sortAsc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+    });
+
+    const total = orders.length;
+    const from = (page - 1) * pageSize;
+    const paginated = orders.slice(from, from + pageSize);
+
+    return {
+      data: paginated,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
   async getOrders({
     page = 1,
     pageSize = 10,
@@ -38,13 +96,15 @@ export const orderService = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        return {
-          data: data || [],
-          total: count || 0,
-          page,
-          pageSize,
-          totalPages: Math.ceil((count || 0) / pageSize),
-        };
+        if (data && data.length > 0) {
+          return {
+            data: data,
+            total: count || data.length,
+            page,
+            pageSize,
+            totalPages: Math.ceil((count || data.length) / pageSize),
+          };
+        }
       } catch (err) {
         console.error('Supabase getOrders error, using local fallback:', err);
       }

@@ -4,6 +4,54 @@ import { localDB } from './storageService';
 const LIST_COLUMNS = 'id, full_name, email, phone, city, state, interest, total_spent, orders_count, tier, created_at';
 
 export const customerService = {
+  // In-memory instant synchronous retrieval for 0ms page transitions
+  getCustomersSync({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    tier = '',
+    sortBy = 'created_at',
+    sortAsc = false
+  } = {}) {
+    let custs = localDB.getCustomers();
+
+    if (tier && tier !== 'All') {
+      custs = custs.filter(c => c.tier === tier);
+    }
+    if (search && search.trim() !== '') {
+      const q = search.toLowerCase().trim();
+      custs = custs.filter(c => 
+        (c.full_name && c.full_name.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        (c.city && c.city.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+      );
+    }
+
+    custs.sort((a, b) => {
+      let valA = a[sortBy];
+      let valB = b[sortBy];
+      if (sortBy === 'created_at') {
+        return sortAsc ? new Date(valA) - new Date(valB) : new Date(valB) - new Date(valA);
+      }
+      if (typeof valA === 'number') {
+        return sortAsc ? valA - valB : valB - valA;
+      }
+      return sortAsc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+    });
+
+    const total = custs.length;
+    const from = (page - 1) * pageSize;
+    const paginated = custs.slice(from, from + pageSize);
+
+    return {
+      data: paginated,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
   async getCustomers({
     page = 1,
     pageSize = 10,
@@ -34,13 +82,15 @@ export const customerService = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        return {
-          data: data || [],
-          total: count || 0,
-          page,
-          pageSize,
-          totalPages: Math.ceil((count || 0) / pageSize),
-        };
+        if (data && data.length > 0) {
+          return {
+            data: data,
+            total: count || data.length,
+            page,
+            pageSize,
+            totalPages: Math.ceil((count || data.length) / pageSize),
+          };
+        }
       } catch (err) {
         console.error('Supabase getCustomers error, using local fallback:', err);
       }
