@@ -5,6 +5,9 @@ import {
   Users, 
   User,
   ShieldCheck,
+  Shield,
+  Key,
+  Lock,
   Mail, 
   Phone, 
   MapPin, 
@@ -26,7 +29,8 @@ import {
   MessageSquare,
   Package,
   Clock,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { customerService } from '../services/customerService';
 import { adminUserService } from '../services/adminUserService';
@@ -52,25 +56,28 @@ export const Customers = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [roleFilter, setRoleFilter] = useState('All'); // 'All' | 'Customer' | 'Admin'
-  const [roleCounts, setRoleCounts] = useState({ all: 0, customers: 0, admins: 0 });
   const [sortBy, setSortBy] = useState('created_at');
   const [sortAsc, setSortAsc] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Modals & Profile View
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [viewUser, setViewUser] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
+  // Stats Counters
+  const [roleCounts, setRoleCounts] = useState({ all: 0, customers: 0, admins: 0 });
 
-  // User Profile Tabs & Related Data (BeautyOasis style)
-  const [profileTab, setProfileTab] = useState('overview'); // 'overview' | 'orders' | 'payments' | 'inquiries'
+  // Modal / Drawer state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // Full Profile View state
+  const [viewUser, setViewUser] = useState(null);
+  const [profileTab, setProfileTab] = useState('overview'); // 'overview' | 'orders' | 'payments' | 'inquiries' | 'permissions' | 'audit'
   const [userOrders, setUserOrders] = useState([]);
   const [userPayments, setUserPayments] = useState([]);
   const [userInquiries, setUserInquiries] = useState([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
+  // Fetch Users & Admin Staff combined
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -270,6 +277,29 @@ export const Customers = () => {
           await customerService.updateCustomer(selectedUser.id, formData);
         }
         toast.success(`User "${formData.full_name || formData.name}" updated successfully!`);
+
+        // Real-time update of currently open profile view
+        if (viewUser && (viewUser.id === selectedUser.id || viewUser.customer_id === selectedUser.customer_id)) {
+          setViewUser(prev => ({
+            ...prev,
+            ...formData,
+            full_name: formData.full_name || formData.name || prev.full_name,
+            name: formData.full_name || formData.name || prev.name,
+            email: formData.email !== undefined ? formData.email : prev.email,
+            phone: formData.phone !== undefined ? formData.phone : prev.phone,
+            city: formData.city !== undefined ? formData.city : prev.city,
+            state: formData.state !== undefined ? formData.state : prev.state,
+            location: formData.location || `${formData.city || 'Bigfork'}, ${formData.state || 'MT'}`,
+            role: formData.role || prev.role,
+            admin_role: formData.admin_role || prev.admin_role,
+            title: formData.title || prev.title,
+            department: formData.department || prev.department,
+            tier: formData.tier || prev.tier,
+            account_status: formData.account_status || prev.account_status,
+            notes: formData.notes !== undefined ? formData.notes : prev.notes,
+            address: formData.address !== undefined ? formData.address : prev.address
+          }));
+        }
       } else {
         await customerService.createCustomer({
           name: formData.full_name,
@@ -304,7 +334,7 @@ export const Customers = () => {
       toast.success(`User "${selectedUser.full_name}" removed.`);
       setIsConfirmOpen(false);
       setSelectedUser(null);
-      if (viewUser && viewUser.id === selectedUser.id) {
+      if (viewUser && (viewUser.id === selectedUser.id || viewUser.customer_id === selectedUser.customer_id)) {
         setViewUser(null);
       }
       fetchUsers();
@@ -333,7 +363,7 @@ export const Customers = () => {
     }
   };
 
-  // Table Columns
+  // Table Columns (TOTAL ORDERS COLUMN REMOVED AS REQUESTED)
   const columns = [
     {
       header: 'USER NAME',
@@ -403,24 +433,6 @@ export const Customers = () => {
       render: (row) => <span>{new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
     },
     {
-      header: 'TOTAL ORDERS',
-      accessor: 'orders_count',
-      render: (row) => {
-        if (row.is_admin) {
-          return (
-            <span className="text-xs font-semibold text-slate-700 block">
-              Internal Staff
-            </span>
-          );
-        }
-        return (
-          <span className="font-bold text-slate-900 text-xs block">
-            {row.orders_count || 0} order(s)
-          </span>
-        );
-      }
-    },
-    {
       header: 'ACCOUNT STATUS',
       accessor: 'account_status',
       render: (row) => <StatusBadge status={row.account_status || 'Active'} />
@@ -428,18 +440,11 @@ export const Customers = () => {
   ];
 
   // ==========================================
-  // VIEW: FULL PROFILE VIEW (BEAUTYOASIS STYLE)
+  // RENDER: DEDICATED ADMIN & STAFF PROFILE
   // ==========================================
-  if (viewUser) {
-    const totalSpentComputed = userOrders.length > 0 
-      ? userOrders.reduce((sum, o) => sum + Number(o.total_settlement || o.total_amount || 0), 0)
-      : Number(viewUser.total_spent || 0);
-
-    const ordersCount = userOrders.length || viewUser.orders_count || 0;
-
+  const renderAdminProfile = () => {
     return (
       <div className="space-y-6 animate-in fade-in duration-200">
-        
         {/* Top Navigation & Action Controls Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -456,7 +461,541 @@ export const Customers = () => {
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
               <span>Users</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-slate-800 font-semibold">{viewUser.is_admin ? 'Staff Profile' : 'Collector Profile'}</span>
+              <span className="text-slate-800 font-semibold">Administrative Staff Profile</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                fetchUsers();
+                toast.success('Admin profile synced with vault authority records');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+              <span>Sync</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleStatus}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
+                viewUser.account_status === 'Active'
+                  ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                  : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+              }`}
+            >
+              {viewUser.account_status === 'Active' ? (
+                <>
+                  <Ban className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Deactivate Account</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Activate Account</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleEdit(viewUser)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-[#C9A23A]" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Profile Header Card */}
+        <div className="bg-white rounded-2xl border border-[#DCE5F0] p-6 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            
+            {/* Left: Avatar & Identity Details */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
+                {viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AD'}
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-xl font-bold font-sans text-slate-900">
+                    {viewUser.full_name}
+                  </h1>
+                  <StatusBadge status={viewUser.account_status || 'Active'} />
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-purple-50 text-purple-700 border-purple-200">
+                    Admin &bull; {viewUser.admin_role || 'Super Admin'}
+                  </span>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    2FA Enforced
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span className="font-semibold text-slate-700">STAFF ID:</span>
+                    <span>{viewUser.customer_id}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(viewUser.customer_id);
+                        toast.success('Staff ID copied');
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                      title="Copy Staff ID"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="font-medium text-slate-700">{viewUser.email}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{viewUser.phone || '(406) 883-2210'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{viewUser.location || `${viewUser.city || 'Bigfork'}, MT`}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Top 3 Stat Tiles for Admin */}
+            <div className="flex items-center gap-3">
+              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  CLEARANCE LEVEL
+                </span>
+                <span className="text-sm font-bold font-sans text-purple-700 mt-1 block flex items-center justify-center gap-1">
+                  <Key className="w-3.5 h-3.5 text-purple-600" />
+                  Level 3 Vault
+                </span>
+              </div>
+
+              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  SYSTEM ROLE
+                </span>
+                <span className="text-sm font-bold font-sans text-[#071A35] mt-1 block">
+                  {viewUser.admin_role || 'Super Admin'}
+                </span>
+              </div>
+
+              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  SECURITY PROTOCOL
+                </span>
+                <span className="text-sm font-bold font-sans text-emerald-600 mt-1 block flex items-center justify-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  2FA Hardware
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Navigation Tabs (Overview & Credentials, Permissions Matrix, Audit Log) */}
+          <div className="flex items-center gap-6 mt-6 border-t border-[#DCE5F0] pt-4 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setProfileTab('overview')}
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
+                profileTab === 'overview'
+                  ? 'border-[#071A35] text-[#071A35] font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Overview &amp; Credentials
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProfileTab('permissions')}
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
+                profileTab === 'permissions'
+                  ? 'border-[#071A35] text-[#071A35] font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Permissions &amp; Scope Matrix
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProfileTab('audit')}
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
+                profileTab === 'audit'
+                  ? 'border-[#071A35] text-[#071A35] font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Audit &amp; Security Activity Log
+            </button>
+          </div>
+        </div>
+
+        {/* Tab 1: Overview & Credentials */}
+        {profileTab === 'overview' && (
+          <div className="space-y-6">
+            {/* 3 Metric Summary Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-slate-500 block">Security Clearance</span>
+                  <span className="text-lg font-bold font-sans text-purple-700 mt-1 block">
+                    Level 3 Vault Keyholder
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-1 block">Dual-custody authorization for physical vault &amp; digital escrow</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-slate-500 block">Administrative Department</span>
+                  <span className="text-lg font-bold font-sans text-slate-900 mt-1 block">
+                    {viewUser.admin_role === 'Order Manager' ? 'Treasury & Wire Settlements' : viewUser.admin_role === 'Inventory Manager' ? 'Numismatic Catalog & Logistics' : 'Executive Vault Governance'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-1 block">Direct authority under Highlander Board of Directors</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] flex items-center justify-center text-[#071A35]">
+                  <Briefcase className="w-6 h-6 text-[#C9A23A]" />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-slate-500 block">Governance Standing</span>
+                  <span className="text-lg font-bold font-sans text-emerald-600 mt-1 block">
+                    Active &amp; Compliance Verified
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-1 block">Continuous audit logging &amp; hardware key enforcement</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+
+            {/* Two Lower Information Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Card 1: Official Administrative Credentials */}
+              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
+                    Official Administrative Credentials
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(viewUser)}
+                    className="text-xs text-[#071A35] hover:text-[#C9A23A] font-semibold transition-colors cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block font-medium">Full Name</span>
+                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.full_name}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block font-medium">Work Email Address</span>
+                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.email}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block font-medium">Direct Extension / Secure Phone</span>
+                    <span className="font-mono text-slate-800 mt-0.5 block">{viewUser.phone || '(406) 883-2210'}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block font-medium">Administrative Role</span>
+                    <span className="font-semibold text-purple-700 mt-0.5 block">{viewUser.admin_role || 'Super Admin'}</span>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-400 block font-medium">Official Staff Title</span>
+                    <span className="font-semibold text-slate-800 mt-0.5 block">
+                      {viewUser.title || (viewUser.admin_role === 'Super Admin' ? 'Senior Numismatist & Vault Director' : viewUser.admin_role === 'Inventory Manager' ? 'Certified Coin Cataloger & Appraiser' : 'Settlement & Wire Verification Officer')}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block font-medium">Primary Operating Facility</span>
+                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.location || 'Bigfork Storefront & Vault, MT'}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 block font-medium">System Authorization Key</span>
+                    <span className="font-mono text-slate-700 mt-0.5 block">HGS-AUTH-{viewUser.customer_id?.replace(/[^0-9]/g, '') || '001'}-SEC</span>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-400 block font-medium">Account Commissioning Date</span>
+                    <span className="font-mono text-slate-600 mt-0.5 block">
+                      {new Date(viewUser.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <div className="sm:col-span-2 p-3 bg-purple-50/60 border border-purple-200/60 rounded-xl">
+                    <span className="text-[11px] font-semibold text-purple-900 block mb-0.5">Administrative Security Directives &amp; Scope:</span>
+                    <p className="text-xs text-purple-800/90 leading-relaxed font-sans">
+                      {viewUser.notes || 'Authorized staff keyholder with dual-custody access to precious metal inventory, bank wire approvals, customer identity verification, and live spot spread controls.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Operational Privileges & Clearance Capabilities */}
+              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs space-y-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
+                      Privileged System Capabilities
+                    </h3>
+                    <span className="text-[11px] font-mono text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Full Clearance
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 mt-1">
+                    <div className="py-2.5 flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">Product Catalog &amp; Bullion Inventory</span>
+                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Full Access</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">Create, edit, adjust spot multipliers, archive lots, and update coin certifications.</p>
+                      </div>
+                    </div>
+
+                    <div className="py-2.5 flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">Order Fulfillment &amp; Wire Approvals</span>
+                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">Verify incoming bank wire transfers, authorize vault dispatch, and release collector escrow.</p>
+                      </div>
+                    </div>
+
+                    <div className="py-2.5 flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">User Directory &amp; Collector Governance</span>
+                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">Review KYC/AML collector documentation, elevate buyer tiers, and manage staff accounts.</p>
+                      </div>
+                    </div>
+
+                    <div className="py-2.5 flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">Spot Price Feed &amp; Hedging Controls</span>
+                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">Manage live Gold/Silver spot margins, premium overrides, and API data feed connectivity.</p>
+                      </div>
+                    </div>
+
+                    <div className="py-2.5 flex items-start gap-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">Security Audit &amp; Ledger Reporting</span>
+                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
+                        </div>
+                        <p className="text-slate-500 text-[11px] mt-0.5">Inspect immutable system audit trails and export certified precious metals transaction ledgers.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span>Highlander Cryptographic Governance Protocol</span>
+                  <span className="font-mono text-purple-700 font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Hardware Token Active
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: System Permissions Matrix */}
+        {profileTab === 'permissions' && (
+          <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
+                  Administrative Permissions Matrix
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configured system access privileges and security clearance levels for {viewUser.full_name}.
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-mono font-semibold">
+                Policy: Full Governance
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#F5F8FC] uppercase font-semibold text-slate-600 border-b border-[#DCE5F0]">
+                  <tr>
+                    <th className="px-4 py-3">System Module</th>
+                    <th className="px-4 py-3">Access Level</th>
+                    <th className="px-4 py-3">Operational Scope</th>
+                    <th className="px-4 py-3">Clearance</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#DCE5F0]">
+                  {[
+                    { module: 'Product Catalog & Bullion', level: 'Full Access (Read / Write / Delete)', scope: 'All precious metal products, numismatics & inventory lots', clearance: 'Level 3 Vault', status: 'Enforced' },
+                    { module: 'Orders & Wire Settlements', level: 'Verification & Release Authority', scope: 'Bank wire confirmation, settlement matching, order state overrides', clearance: 'Level 3 Vault', status: 'Enforced' },
+                    { module: 'Collector Directory', level: 'User & KYC Administration', scope: 'Collector profiles, tiered discounts, buyer verification, account suspension', clearance: 'Level 3 Vault', status: 'Enforced' },
+                    { module: 'Spot Price Margins Engine', level: 'Spread & Hedging Control', scope: 'Real-time live spot margin multipliers and custom markup formulas', clearance: 'Level 3 Vault', status: 'Enforced' },
+                    { module: 'Payment Transactions & Ledgers', level: 'Audit & Financial Clearance', scope: 'Reconciliation ledgers, payment tracking, transaction receipt generation', clearance: 'Level 3 Vault', status: 'Enforced' },
+                    { module: 'Security & Audit Logging', level: 'Immutable Log Inspection', scope: 'Full historical audit trail review, staff session inspection, compliance exports', clearance: 'Level 3 Vault', status: 'Enforced' },
+                  ].map((item, idx) => (
+                    <tr key={idx} className="hover:bg-[#F5F8FC]/50 transition-colors">
+                      <td className="px-4 py-3 font-bold text-slate-900 font-sans">
+                        {item.module}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-[#071A35]">
+                        {item.level}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {item.scope}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-semibold text-purple-700">
+                        {item.clearance}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 font-mono text-emerald-600 font-semibold text-[11px]">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Audit Activity Log */}
+        {profileTab === 'audit' && (
+          <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
+                  Staff Security &amp; Activity Log
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Immutable cryptographic activity trail registered for {viewUser.full_name}.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-slate-400">
+                Last Synced: Just now
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { action: 'Spot Price Margin Calibrated', detail: 'Adjusted spot multiplier to +2.80% for 1 oz American Gold Eagle lots.', time: '12m ago', type: 'price', ip: '192.168.1.10 (Bigfork Vault)' },
+                { action: 'Bank Wire Settlement Verified', detail: 'Confirmed wire receipt for Order #HGS-2026-1003 (Thomas MacGregor — $442.75).', time: '2h ago', type: 'order', ip: '192.168.1.10 (Bigfork Vault)' },
+                { action: 'Catalog Item Added', detail: 'Published new specimen: 1876 George T. Morgan Proposed $100 Gold Union™ (HGS-GOLD-001).', time: 'Yesterday', type: 'catalog', ip: '192.168.1.12 (Numismatics Station)' },
+                { action: 'Collector Account Verified', detail: 'Reviewed KYC credentials and assigned VIP Vault tier to William Sterling.', time: 'Oct 26, 2026', type: 'user', ip: '192.168.1.10 (Bigfork Vault)' },
+                { action: '2FA Hardware Session Authenticated', detail: 'Successful hardware token login from Highlander Vault Master Terminal.', time: 'Oct 25, 2026', type: 'security', ip: '192.168.1.10 (Bigfork Vault)' },
+                { action: 'Quarterly Compliance Ledger Exported', detail: 'Generated encrypted bullion sales report for regulatory compliance.', time: 'Oct 20, 2026', type: 'export', ip: '192.168.1.10 (Bigfork Vault)' },
+              ].map((evt, idx) => (
+                <div key={idx} className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE5F0] space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 text-sm font-sans">{evt.action}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                        {evt.type.toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="font-mono text-slate-400 text-[11px]">{evt.time}</span>
+                  </div>
+                  <p className="text-slate-600 leading-relaxed font-sans">{evt.detail}</p>
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>Terminal: {evt.ip}</span>
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Integrity Verified
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ==========================================
+  // RENDER: CUSTOMER / COLLECTOR PROFILE
+  // ==========================================
+  const renderCustomerProfile = () => {
+    const totalSpentComputed = userOrders.length > 0 
+      ? userOrders.reduce((sum, o) => sum + Number(o.total_settlement || o.total_amount || 0), 0)
+      : Number(viewUser.total_spent || 0);
+
+    const ordersCount = userOrders.length || viewUser.orders_count || 0;
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        {/* Top Navigation & Action Controls Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setViewUser(null)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-500" />
+              <span>Back to Users</span>
+            </button>
+            <div className="text-xs text-slate-400 flex items-center gap-1 font-medium">
+              <span>Dashboard</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              <span>Users</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              <span className="text-slate-800 font-semibold">Collector Profile</span>
             </div>
           </div>
 
@@ -513,7 +1052,7 @@ export const Customers = () => {
             {/* Left: Avatar & Identity Details */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
-                {viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || (viewUser.is_admin ? 'AD' : 'CU')}
+                {viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'CU'}
               </div>
 
               <div>
@@ -522,12 +1061,8 @@ export const Customers = () => {
                     {viewUser.full_name}
                   </h1>
                   <StatusBadge status={viewUser.account_status || 'Active'} />
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold border ${
-                    viewUser.is_admin 
-                      ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
-                  }`}>
-                    {viewUser.is_admin ? `Role: Admin (${viewUser.admin_role || 'Staff'})` : `Role: Collector (${viewUser.tier || 'Standard'})`}
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-blue-50 text-blue-700 border-blue-200">
+                    Role: Collector ({viewUser.tier || 'Collector'})
                   </span>
                 </div>
 
@@ -563,14 +1098,14 @@ export const Customers = () => {
               </div>
             </div>
 
-            {/* Right: Top 3 Stat Tiles (Matching BeautyOasis Header Stats) */}
+            {/* Right: Top 3 Stat Tiles for Customer */}
             <div className="flex items-center gap-3">
               <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[120px]">
                 <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  {viewUser.is_admin ? 'STAFF ROLE' : 'TOTAL SPENT'}
+                  TOTAL SPENT
                 </span>
                 <span className="text-lg font-bold font-mono text-emerald-600 mt-0.5 block">
-                  {viewUser.is_admin ? (viewUser.admin_role || 'Admin') : `$${Number(totalSpentComputed).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                  ${Number(totalSpentComputed).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -650,7 +1185,6 @@ export const Customers = () => {
         {/* Tab 1: Overview */}
         {profileTab === 'overview' && (
           <div className="space-y-6">
-            
             {/* 3 KPI Summary Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
@@ -659,7 +1193,7 @@ export const Customers = () => {
                   <span className="text-2xl font-bold font-mono text-emerald-600 mt-1 block">
                     ${Number(totalSpentComputed).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Settled across acquisitions & orders</span>
+                  <span className="text-[11px] text-slate-400 mt-1 block">Settled across acquisitions &amp; orders</span>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
                   <DollarSign className="w-6 h-6" />
@@ -672,7 +1206,7 @@ export const Customers = () => {
                   <span className="text-2xl font-bold font-mono text-slate-900 mt-1 block">
                     {ordersCount}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Fulfilled shipments & vault allocations</span>
+                  <span className="text-[11px] text-slate-400 mt-1 block">Fulfilled shipments &amp; vault allocations</span>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] flex items-center justify-center text-[#071A35]">
                   <ShoppingBag className="w-6 h-6 text-[#C9A23A]" />
@@ -695,12 +1229,11 @@ export const Customers = () => {
 
             {/* Two Lower Information Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
               {/* Card 1: Confidential Collector Details */}
               <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
                   <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                    {viewUser.is_admin ? 'Administrative Staff Credentials' : 'Confidential Collector Details'}
+                    Confidential Collector Details
                   </h3>
                   <button
                     type="button"
@@ -728,9 +1261,9 @@ export const Customers = () => {
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block font-medium">{viewUser.is_admin ? 'Staff Designation' : 'Assigned Tier'}</span>
+                    <span className="text-slate-400 block font-medium">Assigned Tier</span>
                     <span className="font-semibold text-[#071A35] mt-0.5 block">
-                      {viewUser.is_admin ? viewUser.admin_role : (viewUser.tier || 'Collector')}
+                      {viewUser.tier || 'Collector'}
                     </span>
                   </div>
 
@@ -747,7 +1280,7 @@ export const Customers = () => {
                   </div>
 
                   <div className="sm:col-span-2 p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl">
-                    <span className="text-[11px] font-semibold text-amber-900 block mb-0.5">Collector Notes & Instructions:</span>
+                    <span className="text-[11px] font-semibold text-amber-900 block mb-0.5">Collector Notes &amp; Instructions:</span>
                     <p className="text-xs text-amber-800/90 leading-relaxed font-sans">
                       {viewUser.notes}
                     </p>
@@ -760,7 +1293,7 @@ export const Customers = () => {
                 <div>
                   <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                      Recent Activity & Orders
+                      Recent Activity &amp; Orders
                     </h3>
                     <button
                       type="button"
@@ -813,9 +1346,7 @@ export const Customers = () => {
                   </span>
                 </div>
               </div>
-
             </div>
-
           </div>
         )}
 
@@ -877,7 +1408,7 @@ export const Customers = () => {
         {profileTab === 'payments' && (
           <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans mb-4">
-              Payment & Settlement Transactions
+              Payment &amp; Settlement Transactions
             </h3>
 
             {userPayments.length > 0 ? (
@@ -931,7 +1462,7 @@ export const Customers = () => {
         {profileTab === 'inquiries' && (
           <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans mb-4">
-              Acquisition Inquiries & Consultation Requests
+              Acquisition Inquiries &amp; Consultation Requests
             </h3>
 
             {userInquiries.length > 0 ? (
@@ -959,140 +1490,149 @@ export const Customers = () => {
             )}
           </div>
         )}
-
       </div>
     );
-  }
+  };
 
   // ==========================================
-  // VIEW: MAIN USERS DIRECTORY TABLE
+  // MAIN RETURN (VIEW USER PROFILE OR DIRECTORY TABLE + MODALS)
   // ==========================================
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
-            Users & Collectors
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manage storefront registered collectors, buyer profiles, and administrative staff roles.
-          </p>
-        </div>
+    <>
+      {viewUser ? (
+        viewUser.is_admin || viewUser.role === 'Admin' ? (
+          renderAdminProfile()
+        ) : (
+          renderCustomerProfile()
+        )
+      ) : (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold font-sans text-slate-900">
+                Users &amp; Collectors
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Manage storefront registered collectors, buyer profiles, and administrative staff roles.
+              </p>
+            </div>
 
-        <button
-          onClick={handleAddNew}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4 text-[#C9A23A]" />
-          Add User
-        </button>
-      </div>
-
-      {/* Role Filter Tabs Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <button
-          onClick={() => {
-            setRoleFilter('All');
-            setPage(1);
-          }}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            roleFilter === 'All'
-              ? 'bg-[#071A35] text-white shadow-2xs'
-              : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-        >
-          All Users <span className="ml-1 opacity-70">({roleCounts.all})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setRoleFilter('Customer');
-            setPage(1);
-          }}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            roleFilter === 'Customer'
-              ? 'bg-[#071A35] text-white shadow-2xs'
-              : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-        >
-          Customers <span className="ml-1 opacity-70">({roleCounts.customers})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setRoleFilter('Admin');
-            setPage(1);
-          }}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            roleFilter === 'Admin'
-              ? 'bg-[#071A35] text-white shadow-2xs'
-              : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-        >
-          Admins <span className="ml-1 opacity-70">({roleCounts.admins})</span>
-        </button>
-      </div>
-
-      {/* Dynamic Data Table with onRowClick opening full Profile */}
-      <DataTable
-        columns={columns}
-        data={users}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        totalPages={totalPages}
-        sortBy={sortBy}
-        sortAsc={sortAsc}
-        onSort={handleSort}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search by name, email, role, or User ID..."
-        isLoading={isLoading}
-        onRowClick={(row) => setViewUser(row)}
-        onView={(row) => setViewUser(row)}
-        onEdit={handleEdit}
-        onDelete={handleDeletePrompt}
-        viewLabel="View Profile"
-        editLabel="Edit User"
-        deleteLabel="Delete User"
-        emptyTitle="No users found"
-        emptyDescription="No users match your active search or role criteria."
-        filterComponent={
-          <div className="flex items-center gap-2">
-            <Select
-              value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setPage(1);
-              }}
-              options={[
-                { value: 'All', label: 'All Roles' },
-                { value: 'Customer', label: 'Customers Only' },
-                { value: 'Admin', label: 'Admins Only' }
-              ]}
-            />
-
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              options={[
-                { value: 'All', label: 'All Statuses' },
-                { value: 'Active', label: 'Active' },
-                { value: 'Suspended', label: 'Suspended' },
-                { value: 'Pending Verification', label: 'Pending Verification' }
-              ]}
-            />
+            <button
+              onClick={handleAddNew}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4 text-[#C9A23A]" />
+              Add User
+            </button>
           </div>
-        }
-      />
 
-      {/* User Form Modal */}
+          {/* Role Filter Tabs Bar */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => {
+                setRoleFilter('All');
+                setPage(1);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                roleFilter === 'All'
+                  ? 'bg-[#071A35] text-white shadow-2xs'
+                  : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              All Users <span className="ml-1 opacity-70">({roleCounts.all})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setRoleFilter('Customer');
+                setPage(1);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                roleFilter === 'Customer'
+                  ? 'bg-[#071A35] text-white shadow-2xs'
+                  : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              Customers <span className="ml-1 opacity-70">({roleCounts.customers})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setRoleFilter('Admin');
+                setPage(1);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                roleFilter === 'Admin'
+                  ? 'bg-[#071A35] text-white shadow-2xs'
+                  : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              Admins <span className="ml-1 opacity-70">({roleCounts.admins})</span>
+            </button>
+          </div>
+
+          {/* Dynamic Data Table with onRowClick opening full Profile */}
+          <DataTable
+            columns={columns}
+            data={users}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            sortBy={sortBy}
+            sortAsc={sortAsc}
+            onSort={handleSort}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name, email, role, or User ID..."
+            isLoading={isLoading}
+            onRowClick={(row) => setViewUser(row)}
+            onView={(row) => setViewUser(row)}
+            onEdit={handleEdit}
+            onDelete={handleDeletePrompt}
+            viewLabel="View Profile"
+            editLabel="Edit User"
+            deleteLabel="Delete User"
+            emptyTitle="No users found"
+            emptyDescription="No users match your active search or role criteria."
+            filterComponent={
+              <div className="flex items-center gap-2">
+                <Select
+                  value={roleFilter}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: 'All', label: 'All Roles' },
+                    { value: 'Customer', label: 'Customers Only' },
+                    { value: 'Admin', label: 'Admins Only' }
+                  ]}
+                />
+
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: 'All', label: 'All Statuses' },
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Suspended', label: 'Suspended' },
+                    { value: 'Pending Verification', label: 'Pending Verification' }
+                  ]}
+                />
+              </div>
+            }
+          />
+        </div>
+      )}
+
+      {/* Slide-Over Right Drawer User Form Modal (Always mounted so Edit Profile inside Profile View works seamlessly!) */}
       <CustomerFormModal
         isOpen={isFormOpen}
         onClose={() => {
@@ -1104,7 +1644,7 @@ export const Customers = () => {
         isLoading={isSaving}
       />
 
-      {/* Confirm Delete Dialog */}
+      {/* Confirm Delete Dialog (Always mounted so Delete inside Profile or Table works seamlessly) */}
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={() => {
@@ -1117,6 +1657,6 @@ export const Customers = () => {
         confirmText="Delete Record"
         isLoading={isSaving}
       />
-    </div>
+    </>
   );
 };
