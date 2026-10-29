@@ -20,7 +20,6 @@ import {
   Package
 } from 'lucide-react';
 import { settingsService } from '../services/settingsService';
-import { isSupabaseConfigured, getSupabaseStatus } from '../lib/supabaseClient';
 import { useToast } from '../context/ToastContext';
 import { storefrontSettings } from '../data/initialData';
 
@@ -33,7 +32,6 @@ export const Settings = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const supabaseStatus = getSupabaseStatus();
 
   useEffect(() => {
     settingsService.getSettings()
@@ -80,8 +78,7 @@ export const Settings = () => {
     { id: 'identity', label: 'Storefront Identity', icon: Building },
     { id: 'difference', label: 'Difference Highlights', icon: Sparkles },
     { id: 'guarantee', label: 'Sold Value Guarantee', icon: ShieldCheck },
-    { id: 'heritage', label: 'Heritage & Depository', icon: Compass },
-    { id: 'database', label: 'Supabase Engine', icon: Database }
+    { id: 'heritage', label: 'Heritage & Depository', icon: Compass }
   ];
 
   return (
@@ -789,49 +786,7 @@ export const Settings = () => {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* 5. DATABASE ENGINE & SYSTEM STATUS */}
-        {/* ========================================================================= */}
-        {(activeTab === 'all' || activeTab === 'database') && (
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4 animate-in fade-in duration-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  supabaseStatus.isConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
-                }`}>
-                  <Database className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 font-sans">
-                    Supabase Database Engine
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {supabaseStatus.statusText}
-                  </p>
-                </div>
-              </div>
-
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider self-start sm:self-auto ${
-                supabaseStatus.isConfigured ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
-              }`}>
-                {supabaseStatus.isConfigured ? 'Connected' : 'Offline / Dev Mode'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
-              <p>
-                <strong>Architecture & Dynamic Content Synchronization:</strong>
-              </p>
-              <p>
-                The dashboard settings synchronizes both to the Supabase database (<code className="font-mono bg-white px-1 py-0.5 border rounded">public.store_settings</code>) and our persistent local state engine (<code className="font-mono bg-white px-1 py-0.5 border rounded">localDB</code>). 
-              </p>
-              <p>
-                All website content sections—including The Highlander Difference cards, Sold Value Guarantee promises, and Bigfork Heritage narrative—are safely stored and immediately available to the entire web application.
-              </p>
-            </div>
-          </div>
-        )}
-
+        
         {/* Global Bottom Actions Bar */}
         <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <button

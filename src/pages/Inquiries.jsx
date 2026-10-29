@@ -137,9 +137,9 @@ export const Inquiries = () => {
     const raw = initialInqs.data || [];
     return {
       total: initialInqs.total || raw.length,
-      newCount: raw.filter(i => i.status === 'New').length || 1,
-      inProgressCount: raw.filter(i => i.status === 'In Progress').length || 0,
-      repliedCount: raw.filter(i => i.status === 'Replied').length || 0
+      newCount: raw.filter(i => i.status === 'New').length,
+      inProgressCount: raw.filter(i => i.status === 'In Progress').length,
+      repliedCount: raw.filter(i => i.status === 'Replied').length
     };
   });
 
@@ -169,10 +169,10 @@ export const Inquiries = () => {
         sortBy,
         sortAsc
       });
-      if (res && res.data && res.data.length > 0) {
+      if (res && res.data) {
         setInquiries(res.data);
-        setTotal(res.total);
-        setTotalPages(res.totalPages);
+        setTotal(res.total ?? res.data.length);
+        setTotalPages(res.totalPages || 1);
       }
     } catch (err) {
       console.error('Error fetching inquiries:', err);

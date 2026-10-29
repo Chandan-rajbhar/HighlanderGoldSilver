@@ -96,7 +96,10 @@ export const localDB = {
   getNotifications: () => getStoredItem(STORAGE_KEYS.NOTIFICATIONS, initialNotifications),
   setNotifications: (notifs) => setStoredItem(STORAGE_KEYS.NOTIFICATIONS, notifs),
 
-  getInquiries: () => getStoredItem(STORAGE_KEYS.INQUIRIES, initialInquiries),
+  getInquiries: () => {
+    const raw = getStoredItem(STORAGE_KEYS.INQUIRIES, initialInquiries);
+    return Array.isArray(raw) ? raw.filter(i => !['inq-001', 'inq-002', 'inq-003'].includes(i.id)) : [];
+  },
   setInquiries: (inqs) => setStoredItem(STORAGE_KEYS.INQUIRIES, inqs),
 
   getSettings: () => getStoredItem(STORAGE_KEYS.SETTINGS, storefrontSettings),

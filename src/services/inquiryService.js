@@ -80,13 +80,14 @@ export const inquiryService = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        if (data && data.length > 0) {
+        if (data !== null && data !== undefined) {
+          const totalCount = count !== null && count !== undefined ? count : data.length;
           return {
             data: data,
-            total: count || data.length,
+            total: totalCount,
             page,
             pageSize,
-            totalPages: Math.ceil((count || data.length) / pageSize),
+            totalPages: Math.ceil(totalCount / pageSize) || 1,
           };
         }
       } catch (err) {

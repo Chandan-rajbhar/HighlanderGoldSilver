@@ -24,7 +24,7 @@ export const Sidebar = ({
   setIsCollapsed, 
   isMobileOpen, 
   setIsMobileOpen,
-  inquiriesCount = 1
+  inquiriesCount = 0
 }) => {
   const location = useLocation();
   const { adminUser } = useAuth();
@@ -35,10 +35,10 @@ export const Sidebar = ({
 
   const inqCount = React.useMemo(() => {
     const raw = inquiryService.getInquiriesSync?.()?.data;
-    if (Array.isArray(raw) && raw.length > 0) {
-      return raw.filter(i => i.status === 'New').length || 1;
+    if (Array.isArray(raw)) {
+      return raw.filter(i => i.status === 'New').length;
     }
-    return inquiriesCount || 1;
+    return inquiriesCount || 0;
   }, [inquiriesCount]);
 
   const orderCount = React.useMemo(() => {

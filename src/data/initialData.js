@@ -780,44 +780,7 @@ export const initialNotifications = [
   }
 ];
 
-export const initialInquiries = [
-  {
-    id: "inq-001",
-    lot_number: "1",
-    lot_title: "1876 Morgan $100 Gold Union",
-    inquirer_name: "Col. Harrison Bradley",
-    email: "hbradley.ret@montanaweb.com",
-    phone: "(406) 837-5120",
-    inquiry_type: "Lot Acquisition",
-    message: "Inquiring if Lot #1 is still available for private view at your Jewel Basin Court storefront. Would like to arrange bank wire settlement.",
-    status: "In Progress",
-    created_at: "2026-10-25T09:30:00Z"
-  },
-  {
-    id: "inq-002",
-    lot_number: "153",
-    lot_title: "1897 Morgan Silver Dollar",
-    inquirer_name: "Sarah Lindquist",
-    email: "slindquist@numisguild.org",
-    phone: "(208) 664-8890",
-    inquiry_type: "Condition / Provenance",
-    message: "Could you send a high resolution close-up of the reverse eagle denticles and certification number verification?",
-    status: "Replied",
-    created_at: "2026-10-26T14:20:00Z"
-  },
-  {
-    id: "inq-003",
-    lot_number: null,
-    lot_title: "Precious Metals & Bullion Buyback",
-    inquirer_name: "David K. Campbell",
-    email: "dcampbell@flatheadholdings.com",
-    phone: "(406) 261-3344",
-    inquiry_type: "Sell / Appraisal",
-    message: "I have 50 oz of silver rounds and three $20 Liberty gold double eagles from an estate. Are you currently buying at Bigfork vault?",
-    status: "New",
-    created_at: "2026-10-27T10:15:00Z"
-  }
-];
+export const initialInquiries = [];
 
 export const storefrontSettings = {
   business_name: "Highlander Gold & Silver",
