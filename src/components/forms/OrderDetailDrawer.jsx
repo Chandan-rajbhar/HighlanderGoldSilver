@@ -196,27 +196,7 @@ export const OrderDetailDrawer = ({
               </div>
             </div>
 
-            {/* Order Timeline */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-sans block">
-                Fulfillment Timeline
-              </span>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>Order placed on {new Date(order.created_at).toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gold shrink-0" />
-                  <span>Vault settlement status: {order.payment_status || 'Settled'}</span>
-                </div>
-                {order.notes && (
-                  <p className="mt-2 text-[11px] text-slate-500 italic border-t border-slate-200 pt-2">
-                    Note: "{order.notes}"
-                  </p>
-                )}
-              </div>
-            </div>
+            
 
           </div>
 

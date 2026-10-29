@@ -363,18 +363,8 @@ export const Customers = () => {
     {
       header: 'EMAIL',
       accessor: 'email',
-      render: (row) => (
-        <div className="flex flex-col text-xs">
-          <span className="text-slate-800 font-medium font-sans">
-            {row.email}
-          </span>
-          {row.phone && (
-            <span className="text-slate-500 text-[11px] font-mono">
-              {row.phone}
-            </span>
-          )}
-        </div>
-      )
+      className: 'text-xs text-slate-800 font-medium font-sans',
+      render: (row) => <span>{row.email}</span>
     },
     {
       header: 'ROLE',
@@ -382,31 +372,17 @@ export const Customers = () => {
       render: (row) => {
         if (row.is_admin || row.role === 'Admin') {
           return (
-            <div className="flex flex-col gap-0.5 items-start">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                Admin
-              </span>
-              {row.admin_role && (
-                <span className="text-[10px] text-slate-500 font-mono pl-1">
-                  {row.admin_role}
-                </span>
-              )}
-            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              Admin
+            </span>
           );
         }
         return (
-          <div className="flex flex-col gap-0.5 items-start">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-              <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              Customer
-            </span>
-            {row.tier && row.tier !== 'Customer' && (
-              <span className="text-[10px] text-slate-500 font-mono pl-1">
-                {row.tier}
-              </span>
-            )}
-          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            Customer
+          </span>
         );
       }
     },
@@ -432,21 +408,15 @@ export const Customers = () => {
       render: (row) => {
         if (row.is_admin) {
           return (
-            <div>
-              <span className="text-xs font-semibold text-slate-700 block">Internal Staff</span>
-              <span className="text-[10px] text-slate-400 font-mono">{row.title || 'Director'}</span>
-            </div>
+            <span className="text-xs font-semibold text-slate-700 block">
+              Internal Staff
+            </span>
           );
         }
         return (
-          <div>
-            <span className="font-bold text-slate-900 text-xs block">
-              {row.orders_count || 0} order(s)
-            </span>
-            <span className="text-[11px] font-mono text-emerald-600 font-semibold">
-              ${Number(row.total_spent || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
+          <span className="font-bold text-slate-900 text-xs block">
+            {row.orders_count || 0} order(s)
+          </span>
         );
       }
     },
