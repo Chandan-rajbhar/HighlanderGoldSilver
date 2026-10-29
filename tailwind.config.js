@@ -7,15 +7,25 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Brand Reference Exact Colors
+        brand: {
+          navy: '#0B2D52',        // Deep navy blue
+          blue: '#155A96',        // Primary Highlander blue
+          bright: '#1685D4',      // Bright blue accents
+          ice: '#D8EBFA',         // Icy blue
+          soft: '#F4F9FD',        // Soft blue-white
+          gold: '#D6AD43',        // Restrained metallic gold
+          silver: '#C9D2DB',      // Silver
+        },
         // Highlander Admin Luxury Light Blue & Gold Identity Palette
         highlander: {
-          navy: '#111827',        // Primary Dark Navy Text
+          navy: '#0B2D52',        // Primary Dark Navy Text
           deep: '#0B1E36',        // Deep Slate Navy
-          gold: '#D6AD45',        // Premium Gold Accent
+          gold: '#D6AD43',        // Premium Gold Accent
           'gold-hover': '#BF952E',// Gold Hover
-          bg: '#F5F8FC',          // Very Light Blue-Gray Main Canvas
+          bg: '#F4F9FD',          // Soft blue-white Main Canvas
           card: '#FFFFFF',        // Pure White Card Background
-          border: '#DCE5F0',      // Soft Blue-Gray Border
+          border: '#D8EBFA',      // Soft Blue-Gray Border
           muted: '#64748B',       // Muted Slate Blue Text
           success: '#10B981',     // Subtle Green
           error: '#EF4444',       // Muted Red
@@ -57,6 +67,7 @@ export default {
       },
       fontFamily: {
         serif: ['Cinzel', 'Georgia', 'serif'],
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
         sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
