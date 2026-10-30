@@ -190,7 +190,7 @@ export const AdminUsers = () => {
 
         <button
           onClick={handleAddNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-aubergine hover:bg-aubergine-light text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4 text-gold" />
           Provision Staff Member

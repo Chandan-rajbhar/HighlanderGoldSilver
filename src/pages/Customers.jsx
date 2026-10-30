@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Users, 
+import {
+  Plus,
+  Users,
   User,
   ShieldCheck,
   Shield,
   Key,
   Lock,
-  Mail, 
-  Phone, 
-  MapPin, 
-  ShoppingBag, 
+  Mail,
+  Phone,
+  MapPin,
+  ShoppingBag,
   Calendar,
-  Eye, 
-  Edit3, 
-  Trash2, 
+  Eye,
+  Edit3,
+  Trash2,
   MoreVertical,
   X,
   ExternalLink,
@@ -93,8 +93,8 @@ export const Customers = () => {
         adminUserService.getAdminUsers({ search: '' })
       ]);
 
-      // Normalize customers
-      const custList = (custRes.data || []).map(c => ({
+      // Normalize customers directly from Supabase customers table
+      const custList = (custRes?.data || []).map(c => ({
         ...c,
         id: c.id,
         full_name: c.name || c.full_name || 'Collector',
@@ -114,7 +114,7 @@ export const Customers = () => {
         created_at: c.created_at || '2026-09-01T00:00:00Z'
       }));
 
-      // Normalize admins
+      // Normalize admins directly from Supabase admin_users table
       const adminList = (adminRes || []).map(a => ({
         ...a,
         id: a.id,
@@ -160,7 +160,7 @@ export const Customers = () => {
       // Filter by search
       if (search && search.trim() !== '') {
         const q = search.toLowerCase().trim();
-        filtered = filtered.filter(u => 
+        filtered = filtered.filter(u =>
           (u.full_name && u.full_name.toLowerCase().includes(q)) ||
           (u.email && u.email.toLowerCase().includes(q)) ||
           (u.customer_id && u.customer_id.toLowerCase().includes(q)) ||
@@ -220,17 +220,17 @@ export const Customers = () => {
       const uEmail = (viewUser.email || '').toLowerCase().trim();
       const uName = (viewUser.full_name || '').toLowerCase().trim();
 
-      const matchedOrders = allOrders.filter(o => 
+      const matchedOrders = allOrders.filter(o =>
         (o.customer_email && o.customer_email.toLowerCase().trim() === uEmail) ||
         (o.customer_name && o.customer_name.toLowerCase().trim() === uName)
       );
 
-      const matchedPayments = allPayments.filter(p => 
+      const matchedPayments = allPayments.filter(p =>
         (p.customer_email && p.customer_email.toLowerCase().trim() === uEmail) ||
         (p.customer_name && p.customer_name.toLowerCase().trim() === uName)
       );
 
-      const matchedInquiries = allInquiries.filter(i => 
+      const matchedInquiries = allInquiries.filter(i =>
         (i.email && i.email.toLowerCase().trim() === uEmail) ||
         (i.name && i.name.toLowerCase().trim() === uName)
       );
@@ -295,7 +295,7 @@ export const Customers = () => {
             state: formData.state !== undefined ? formData.state : prev.state,
             location: formData.location || (formData.city ? `${formData.city}${formData.state ? `, ${formData.state}` : ''}` : ''),
             role: formData.role || prev.role,
-            admin_role: formData.admin_role || prev.admin_role,
+            admin_role: formData.admin_role !== undefined ? formData.admin_role : prev.admin_role,
             title: formData.title || prev.title,
             department: formData.department || prev.department,
             tier: formData.tier || prev.tier,
@@ -379,11 +379,10 @@ export const Customers = () => {
       className: 'font-semibold',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full ${
-            row.is_admin 
-              ? 'bg-[#071A35] text-[#C9A23A] border-[#C9A23A]/50 font-bold' 
+          <div className={`w-9 h-9 rounded-full ${row.is_admin
+              ? 'bg-[#071A35] text-[#C9A23A] border-[#C9A23A]/50 font-bold'
               : 'bg-[#F5F8FC] text-[#071A35] border-[#DCE5F0] font-bold'
-          } text-xs flex items-center justify-center shrink-0 border shadow-2xs font-sans`}>
+            } text-xs flex items-center justify-center shrink-0 border shadow-2xs font-sans`}>
             {row.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || (row.is_admin ? 'AD' : 'CU')}
           </div>
           <div>
@@ -483,42 +482,8 @@ export const Customers = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                fetchUsers();
-                toast.success('Admin profile synced with vault authority records');
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Sync</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToggleStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
-                viewUser.account_status === 'Active'
-                  ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
-                  : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-              }`}
-            >
-              {viewUser.account_status === 'Active' ? (
-                <>
-                  <Ban className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Deactivate Account</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Activate Account</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
               onClick={() => handleEdit(viewUser)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5 text-[#C9A23A]" />
               <span>Edit Profile</span>
@@ -529,7 +494,7 @@ export const Customers = () => {
         {/* Profile Header Card */}
         <div className="bg-white rounded-2xl border border-[#DCE5F0] p-6 shadow-xs">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            
+
             {/* Left: Avatar & Identity Details */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
@@ -542,13 +507,6 @@ export const Customers = () => {
                     {viewUser.full_name}
                   </h1>
                   <StatusBadge status={viewUser.account_status || 'Active'} />
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-purple-50 text-purple-700 border-purple-200">
-                    Admin &bull; {viewUser.admin_role || 'Super Admin'}
-                  </span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    2FA Enforced
-                  </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
@@ -586,76 +544,18 @@ export const Customers = () => {
               </div>
             </div>
 
-            {/* Right: Top 3 Stat Tiles for Admin */}
-            <div className="flex items-center gap-3">
-              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  CLEARANCE LEVEL
-                </span>
-                <span className="text-sm font-bold font-sans text-purple-700 mt-1 block flex items-center justify-center gap-1">
-                  <Key className="w-3.5 h-3.5 text-purple-600" />
-                  Level 3 Vault
-                </span>
-              </div>
 
-              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  SYSTEM ROLE
-                </span>
-                <span className="text-sm font-bold font-sans text-[#071A35] mt-1 block">
-                  {viewUser.admin_role || 'Super Admin'}
-                </span>
-              </div>
-
-              <div className="px-5 py-3 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] text-center min-w-[130px]">
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  SECURITY PROTOCOL
-                </span>
-                <span className="text-sm font-bold font-sans text-emerald-600 mt-1 block flex items-center justify-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  2FA Hardware
-                </span>
-              </div>
-            </div>
 
           </div>
 
-          {/* Navigation Tabs (Overview & Credentials, Permissions Matrix, Audit Log) */}
+          {/* Navigation Tabs */}
           <div className="flex items-center gap-6 mt-6 border-t border-[#DCE5F0] pt-4 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setProfileTab('overview')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'overview'
-                  ? 'border-[#071A35] text-[#071A35] font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+              className="pb-2.5 transition-colors cursor-pointer border-b-2 border-[#071A35] text-[#071A35] font-bold"
             >
               Overview &amp; Credentials
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setProfileTab('permissions')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'permissions'
-                  ? 'border-[#071A35] text-[#071A35] font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Permissions &amp; Scope Matrix
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setProfileTab('audit')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'audit'
-                  ? 'border-[#071A35] text-[#071A35] font-bold'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Audit &amp; Security Activity Log
             </button>
           </div>
         </div>
@@ -663,318 +563,73 @@ export const Customers = () => {
         {/* Tab 1: Overview & Credentials */}
         {profileTab === 'overview' && (
           <div className="space-y-6">
-            {/* 3 Metric Summary Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-medium text-slate-500 block">Security Clearance</span>
-                  <span className="text-lg font-bold font-sans text-purple-700 mt-1 block">
-                    Level 3 Vault Keyholder
-                  </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Dual-custody authorization for physical vault &amp; digital escrow</span>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-medium text-slate-500 block">Administrative Department</span>
-                  <span className="text-lg font-bold font-sans text-slate-900 mt-1 block">
-                    {viewUser.admin_role === 'Order Manager' ? 'Treasury & Wire Settlements' : viewUser.admin_role === 'Inventory Manager' ? 'Numismatic Catalog & Logistics' : 'Executive Vault Governance'}
-                  </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Direct authority under Highlander Board of Directors</span>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-[#F5F8FC] border border-[#DCE5F0] flex items-center justify-center text-[#071A35]">
-                  <Briefcase className="w-6 h-6 text-[#C9A23A]" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-medium text-slate-500 block">Governance Standing</span>
-                  <span className="text-lg font-bold font-sans text-emerald-600 mt-1 block">
-                    Active &amp; Compliance Verified
-                  </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">Continuous audit logging &amp; hardware key enforcement</span>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-
-            {/* Two Lower Information Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Card 1: Official Administrative Credentials */}
-              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                    Official Administrative Credentials
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(viewUser)}
-                    className="text-xs text-[#071A35] hover:text-[#C9A23A] font-semibold transition-colors cursor-pointer"
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Full Name</span>
-                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.full_name}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block font-medium">Work Email Address</span>
-                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.email}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block font-medium">Direct Extension / Secure Phone</span>
-                    <span className="font-mono text-slate-800 mt-0.5 block">{viewUser.phone || '(406) 883-2210'}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block font-medium">Administrative Role</span>
-                    <span className="font-semibold text-purple-700 mt-0.5 block">{viewUser.admin_role || 'Super Admin'}</span>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-400 block font-medium">Official Staff Title</span>
-                    <span className="font-semibold text-slate-800 mt-0.5 block">
-                      {viewUser.title || (viewUser.admin_role === 'Super Admin' ? 'Senior Numismatist & Vault Director' : viewUser.admin_role === 'Inventory Manager' ? 'Certified Coin Cataloger & Appraiser' : 'Settlement & Wire Verification Officer')}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block font-medium">Primary Operating Facility</span>
-                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.location || 'Bigfork Storefront & Vault, MT'}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block font-medium">System Authorization Key</span>
-                    <span className="font-mono text-slate-700 mt-0.5 block">HGS-AUTH-{viewUser.customer_id?.replace(/[^0-9]/g, '') || '001'}-SEC</span>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-400 block font-medium">Account Commissioning Date</span>
-                    <span className="font-mono text-slate-600 mt-0.5 block">
-                      {new Date(viewUser.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  </div>
-
-                  <div className="sm:col-span-2 p-3 bg-purple-50/60 border border-purple-200/60 rounded-xl">
-                    <span className="text-[11px] font-semibold text-purple-900 block mb-0.5">Administrative Security Directives &amp; Scope:</span>
-                    <p className="text-xs text-purple-800/90 leading-relaxed font-sans">
-                      {viewUser.notes || 'Authorized staff keyholder with dual-custody access to precious metal inventory, bank wire approvals, customer identity verification, and live spot spread controls.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Operational Privileges & Clearance Capabilities */}
-              <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs space-y-4 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                      Privileged System Capabilities
-                    </h3>
-                    <span className="text-[11px] font-mono text-emerald-600 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Full Clearance
-                    </span>
-                  </div>
-
-                  <div className="divide-y divide-slate-100 mt-1">
-                    <div className="py-2.5 flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900">Product Catalog &amp; Bullion Inventory</span>
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Full Access</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px] mt-0.5">Create, edit, adjust spot multipliers, archive lots, and update coin certifications.</p>
-                      </div>
-                    </div>
-
-                    <div className="py-2.5 flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900">Order Fulfillment &amp; Wire Approvals</span>
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px] mt-0.5">Verify incoming bank wire transfers, authorize vault dispatch, and release collector escrow.</p>
-                      </div>
-                    </div>
-
-                    <div className="py-2.5 flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900">User Directory &amp; Collector Governance</span>
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px] mt-0.5">Review KYC/AML collector documentation, elevate buyer tiers, and manage staff accounts.</p>
-                      </div>
-                    </div>
-
-                    <div className="py-2.5 flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900">Spot Price Feed &amp; Hedging Controls</span>
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px] mt-0.5">Manage live Gold/Silver spot margins, premium overrides, and API data feed connectivity.</p>
-                      </div>
-                    </div>
-
-                    <div className="py-2.5 flex items-start gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900">Security Audit &amp; Ledger Reporting</span>
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Authorized</span>
-                        </div>
-                        <p className="text-slate-500 text-[11px] mt-0.5">Inspect immutable system audit trails and export certified precious metals transaction ledgers.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span>Highlander Cryptographic Governance Protocol</span>
-                  <span className="font-mono text-purple-700 font-semibold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Hardware Token Active
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: System Permissions Matrix */}
-        {profileTab === 'permissions' && (
-          <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+            {/* Official Administrative Credentials */}
+            <div className="bg-white rounded-2xl border border-[#DCE5F0] p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#DCE5F0] pb-3">
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                  Administrative Permissions Matrix
+                  Official Administrative Credentials
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Configured system access privileges and security clearance levels for {viewUser.full_name}.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => handleEdit(viewUser)}
+                  className="text-xs text-[#071A35] hover:text-[#C9A23A] font-semibold transition-colors cursor-pointer"
+                >
+                  Edit
+                </button>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-mono font-semibold">
-                Policy: Full Governance
-              </span>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#F5F8FC] uppercase font-semibold text-slate-600 border-b border-[#DCE5F0]">
-                  <tr>
-                    <th className="px-4 py-3">System Module</th>
-                    <th className="px-4 py-3">Access Level</th>
-                    <th className="px-4 py-3">Operational Scope</th>
-                    <th className="px-4 py-3">Clearance</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#DCE5F0]">
-                  {[
-                    { module: 'Product Catalog & Bullion', level: 'Full Access (Read / Write / Delete)', scope: 'All precious metal products, numismatics & inventory lots', clearance: 'Level 3 Vault', status: 'Enforced' },
-                    { module: 'Orders & Wire Settlements', level: 'Verification & Release Authority', scope: 'Bank wire confirmation, settlement matching, order state overrides', clearance: 'Level 3 Vault', status: 'Enforced' },
-                    { module: 'Collector Directory', level: 'User & KYC Administration', scope: 'Collector profiles, tiered discounts, buyer verification, account suspension', clearance: 'Level 3 Vault', status: 'Enforced' },
-                    { module: 'Spot Price Margins Engine', level: 'Spread & Hedging Control', scope: 'Real-time live spot margin multipliers and custom markup formulas', clearance: 'Level 3 Vault', status: 'Enforced' },
-                    { module: 'Payment Transactions & Ledgers', level: 'Audit & Financial Clearance', scope: 'Reconciliation ledgers, payment tracking, transaction receipt generation', clearance: 'Level 3 Vault', status: 'Enforced' },
-                    { module: 'Security & Audit Logging', level: 'Immutable Log Inspection', scope: 'Full historical audit trail review, staff session inspection, compliance exports', clearance: 'Level 3 Vault', status: 'Enforced' },
-                  ].map((item, idx) => (
-                    <tr key={idx} className="hover:bg-[#F5F8FC]/50 transition-colors">
-                      <td className="px-4 py-3 font-bold text-slate-900 font-sans">
-                        {item.module}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-[#071A35]">
-                        {item.level}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {item.scope}
-                      </td>
-                      <td className="px-4 py-3 font-mono font-semibold text-purple-700">
-                        {item.clearance}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 font-mono text-emerald-600 font-semibold text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Audit Activity Log */}
-        {profileTab === 'audit' && (
-          <div className="bg-white rounded-2xl border border-[#DCE5F0] p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-sans">
-                  Staff Security &amp; Activity Log
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Immutable cryptographic activity trail registered for {viewUser.full_name}.
-                </p>
-              </div>
-              <span className="text-xs font-mono text-slate-400">
-                Last Synced: Just now
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { action: 'Spot Price Margin Calibrated', detail: 'Adjusted spot multiplier to +2.80% for 1 oz American Gold Eagle lots.', time: '12m ago', type: 'price', ip: '192.168.1.10 (Bigfork Vault)' },
-                { action: 'Bank Wire Settlement Verified', detail: 'Confirmed wire receipt for Order #HGS-2026-1003 (Thomas MacGregor — $442.75).', time: '2h ago', type: 'order', ip: '192.168.1.10 (Bigfork Vault)' },
-                { action: 'Catalog Item Added', detail: 'Published new specimen: 1876 George T. Morgan Proposed $100 Gold Union™ (HGS-GOLD-001).', time: 'Yesterday', type: 'catalog', ip: '192.168.1.12 (Numismatics Station)' },
-                { action: 'Collector Account Verified', detail: 'Reviewed KYC credentials and assigned VIP Vault tier to William Sterling.', time: 'Oct 26, 2026', type: 'user', ip: '192.168.1.10 (Bigfork Vault)' },
-                { action: '2FA Hardware Session Authenticated', detail: 'Successful hardware token login from Highlander Vault Master Terminal.', time: 'Oct 25, 2026', type: 'security', ip: '192.168.1.10 (Bigfork Vault)' },
-                { action: 'Quarterly Compliance Ledger Exported', detail: 'Generated encrypted bullion sales report for regulatory compliance.', time: 'Oct 20, 2026', type: 'export', ip: '192.168.1.10 (Bigfork Vault)' },
-              ].map((evt, idx) => (
-                <div key={idx} className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE5F0] space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 text-sm font-sans">{evt.action}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
-                        {evt.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="font-mono text-slate-400 text-[11px]">{evt.time}</span>
-                  </div>
-                  <p className="text-slate-600 leading-relaxed font-sans">{evt.detail}</p>
-                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                    <span>Terminal: {evt.ip}</span>
-                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Integrity Verified
-                    </span>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 block font-medium">Full Name</span>
+                  <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.full_name}</span>
                 </div>
-              ))}
+
+                <div>
+                  <span className="text-slate-400 block font-medium">Work Email Address</span>
+                  <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.email}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block font-medium">Direct Extension / Secure Phone</span>
+                  <span className="font-mono text-slate-800 mt-0.5 block">{viewUser.phone || '(406) 883-2210'}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block font-medium">Administrative Role</span>
+                  <span className="font-semibold text-purple-700 mt-0.5 block">{viewUser.admin_role || 'Super Admin'}</span>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <span className="text-slate-400 block font-medium">Official Staff Title</span>
+                  <span className="font-semibold text-slate-800 mt-0.5 block">
+                    {viewUser.title || (viewUser.admin_role === 'Super Admin' ? 'Senior Numismatist & Vault Director' : viewUser.admin_role === 'Inventory Manager' ? 'Certified Coin Cataloger & Appraiser' : 'Settlement & Wire Verification Officer')}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block font-medium">Primary Operating Facility</span>
+                  <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.location || 'Bigfork Storefront & Vault, MT'}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block font-medium">System Authorization Key</span>
+                  <span className="font-mono text-slate-700 mt-0.5 block">HGS-AUTH-{viewUser.customer_id?.replace(/[^0-9]/g, '') || '001'}-SEC</span>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <span className="text-slate-400 block font-medium">Account Commissioning Date</span>
+                  <span className="font-mono text-slate-600 mt-0.5 block">
+                    {new Date(viewUser.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+
+                <div className="sm:col-span-2 p-3 bg-purple-50/60 border border-purple-200/60 rounded-xl">
+                  <span className="text-[11px] font-semibold text-purple-900 block mb-0.5">Administrative Security Directives &amp; Scope:</span>
+                  <p className="text-xs text-purple-800/90 leading-relaxed font-sans">
+                    {viewUser.notes || 'Authorized staff keyholder with dual-custody access to precious metal inventory, bank wire approvals, customer identity verification, and live spot spread controls.'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -986,7 +641,7 @@ export const Customers = () => {
   // RENDER: CUSTOMER / COLLECTOR PROFILE
   // ==========================================
   const renderCustomerProfile = () => {
-    const totalSpentComputed = userOrders.length > 0 
+    const totalSpentComputed = userOrders.length > 0
       ? userOrders.reduce((sum, o) => sum + Number(o.total_settlement || o.total_amount || 0), 0)
       : Number(viewUser.total_spent || 0);
 
@@ -1017,42 +672,8 @@ export const Customers = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                fetchUsers();
-                toast.success('Profile synced with latest records');
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Sync</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToggleStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
-                viewUser.account_status === 'Active'
-                  ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
-                  : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-              }`}
-            >
-              {viewUser.account_status === 'Active' ? (
-                <>
-                  <Ban className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Deactivate Account</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Activate Account</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
               onClick={() => handleEdit(viewUser)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5 text-[#C9A23A]" />
               <span>Edit Profile</span>
@@ -1063,7 +684,7 @@ export const Customers = () => {
         {/* Profile Header Card */}
         <div className="bg-white rounded-2xl border border-[#DCE5F0] p-6 shadow-xs">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            
+
             {/* Left: Avatar & Identity Details */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
@@ -1147,11 +768,10 @@ export const Customers = () => {
             <button
               type="button"
               onClick={() => setProfileTab('overview')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'overview'
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${profileTab === 'overview'
                   ? 'border-[#071A35] text-[#071A35] font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+                }`}
             >
               Overview
             </button>
@@ -1159,11 +779,10 @@ export const Customers = () => {
             <button
               type="button"
               onClick={() => setProfileTab('orders')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'orders'
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${profileTab === 'orders'
                   ? 'border-[#071A35] text-[#071A35] font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+                }`}
             >
               Orders ({userOrders.length})
             </button>
@@ -1171,11 +790,10 @@ export const Customers = () => {
             <button
               type="button"
               onClick={() => setProfileTab('payments')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'payments'
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${profileTab === 'payments'
                   ? 'border-[#071A35] text-[#071A35] font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+                }`}
             >
               Payments ({userPayments.length})
             </button>
@@ -1183,11 +801,10 @@ export const Customers = () => {
             <button
               type="button"
               onClick={() => setProfileTab('inquiries')}
-              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${
-                profileTab === 'inquiries'
+              className={`pb-2.5 transition-colors cursor-pointer border-b-2 ${profileTab === 'inquiries'
                   ? 'border-[#071A35] text-[#071A35] font-bold'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
+                }`}
             >
               Inquiries ({userInquiries.length})
             </button>
@@ -1534,7 +1151,7 @@ export const Customers = () => {
 
             <button
               onClick={handleAddNew}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
             >
               <Plus className="w-4 h-4 text-[#C9A23A]" />
               Add User
@@ -1548,11 +1165,10 @@ export const Customers = () => {
                 setRoleFilter('All');
                 setPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                roleFilter === 'All'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${roleFilter === 'All'
                   ? 'bg-[#071A35] text-white shadow-2xs'
                   : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+                }`}
             >
               All Users <span className="ml-1 opacity-70">({roleCounts.all})</span>
             </button>
@@ -1562,11 +1178,10 @@ export const Customers = () => {
                 setRoleFilter('Customer');
                 setPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                roleFilter === 'Customer'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${roleFilter === 'Customer'
                   ? 'bg-[#071A35] text-white shadow-2xs'
                   : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+                }`}
             >
               Customers <span className="ml-1 opacity-70">({roleCounts.customers})</span>
             </button>
@@ -1576,11 +1191,10 @@ export const Customers = () => {
                 setRoleFilter('Admin');
                 setPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                roleFilter === 'Admin'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${roleFilter === 'Admin'
                   ? 'bg-[#071A35] text-white shadow-2xs'
                   : 'bg-white border border-[#DCE5F0] text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+                }`}
             >
               Admins <span className="ml-1 opacity-70">({roleCounts.admins})</span>
             </button>

@@ -802,7 +802,80 @@ export const initialNotifications = [
   }
 ];
 
-export const initialInquiries = [];
+export const initialInquiries = [
+  {
+    id: "inq-001",
+    lot_number: "1",
+    lot_title: "1876 George T. Morgan Proposed $100 Gold Union™",
+    inquirer_name: "Col. Harrison Bradley",
+    email: "hbradley.ret@montanaweb.com",
+    phone: "(406) 837-5120",
+    inquiry_type: "Lot Acquisition",
+    message: "Inquiring if Lot #1 is still available for private view at your Jewel Basin Court storefront. Would like to arrange bank wire settlement.",
+    status: "In Progress",
+    created_at: "2026-10-25T09:30:00Z"
+  },
+  {
+    id: "inq-002",
+    lot_number: "153",
+    lot_title: "1897 Morgan Silver Dollar MS-65 PL",
+    inquirer_name: "Sarah Lindquist",
+    email: "slindquist@numisguild.org",
+    phone: "(208) 664-8890",
+    inquiry_type: "Condition / Provenance",
+    message: "Could you send a high resolution close-up of the reverse eagle denticles and certification number verification?",
+    status: "Replied",
+    created_at: "2026-10-26T14:20:00Z"
+  },
+  {
+    id: "inq-003",
+    lot_number: null,
+    lot_title: "Precious Metals Liquidation / Buyback",
+    inquirer_name: "David K. Campbell",
+    email: "dcampbell@flatheadholdings.com",
+    phone: "(406) 261-3344",
+    inquiry_type: "Sell / Appraisal",
+    message: "I have 50 oz of silver rounds and three $20 Liberty gold double eagles from an estate. Are you currently buying at Bigfork vault?",
+    status: "New",
+    created_at: "2026-10-27T10:15:00Z"
+  },
+  {
+    id: "inq-004",
+    lot_number: "9",
+    lot_title: "1921 Pilgrim Tercentenary 50¢ Silver Commemorative MS-65",
+    inquirer_name: "Arthur Pendleton",
+    email: "a.pendleton@pacificnorthwest.org",
+    phone: "(406) 755-9012",
+    inquiry_type: "Lot Acquisition",
+    message: "Interested in securing Lot #9 Pilgrim Tercentenary. Is direct PayPal settlement eligible for immediate vault dispatch?",
+    status: "New",
+    created_at: "2026-10-28T11:45:00Z"
+  },
+  {
+    id: "inq-005",
+    lot_number: "170",
+    lot_title: "10 oz Scottsdale Silver Stacker® Bar .999 Fine",
+    inquirer_name: "Evelyn Cross",
+    email: "cross.evelyn@bigskycapital.com",
+    phone: "(406) 862-4411",
+    inquiry_type: "Product Inquiry",
+    message: "Looking to purchase 5 units of the 10 oz Scottsdale stackers if you have additional inventory incoming to Bigfork vault.",
+    status: "In Progress",
+    created_at: "2026-10-29T08:15:00Z"
+  },
+  {
+    id: "inq-006",
+    lot_number: null,
+    lot_title: "Private Vault Appointment & Numismatic Appraisal",
+    inquirer_name: "Franklin Vance",
+    email: "f.vance@yellowstoneestates.com",
+    phone: "(406) 587-3320",
+    inquiry_type: "General Inquiry",
+    message: "Requesting an in-person appointment at your 119 Jewel Basin Ct location for physical inspection of high-grade Saint-Gaudens double eagles.",
+    status: "Replied",
+    created_at: "2026-10-29T16:00:00Z"
+  }
+];
 
 export const storefrontSettings = {
   business_name: "Highlander Gold & Silver",

@@ -405,7 +405,7 @@ export const Payments = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedTxn(null)}
-                  className="px-5 py-2.5 bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  className="px-5 py-2.5 bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   Close Record
                 </button>

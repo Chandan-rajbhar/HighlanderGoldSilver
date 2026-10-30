@@ -1,8 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 
-const LIST_COLUMNS = 'id, lot_number, lot_title, inquirer_name, email, phone, inquiry_type, message, status, created_at';
-
 export const inquiryService = {
   // In-memory instant synchronous retrieval for 0ms page transitions
   getInquiriesSync({
@@ -24,7 +22,8 @@ export const inquiryService = {
         (i.inquirer_name && i.inquirer_name.toLowerCase().includes(q)) ||
         (i.email && i.email.toLowerCase().includes(q)) ||
         (i.lot_title && i.lot_title.toLowerCase().includes(q)) ||
-        (i.lot_number && i.lot_number.includes(q)) ||
+        (i.lot_number && String(i.lot_number).includes(q)) ||
+        (i.inquiry_type && i.inquiry_type.toLowerCase().includes(q)) ||
         (i.message && i.message.toLowerCase().includes(q))
       );
     }
@@ -50,6 +49,7 @@ export const inquiryService = {
       totalPages: Math.ceil(total / pageSize) || 1,
     };
   },
+
   async getInquiries({
     page = 1,
     pageSize = 10,
@@ -58,21 +58,21 @@ export const inquiryService = {
     sortBy = 'created_at',
     sortAsc = false
   } = {}) {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && supabase) {
       try {
         const from = (page - 1) * pageSize;
         const to = from + pageSize - 1;
 
         let query = supabase
           .from('inquiries')
-          .select(LIST_COLUMNS, { count: 'exact' });
+          .select('*', { count: 'exact' });
 
         if (status && status !== 'All') {
           query = query.eq('status', status);
         }
         if (search && search.trim() !== '') {
           const s = search.trim();
-          query = query.or(`inquirer_name.ilike.%${s}%,email.ilike.%${s}%,lot_title.ilike.%${s}%`);
+          query = query.or(`inquirer_name.ilike.%${s}%,email.ilike.%${s}%,lot_title.ilike.%${s}%,inquiry_type.ilike.%${s}%,message.ilike.%${s}%`);
         }
 
         query = query.order(sortBy, { ascending: sortAsc }).range(from, to);
@@ -106,7 +106,8 @@ export const inquiryService = {
         (i.inquirer_name && i.inquirer_name.toLowerCase().includes(q)) ||
         (i.email && i.email.toLowerCase().includes(q)) ||
         (i.lot_title && i.lot_title.toLowerCase().includes(q)) ||
-        (i.lot_number && i.lot_number.includes(q)) ||
+        (i.lot_number && String(i.lot_number).includes(q)) ||
+        (i.inquiry_type && i.inquiry_type.toLowerCase().includes(q)) ||
         (i.message && i.message.toLowerCase().includes(q))
       );
     }
@@ -135,9 +136,10 @@ export const inquiryService = {
 
   async getInquiryStats() {
     let inqs = [];
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && supabase) {
       try {
-        const { data } = await supabase.from('inquiries').select('id, status');
+        const { data, error } = await supabase.from('inquiries').select('id, status');
+        if (error) throw error;
         inqs = data || [];
       } catch (err) {
         console.error('Supabase getInquiryStats error, using localDB fallback:', err);
@@ -151,16 +153,52 @@ export const inquiryService = {
       total: inqs.length,
       newCount: inqs.filter(i => i.status === 'New').length,
       inProgressCount: inqs.filter(i => i.status === 'In Progress').length,
-      repliedCount: inqs.filter(i => i.status === 'Replied' || i.status === 'Closed').length
+      repliedCount: inqs.filter(i => i.status === 'Replied').length
     };
   },
 
-  async updateInquiryStatus(id, newStatus) {
-    if (isSupabaseConfigured()) {
+  async createInquiry(payload) {
+    const id = payload.id || `inq-${Math.random().toString(36).substring(2, 10)}`;
+    const now = new Date().toISOString();
+    const newRecord = {
+      id,
+      lot_number: payload.lot_number || payload.lotNumber || null,
+      lot_title: payload.lot_title || payload.lotTitle || payload.productRef || 'General Inquiry',
+      inquirer_name: payload.inquirer_name || payload.fullName || 'Anonymous Collector',
+      email: payload.email,
+      phone: payload.phone || null,
+      inquiry_type: payload.inquiry_type || payload.inquiryType || 'General',
+      message: payload.message || '',
+      status: payload.status || 'New',
+      created_at: payload.created_at || now,
+      updated_at: payload.updated_at || now
+    };
+
+    if (isSupabaseConfigured() && supabase) {
       try {
         const { data, error } = await supabase
           .from('inquiries')
-          .update({ status: newStatus })
+          .insert([newRecord])
+          .select()
+          .single();
+        if (error) throw error;
+        return data || newRecord;
+      } catch (err) {
+        console.error('Supabase createInquiry error:', err);
+      }
+    }
+
+    const inqs = localDB.getInquiries();
+    localDB.setInquiries([newRecord, ...inqs]);
+    return newRecord;
+  },
+
+  async updateInquiryStatus(id, newStatus) {
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('inquiries')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
           .eq('id', id)
           .select()
           .single();
@@ -175,13 +213,13 @@ export const inquiryService = {
     const inqs = localDB.getInquiries();
     const index = inqs.findIndex(i => i.id === id);
     if (index === -1) throw new Error('Inquiry not found');
-    inqs[index] = { ...inqs[index], status: newStatus };
+    inqs[index] = { ...inqs[index], status: newStatus, updated_at: new Date().toISOString() };
     localDB.setInquiries([...inqs]);
     return inqs[index];
   },
 
   async deleteInquiry(id) {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && supabase) {
       try {
         const { error } = await supabase
           .from('inquiries')
@@ -201,4 +239,3 @@ export const inquiryService = {
     return true;
   }
 };
-

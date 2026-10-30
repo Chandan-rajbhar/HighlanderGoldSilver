@@ -82,22 +82,20 @@ export const customerService = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        if (Array.isArray(data)) {
-          const effectiveTotal = count !== null && count !== undefined ? count : data.length;
-          return {
-            data: data,
-            total: effectiveTotal,
-            page,
-            pageSize,
-            totalPages: Math.ceil(effectiveTotal / pageSize) || 1,
-          };
-        }
+        return {
+          data: data || [],
+          total: count !== null && count !== undefined ? count : (data?.length || 0),
+          page,
+          pageSize,
+          totalPages: Math.ceil((count !== null && count !== undefined ? count : (data?.length || 0)) / pageSize) || 1,
+        };
       } catch (err) {
-        console.error('Supabase getCustomers error, using local fallback:', err);
+        console.error('Supabase getCustomers error:', err);
+        return { data: [], total: 0, page, pageSize, totalPages: 1 };
       }
     }
 
-    let custs = localDB.getCustomers();
+    return { data: [], total: 0, page, pageSize, totalPages: 1 };
 
     if (tier && tier !== 'All') {
       custs = custs.filter(c => c.tier === tier);
@@ -183,11 +181,15 @@ export const customerService = {
           .upsert([newCust], { onConflict: 'email' })
           .select()
           .single();
-        if (error) throw error;
-        return data;
+        if (error) {
+          console.warn('Supabase createCustomer warning, saving to localDB:', error);
+        } else if (data) {
+          const custs = localDB.getCustomers();
+          localDB.setCustomers([data, ...custs]);
+          return data;
+        }
       } catch (err) {
-        console.error('Supabase createCustomer error:', err);
-        throw err;
+        console.warn('Supabase createCustomer error, saving to localDB:', err);
       }
     }
 
@@ -252,11 +254,19 @@ export const customerService = {
           error = retryRes.error;
         }
 
-        if (error) throw error;
-        return data?.[0] || cleanPayload;
+        if (error) {
+          console.warn('Supabase updateCustomer warning, falling back to local update:', error);
+        } else if (data?.[0]) {
+          const custs = localDB.getCustomers();
+          const idx = custs.findIndex(c => c.id === id || c.customer_id === id || c.email === cleanPayload.email);
+          if (idx !== -1) {
+            custs[idx] = { ...custs[idx], ...data[0] };
+            localDB.setCustomers([...custs]);
+          }
+          return data[0];
+        }
       } catch (err) {
-        console.error('Supabase updateCustomer error:', err);
-        throw err;
+        console.warn('Supabase updateCustomer error, saving to localDB:', err);
       }
     }
 

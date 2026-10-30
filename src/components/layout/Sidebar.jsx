@@ -60,7 +60,7 @@ export const Sidebar = ({
           alternateTo: '/products',
           label: 'Product Catalog',
           icon: Coins,
-          badge: catalogCount ? String(catalogCount) : null
+          badge: null
         },
         {
           to: '/categories',

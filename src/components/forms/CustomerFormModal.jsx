@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, User, ShieldCheck, Check } from 'lucide-react';
 import { Select } from '../ui/Select';
 
-const ACCOUNT_STATUSES = ['Active', 'Suspended', 'Pending Verification'];
 
 export const CustomerFormModal = ({
   isOpen,
@@ -21,7 +20,7 @@ export const CustomerFormModal = ({
     email: '',
     phone: '',
     role: 'Customer', // 'Customer' | 'Admin'
-    admin_role: 'Super Admin',
+    admin_role: '',
     title: 'Administrative Staff',
     city: '',
     state: '',
@@ -43,7 +42,7 @@ export const CustomerFormModal = ({
         email: initialData.email || '',
         phone: initialData.phone || '',
         role: isAdm ? 'Admin' : 'Customer',
-        admin_role: initialData.admin_role || initialData.role || 'Super Admin',
+        admin_role: initialData.admin_role || (initialData.role && initialData.role !== 'Admin' && initialData.role !== 'Customer' ? initialData.role : '') || '',
         title: initialData.title || (isAdm ? 'Senior Numismatist & Vault Director' : ''),
         city: initialData.city || '',
         state: initialData.state || '',
@@ -61,7 +60,7 @@ export const CustomerFormModal = ({
         email: '',
         phone: '',
         role: 'Customer',
-        admin_role: 'Super Admin',
+        admin_role: '',
         title: 'Senior Numismatist',
         city: '',
         state: '',
@@ -145,7 +144,7 @@ export const CustomerFormModal = ({
                   <span>Account Credentials</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                       User ID *
@@ -177,18 +176,6 @@ export const CustomerFormModal = ({
                         { value: 'Customer', label: 'Customer' },
                         { value: 'Admin', label: 'Admin (Staff)' }
                       ]}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                      Status *
-                    </label>
-                    <Select
-                      value={formData.account_status}
-                      onChange={(e) => setFormData({ ...formData, account_status: e.target.value })}
-                      options={ACCOUNT_STATUSES.map(s => ({ value: s, label: s }))}
                       className="w-full"
                     />
                   </div>
@@ -291,16 +278,12 @@ export const CustomerFormModal = ({
                       <label className="block text-xs font-semibold text-purple-900 uppercase tracking-wider mb-1">
                         Admin Staff Role
                       </label>
-                      <Select
-                        value={formData.admin_role}
+                      <input
+                        type="text"
+                        value={formData.admin_role || ''}
                         onChange={(e) => setFormData({ ...formData, admin_role: e.target.value })}
-                        options={[
-                          { value: 'Super Admin', label: 'Super Admin' },
-                          { value: 'Inventory Manager', label: 'Inventory Manager' },
-                          { value: 'Order Manager', label: 'Order Manager' },
-                          { value: 'Vault Staff', label: 'Vault Staff' }
-                        ]}
-                        className="w-full"
+                        placeholder="e.g. Super Admin"
+                        className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-purple-200 bg-white text-slate-800 focus:outline-none"
                       />
                     </div>
                     <div>
@@ -348,7 +331,7 @@ export const CustomerFormModal = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-[#071A35] hover:bg-[#0B2548] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-[#0B2B4E] hover:bg-[#114275] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

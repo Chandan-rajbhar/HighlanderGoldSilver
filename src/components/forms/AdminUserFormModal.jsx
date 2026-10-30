@@ -155,7 +155,7 @@ export const AdminUserFormModal = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold font-sans uppercase tracking-wider text-white bg-aubergine hover:bg-aubergine-light rounded-lg shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold font-sans uppercase tracking-wider text-white bg-[#0B2B4E] hover:bg-[#114275] rounded-lg shadow-sm cursor-pointer"
           >
             <Check className="w-4 h-4 text-gold" />
             {isEditing ? 'Save Changes' : 'Provision Staff'}

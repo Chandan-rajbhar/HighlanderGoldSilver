@@ -13,8 +13,10 @@ import {
   ShieldCheck,
   Layers,
   Sparkles,
-  Plus
+  Plus,
+  Link as LinkIcon
 } from 'lucide-react';
+import { uploadMultipleInventoryImages, normalizeImageToLink } from '../../services/imageUploadService';
 
 const CATEGORIES = [
   'Gold',
@@ -55,7 +57,7 @@ export const CatalogItemFormDrawer = ({
     inventory: 1,
     description: '',
     storefront_status: 'Active',
-    featured_image: '/assets/items/lot1_morgan_gold_gem.jpg',
+    featured_image: normalizeImageToLink('/assets/items/lot1_morgan_gold_gem.jpg'),
   };
 
   const [formData, setFormData] = useState(defaultFormData);
@@ -65,6 +67,7 @@ export const CatalogItemFormDrawer = ({
   const [isDirty, setIsDirty] = useState(false);
   const [images, setImages] = useState([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,7 +75,7 @@ export const CatalogItemFormDrawer = ({
         const rawImgs = Array.isArray(item.additional_images) && item.additional_images.length > 0
           ? item.additional_images
           : (Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.featured_image ? [item.featured_image] : []));
-        const initialImgs = rawImgs.length > 0 ? rawImgs : ['/assets/items/lot1_morgan_gold_gem.jpg'];
+        const initialImgs = (rawImgs.length > 0 ? rawImgs : ['/assets/items/lot1_morgan_gold_gem.jpg']).map(normalizeImageToLink);
         setImages(initialImgs);
 
         const standardMetals = ['Gold', 'Silver', 'Platinum', 'Palladium', 'Copper'];
@@ -96,11 +99,11 @@ export const CatalogItemFormDrawer = ({
           inventory: item.inventory ?? item.stock_quantity ?? 1,
           description: item.description || '',
           storefront_status: item.storefront_status || item.status || 'Active',
-          featured_image: initialImgs[0] || item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg',
+          featured_image: initialImgs[0] || normalizeImageToLink(item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'),
         });
       } else {
         const randomNum = Math.floor(1 + Math.random() * 99);
-        const defaultImgs = ['/assets/items/lot1_morgan_gold_gem.jpg'];
+        const defaultImgs = [normalizeImageToLink('/assets/items/lot1_morgan_gold_gem.jpg')];
         setImages(defaultImgs);
         setSelectedMetal('Gold');
         setCustomMetal('');
@@ -172,33 +175,32 @@ export const CatalogItemFormDrawer = ({
     updateField('metal', val.trim() || 'Other');
   };
 
-  const handleMultipleFilesChange = (e) => {
+  const handleMultipleFilesChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const readers = files.map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readers).then(newUrls => {
+    setIsUploadingImages(true);
+    try {
+      const uploadedLinks = await uploadMultipleInventoryImages(files, 'items');
       setImages(prev => {
-        const updated = [...prev, ...newUrls];
+        const updated = [...prev, ...uploadedLinks];
         updateField('featured_image', updated[0]);
         return updated;
       });
       setIsDirty(true);
-    });
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      console.error('Image upload error:', err);
+    } finally {
+      setIsUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleAddUrlImage = () => {
     if (!imageUrlInput.trim()) return;
+    const cleanLink = normalizeImageToLink(imageUrlInput.trim());
     setImages(prev => {
-      const updated = [...prev, imageUrlInput.trim()];
+      const updated = [...prev, cleanLink];
       updateField('featured_image', updated[0]);
       return updated;
     });
@@ -245,7 +247,8 @@ export const CatalogItemFormDrawer = ({
     e.preventDefault();
     if (!validate()) return;
 
-    const finalImages = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : ['/assets/items/lot1_morgan_gold_gem.jpg']);
+    const rawImgs = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : ['/assets/items/lot1_morgan_gold_gem.jpg']);
+    const finalImages = rawImgs.map(normalizeImageToLink);
     const finalMetal = selectedMetal === 'Other' ? (customMetal.trim() || 'Other') : selectedMetal;
     onSave({
       ...formData,
@@ -357,7 +360,7 @@ export const CatalogItemFormDrawer = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2348] hover:bg-[#071A35] text-white text-xs font-medium transition-colors shadow-xs cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-medium transition-colors shadow-xs cursor-pointer"
                         >
                           <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
                           Upload / Replace
@@ -396,7 +399,7 @@ export const CatalogItemFormDrawer = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0B2348] text-white text-xs font-medium hover:bg-[#071A35] transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-medium transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
                       + Upload More
@@ -476,7 +479,7 @@ export const CatalogItemFormDrawer = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2348] text-white text-xs font-medium hover:bg-[#071A35] shadow-xs cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-medium shadow-xs cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
                       Upload Photos
@@ -484,6 +487,47 @@ export const CatalogItemFormDrawer = ({
                   </div>
                 </div>
               )}
+
+              {/* Cloud Uploading State */}
+              {isUploadingImages && (
+                <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[#0B2348]/5 border border-[#C9A23A]/30 text-xs text-[#0B2348] font-medium animate-pulse">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#C9A23A]" />
+                  <span>Uploading image to Supabase Storage and generating public URL link...</span>
+                </div>
+              )}
+
+              {/* Add by Direct Web Link */}
+              <div className="p-3 rounded-xl bg-[#F8F6F1] border border-[#E4E0D8] space-y-1.5">
+                <div className="flex items-center gap-1.5 text-slate-600">
+                  <LinkIcon className="w-3.5 h-3.5 text-[#C9A23A]" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider font-sans">
+                    Or Add Image via Direct Web Link
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="https://.../coin-photo.jpg"
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A] font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddUrlImage();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddUrlImage}
+                    disabled={!imageUrlInput.trim()}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#0B2B4E] text-white hover:bg-[#114275] disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                  >
+                    + Add Link
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 2. Core Product Information */}

@@ -255,7 +255,7 @@ export const ItemDetailModal = ({
                   onClose();
                   onEdit(item);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5 text-[#C9A23A]" />
                 <span>Edit Product</span>

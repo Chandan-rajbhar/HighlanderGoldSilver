@@ -20,6 +20,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { inquiryService } from '../services/inquiryService';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { DataTable } from '../components/ui/DataTable';
 import { Select } from '../components/ui/Select';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -428,6 +429,27 @@ export const Inquiries = () => {
     fetchStats();
   }, [fetchStats]);
 
+  // Real-time Supabase subscription for dynamic live updates across storefront & database
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+
+    const channel = supabase
+      .channel('admin-inquiries-live-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'inquiries' },
+        () => {
+          fetchInquiries();
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchInquiries, fetchStats]);
+
   const handleSort = (columnKey) => {
     if (sortBy === columnKey) {
       setSortAsc(!sortAsc);
@@ -601,13 +623,30 @@ export const Inquiries = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#0B2D52]">
-          Customer Inquiries
-        </h2>
-        <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-          Manage customer messages, product inquiries, and buyback requests.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#0B2D52]">
+            Customer Inquiries
+          </h2>
+          <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+            Manage customer messages, product inquiries, and buyback requests.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            fetchInquiries();
+            fetchStats();
+            toast.success('Inquiries updated from database');
+          }}
+          disabled={isLoading}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
+          title="Refresh inquiries from database"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-[#0B2B4E] ${isLoading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* Top Status KPI Summary Cards with Interactive Filter */}

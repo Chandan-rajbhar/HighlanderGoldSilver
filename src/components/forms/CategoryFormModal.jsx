@@ -259,7 +259,7 @@ export const CategoryFormModal = ({
               type="submit"
               form="category-drawer-form"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-aubergine hover:bg-aubergine-light rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#0B2B4E] hover:bg-[#114275] rounded-xl shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

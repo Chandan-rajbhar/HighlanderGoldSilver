@@ -2,6 +2,7 @@ import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Sparkles, DollarSign, Image, Check, AlertCircle } from 'lucide-react';
+import { normalizeImageToLink } from '../../services/imageUploadService';
 
 const CATEGORIES = [
   'Gold',
@@ -105,6 +106,7 @@ export const ItemFormModal = ({
 
     onSave({
       ...formData,
+      featured_image: normalizeImageToLink(formData.featured_image),
       price: Number(formData.price),
       stock_quantity: Number(formData.stock_quantity) || 1,
     });

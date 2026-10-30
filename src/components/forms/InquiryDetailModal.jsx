@@ -3,19 +3,12 @@ import {
   X, 
   Mail, 
   Phone, 
-  Calendar, 
-  Send, 
   Check, 
-  Clock, 
   MessageSquare, 
   User, 
   Tag, 
   Trash2, 
-  Copy, 
-  CheckCheck,
-  ExternalLink,
-  ShieldCheck,
-  FileText
+  Copy
 } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
 
@@ -31,18 +24,11 @@ export const InquiryDetailModal = ({
   if (!isOpen || !inquiry) return null;
 
   const [selectedStatus, setSelectedStatus] = useState(inquiry.status || 'New');
-  const [replyText, setReplyText] = useState('');
-  const [adminNotes, setAdminNotes] = useState(inquiry.admin_notes || '');
   const [copiedField, setCopiedField] = useState(null);
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
 
   useEffect(() => {
     if (inquiry) {
       setSelectedStatus(inquiry.status || 'New');
-      setAdminNotes(inquiry.admin_notes || '');
-      setReplyText(`Hello ${inquiry.inquirer_name || 'Customer'},\n\nThank you for reaching out to Highlander Gold & Silver regarding ${inquiry.lot_title || 'our catalog'}.\n\n\n\nBest regards,\nAlexander MacLeod\nHighlander Gold & Silver\nBigfork, Montana | (406) 407-0281`);
-      setNotesSaved(false);
     }
   }, [inquiry]);
 
@@ -85,20 +71,8 @@ export const InquiryDetailModal = ({
 
   const handleSendReply = () => {
     const subject = encodeURIComponent(`RE: Highlander Gold & Silver Inquiry - ${inquiry.lot_title || 'General Inquiry'}`);
-    const body = encodeURIComponent(replyText);
-    window.open(`mailto:${inquiry.email}?subject=${subject}&body=${body}`);
+    window.open(`mailto:${inquiry.email}?subject=${subject}`);
     handleStatusChange('Replied');
-  };
-
-  const handleSaveNotes = async () => {
-    setIsSavingNotes(true);
-    try {
-      // If service supports updating notes
-      setNotesSaved(true);
-      setTimeout(() => setNotesSaved(false), 2500);
-    } finally {
-      setIsSavingNotes(false);
-    }
   };
 
   const displayTitle = inquiry.lot_title || 'General Customer Question';
@@ -138,7 +112,7 @@ export const InquiryDetailModal = ({
                 Customer Inquiry Dossier
               </h2>
               <p className="text-xs text-slate-300 mt-0.5">
-                Review message, client contact information, and dispatch reply.
+                Review message and client contact details.
               </p>
             </div>
 
@@ -313,67 +287,30 @@ export const InquiryDetailModal = ({
               </div>
             </div>
 
-            {/* Quick Email Response Draft */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            {/* Direct Email Reply Action Card */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <Send className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Reply / Client Communication
+                  <Mail className="w-4 h-4 text-[#155A96]" />
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Email Reply
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400">
-                  Pre-drafted template
-                </span>
+                <p className="text-xs text-slate-500">
+                  Open default email client to reply directly to <span className="font-semibold text-slate-700">{inquiry.email}</span>
+                </p>
               </div>
 
-              <textarea
-                rows="5"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`Draft reply to ${inquiry.inquirer_name}...`}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white font-sans focus:ring-2 focus:ring-[#155A96]/20 focus:border-[#155A96] focus:outline-none transition-all leading-relaxed"
-              />
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400">
-                  Clicking will open your email client with pre-filled subject and recipient.
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSendReply}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#0B2D52] hover:bg-[#155A96] rounded-xl transition-colors shadow-xs cursor-pointer shrink-0"
-                >
-                  <Send className="w-3.5 h-3.5 text-[#F5D061]" />
-                  <span>Send Email Reply</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleSendReply}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#0B2D52] hover:bg-[#155A96] rounded-xl transition-colors shadow-xs cursor-pointer shrink-0"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#F5D061]" />
+                <span>Reply via Email</span>
+              </button>
             </div>
 
-            {/* Internal Admin Notes */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Internal Staff Notes
-                  </span>
-                </div>
-                {notesSaved && (
-                  <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                    <CheckCheck className="w-3.5 h-3.5" /> Notes recorded
-                  </span>
-                )}
-              </div>
-
-              <textarea
-                rows="2"
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Internal notes visible only to administrators (e.g. called customer on Friday, follow up on Tuesday)..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-[#155A96]/20 focus:border-[#155A96] focus:outline-none transition-all"
-              />
-            </div>
           </div>
 
           {/* Drawer Footer */}
@@ -392,24 +329,13 @@ export const InquiryDetailModal = ({
               </button>
             ) : <div />}
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              >
-                Close Slider
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSendReply}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#0B2D52] hover:bg-[#155A96] rounded-xl transition-colors shadow-xs cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5 text-[#F5D061]" />
-                <span>Reply to Client</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              Close Slider
+            </button>
           </div>
         </div>
       </div>

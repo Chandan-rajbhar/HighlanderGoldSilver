@@ -102,7 +102,7 @@ export const Inventory = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, search, category, metal, availability, sortBy, sortAsc, toast]);
+  }, [page, pageSize, search, category, metal, availability, sortBy, sortAsc]);
 
   useEffect(() => {
     fetchItems();
@@ -175,7 +175,7 @@ export const Inventory = () => {
         toast.success(`Item #${updated.lot_number} "${updated.title}" updated!`);
       } else {
         const created = await inventoryService.createItem(formData);
-        setItems(prev => [created, ...prev]);
+        setItems(prev => [created, ...prev.filter(item => item.id !== created.id)]);
         setTotal(prev => prev + 1);
         toast.success(`Product Item #${created.lot_number} "${created.title}" added!`);
       }
@@ -319,7 +319,7 @@ export const Inventory = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleAddNew}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#071A35] hover:bg-[#0B2548] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4 text-[#C9A23A]" />
             Add Product

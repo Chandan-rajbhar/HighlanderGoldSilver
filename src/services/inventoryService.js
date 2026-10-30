@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
+import { normalizeImageToLink } from './imageUploadService';
 
 // Columns for list views - Egress Optimization: Never select('*') on lists!
 const LIST_COLUMNS = 'id, lot_number, sku, title, lead, description, category, metal, purity, grade, price, inventory, stock_quantity, stock_status, storefront_status, status, show_on_storefront, is_featured, featured_image, additional_images, weight, mintage, cert_company, cert_number, estimate_range, payment_note, created_at';
@@ -27,9 +28,12 @@ const sanitizeInventoryPayload = (item) => {
     }
   }
   
-  sanitized.additional_images = Array.isArray(additionalImgs) ? additionalImgs : [];
+  const rawAdditional = Array.isArray(additionalImgs) ? additionalImgs : [];
+  sanitized.additional_images = rawAdditional.map(normalizeImageToLink).filter(Boolean);
   if (!sanitized.featured_image && sanitized.additional_images.length > 0) {
     sanitized.featured_image = sanitized.additional_images[0];
+  } else if (sanitized.featured_image) {
+    sanitized.featured_image = normalizeImageToLink(sanitized.featured_image);
   }
 
   if (sanitized.price !== undefined) sanitized.price = Number(sanitized.price) || 0;

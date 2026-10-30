@@ -22,11 +22,12 @@ export const adminUserService = {
         if (error) throw error;
         return data || [];
       } catch (err) {
-        console.error('Supabase getAdminUsers error, falling back to local:', err);
+        console.error('Supabase getAdminUsers error:', err);
+        return [];
       }
     }
 
-    let users = localDB.getAdminUsers();
+    return [];
     if (role && role !== 'All') users = users.filter(u => u.role === role);
     if (status && status !== 'All') users = users.filter(u => u.status === status);
     if (search && search.trim() !== '') {
@@ -77,7 +78,7 @@ export const adminUserService = {
       if (userData[col] !== undefined) cleanPayload[col] = userData[col];
     });
     if (userData.full_name && !cleanPayload.name) cleanPayload.name = userData.full_name;
-    if (userData.admin_role && !cleanPayload.role) cleanPayload.role = userData.admin_role;
+    if (userData.admin_role !== undefined) cleanPayload.role = userData.admin_role;
     if (userData.account_status && !cleanPayload.status) cleanPayload.status = userData.account_status;
 
     if (isSupabaseConfigured()) {
@@ -87,18 +88,30 @@ export const adminUserService = {
           .update(cleanPayload)
           .eq('id', id)
           .select();
-        if (error) throw error;
-        return data?.[0] || cleanPayload;
+        if (error) {
+          console.warn('Supabase updateAdminUser warning, falling back to local:', error);
+        } else if (data?.[0]) {
+          const users = localDB.getAdminUsers();
+          const idx = users.findIndex(u => u.id === id);
+          if (idx !== -1) {
+            users[idx] = { ...users[idx], ...data[0] };
+            localDB.setAdminUsers([...users]);
+          }
+          return data[0];
+        }
       } catch (err) {
-        console.error('Supabase updateAdminUser error:', err);
-        throw err;
+        console.warn('Supabase updateAdminUser error, saving to localDB:', err);
       }
     }
 
     const users = localDB.getAdminUsers();
     const index = users.findIndex(u => u.id === id);
-    if (index === -1) throw new Error('Admin user not found');
-    users[index] = { ...users[index], ...userData };
+    if (index === -1) {
+      const fallbackAdmin = { id, ...cleanPayload };
+      localDB.setAdminUsers([...users, fallbackAdmin]);
+      return fallbackAdmin;
+    }
+    users[index] = { ...users[index], ...cleanPayload };
     localDB.setAdminUsers([...users]);
     return users[index];
   },
