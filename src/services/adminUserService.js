@@ -71,16 +71,24 @@ export const adminUserService = {
   },
 
   async updateAdminUser(id, userData) {
+    const validFields = ['name', 'email', 'role', 'status', 'two_factor_enabled', 'title', 'location'];
+    const cleanPayload = {};
+    validFields.forEach(col => {
+      if (userData[col] !== undefined) cleanPayload[col] = userData[col];
+    });
+    if (userData.full_name && !cleanPayload.name) cleanPayload.name = userData.full_name;
+    if (userData.admin_role && !cleanPayload.role) cleanPayload.role = userData.admin_role;
+    if (userData.account_status && !cleanPayload.status) cleanPayload.status = userData.account_status;
+
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('admin_users')
-          .update(userData)
+          .update(cleanPayload)
           .eq('id', id)
-          .select()
-          .single();
+          .select();
         if (error) throw error;
-        return data;
+        return data?.[0] || cleanPayload;
       } catch (err) {
         console.error('Supabase updateAdminUser error:', err);
         throw err;

@@ -274,7 +274,11 @@ export const Customers = () => {
         if (selectedUser.is_admin) {
           await adminUserService.updateAdminUser(selectedUser.id, formData);
         } else {
-          await customerService.updateCustomer(selectedUser.id, formData);
+          await customerService.updateCustomer(selectedUser.id, {
+            ...formData,
+            email: formData.email || selectedUser.email,
+            customer_id: formData.customer_id || selectedUser.customer_id
+          });
         }
         toast.success(`User "${formData.full_name || formData.name}" updated successfully!`);
 

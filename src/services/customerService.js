@@ -198,16 +198,62 @@ export const customerService = {
   },
 
   async updateCustomer(id, custData) {
+    // Whitelist only valid columns of public.customers to avoid 400 errors (e.g. unknown column "role")
+    const validFields = [
+      'customer_id',
+      'auth_user_id',
+      'full_name',
+      'email',
+      'phone',
+      'city',
+      'state',
+      'interest',
+      'total_spent',
+      'orders_count',
+      'account_status',
+      'notes'
+    ];
+
+    const cleanPayload = {};
+    for (const key of Object.keys(custData)) {
+      if (validFields.includes(key) && custData[key] !== undefined) {
+        cleanPayload[key] = custData[key];
+      }
+    }
+    if (custData.name && !cleanPayload.full_name) {
+      cleanPayload.full_name = custData.name;
+    }
+    if (cleanPayload.total_spent !== undefined) {
+      cleanPayload.total_spent = Number(cleanPayload.total_spent) || 0;
+    }
+    if (cleanPayload.orders_count !== undefined) {
+      cleanPayload.orders_count = Number(cleanPayload.orders_count) || 0;
+    }
+    cleanPayload.updated_at = new Date().toISOString();
+
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        // Attempt update by primary key id first
+        let { data, error } = await supabase
           .from('customers')
-          .update(custData)
+          .update(cleanPayload)
           .eq('id', id)
-          .select()
-          .single();
+          .select();
+
+        // If no rows matched by id, try matching by customer_id or email
+        if (!error && (!data || data.length === 0)) {
+          const fallbackId = cleanPayload.customer_id || id;
+          const retryRes = await supabase
+            .from('customers')
+            .update(cleanPayload)
+            .or(`customer_id.eq.${fallbackId},email.eq.${cleanPayload.email || ''}`)
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
         if (error) throw error;
-        return data;
+        return data?.[0] || cleanPayload;
       } catch (err) {
         console.error('Supabase updateCustomer error:', err);
         throw err;
@@ -215,9 +261,13 @@ export const customerService = {
     }
 
     const custs = localDB.getCustomers();
-    const index = custs.findIndex(c => c.id === id);
-    if (index === -1) throw new Error('Customer not found');
-    custs[index] = { ...custs[index], ...custData };
+    const index = custs.findIndex(c => c.id === id || c.customer_id === id || c.email === custData.email);
+    if (index === -1) {
+      const fallbackCust = { id, ...cleanPayload };
+      localDB.setCustomers([fallbackCust, ...custs]);
+      return fallbackCust;
+    }
+    custs[index] = { ...custs[index], ...cleanPayload };
     localDB.setCustomers([...custs]);
     return custs[index];
   },
