@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HeroSection } from './Home/HeroSection';
 import { FeaturedCarousel } from '../components/collection/FeaturedCarousel';
@@ -7,10 +7,26 @@ import { INVENTORY_ITEMS } from '../data/inventory';
 import { BUSINESS_INFO } from '../data/businessInfo';
 import { Icons } from '../utils/icons';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { settingsService } from '../services/settingsService';
 
 export const HomePage: React.FC = () => {
   // Setup smooth scroll reveal observer
   useScrollReveal();
+
+  const [settings, setSettings] = useState(() => settingsService.getActiveStorefrontContent());
+
+  useEffect(() => {
+    settingsService.getSettings()
+      .then((data) => setSettings(prev => ({ ...prev, ...data })))
+      .catch(() => {});
+
+    const handleUpdate = (e: any) => {
+      if (e.detail) setSettings((prev: any) => ({ ...prev, ...e.detail }));
+    };
+
+    window.addEventListener('hgs:settings-updated', handleUpdate);
+    return () => window.removeEventListener('hgs:settings-updated', handleUpdate);
+  }, []);
 
   return (
     <main>
@@ -38,9 +54,9 @@ export const HomePage: React.FC = () => {
         <div className="container">
           <SectionHeading
             align="center"
-            eyebrow="The Highlander Difference · Bigfork, Montana"
-            title="A Dedicated Storefront for Numismatic Collectors"
-            subtitle="We operate as a direct storefront rather than an auction house. Acquire sovereign gold, rare coins, and investment-grade bullion with instant pricing, zero bidding wars, and immediate settlement."
+            eyebrow={settings.difference_eyebrow || "The Highlander Difference · Bigfork, Montana"}
+            title={settings.difference_title || "A Dedicated Storefront for Numismatic Collectors"}
+            subtitle={settings.difference_subtitle || "We operate as a direct storefront rather than an auction house. Acquire sovereign gold, rare coins, and investment-grade bullion with instant pricing, zero bidding wars, and immediate settlement."}
           />
 
           <div className="store-highlights-grid">
@@ -48,9 +64,9 @@ export const HomePage: React.FC = () => {
               <div className="highlight-icon-box">
                 <Icons.CreditCard size={22} />
               </div>
-              <h3 className="highlight-title">Direct Storefront Purchase</h3>
+              <h3 className="highlight-title">{settings.card1_title || "Direct Storefront Purchase"}</h3>
               <p className="highlight-text">
-                Browse verified inventory and purchase immediately via PayPal or bank wire. No bidding wars, timer countdowns, or auction delays.
+                {settings.card1_desc || "Browse verified inventory and purchase immediately via PayPal or bank wire. No bidding wars, timer countdowns, or auction delays."}
               </p>
             </div>
 
@@ -58,9 +74,9 @@ export const HomePage: React.FC = () => {
               <div className="highlight-icon-box">
                 <Icons.ShieldCheck size={22} />
               </div>
-              <h3 className="highlight-title">Sold Value Guarantee</h3>
+              <h3 className="highlight-title">{settings.card2_title || "Sold Value Guarantee"}</h3>
               <p className="highlight-text">
-                Every piece is evaluated for true luster, strike, eye appeal, and metal integrity. Backed by our market value difference refund promise.
+                {settings.card2_desc || "Every piece is evaluated for true luster, strike, eye appeal, and metal integrity. Backed by our market value difference refund promise."}
               </p>
             </div>
 
@@ -68,9 +84,9 @@ export const HomePage: React.FC = () => {
               <div className="highlight-icon-box">
                 <Icons.Package size={22} />
               </div>
-              <h3 className="highlight-title">In-House Insured Delivery</h3>
+              <h3 className="highlight-title">{settings.card3_title || "In-House Insured Delivery"}</h3>
               <p className="highlight-text">
-                All packaging is performed in-house from Jewel Basin Armory. Every parcel is shipped via USPS Priority, fully insured with tracking.
+                {settings.card3_desc || "All packaging is performed in-house from Jewel Basin Armory. Every parcel is shipped via USPS Priority, fully insured with tracking."}
               </p>
             </div>
 
@@ -78,9 +94,9 @@ export const HomePage: React.FC = () => {
               <div className="highlight-icon-box">
                 <Icons.Check size={22} />
               </div>
-              <h3 className="highlight-title">0% Montana Sales Tax</h3>
+              <h3 className="highlight-title">{settings.card4_title || "0% Montana Sales Tax"}</h3>
               <p className="highlight-text">
-                Take advantage of Montana's 0% state sales tax on precious metals, combined with transparent 15% settlement fee.
+                {settings.card4_desc || "Take advantage of Montana's 0% state sales tax on precious metals, combined with transparent 15% settlement fee."}
               </p>
             </div>
           </div>
@@ -94,38 +110,29 @@ export const HomePage: React.FC = () => {
             <div>
               <span className="guarantee-badge">
                 <Icons.ShieldCheck size={16} strokeWidth={2.5} />
-                Authentic Value &amp; Authenticity Promise
+                {settings.guarantee_badge || "Authentic Value & Authenticity Promise"}
               </span>
               <h2 className="guarantee-title">
-                The Highlander Sold Value Guarantee
+                {settings.guarantee_title || "The Highlander Sold Value Guarantee"}
               </h2>
               <p className="text-muted guarantee-desc">
-                Highlander Gold &amp; Silver hand-selects coins and precious metals for superior eye appeal, strike quality,
-                and metal integrity. We represent sovereign gold, certified Morgan dollars, commemorative coins, and pure bullion.
+                {settings.guarantee_desc || "Highlander Gold & Silver hand-selects coins and precious metals for superior eye appeal, strike quality, and metal integrity. We represent sovereign gold, certified Morgan dollars, commemorative coins, and pure bullion."}
               </p>
               <p className="text-muted guarantee-desc">
-                <strong>Our Direct Promise:</strong> If at any time a customer proves that a piece they purchased was
-                overpriced based on its current market state, HGS will refund the cost difference, or accept the return
-                of the item at its full purchased value (as-sold). Acquire with complete confidence knowing your investment
-                is backed by genuine integrity.
+                <strong>{settings.guarantee_promise_prefix || "Our Direct Promise:"}</strong> {settings.guarantee_promise_text || "If at any time a customer proves that a piece they purchased was overpriced based on its current market state, HGS will refund the cost difference, or accept the return of the item at its full purchased value (as-sold). Acquire with complete confidence knowing your investment is backed by genuine integrity."}
               </p>
               <div className="guarantee-badges-list">
-                <span className="badge-verified">
-                  <Icons.Check size={13} />
-                  Verified Sold Value Guarantee
-                </span>
-                <span className="badge-verified">
-                  <Icons.Check size={13} />
-                  Hand-Selected Eye Appeal
-                </span>
-                <span className="badge-verified">
-                  <Icons.Check size={13} />
-                  Difference Refund Protection
-                </span>
-                <span className="badge-verified">
-                  <Icons.Check size={13} />
-                  0% Montana State Sales Tax
-                </span>
+                {[
+                  settings.guarantee_badge_1 || "Verified Sold Value Guarantee",
+                  settings.guarantee_badge_2 || "Hand-Selected Eye Appeal",
+                  settings.guarantee_badge_3 || "Difference Refund Protection",
+                  settings.guarantee_badge_4 || "0% Montana State Sales Tax"
+                ].filter(Boolean).map((badge, idx) => (
+                  <span key={idx} className="badge-verified">
+                    <Icons.Check size={13} />
+                    {badge}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
@@ -139,18 +146,18 @@ export const HomePage: React.FC = () => {
             <div className="heritage-preview-content">
 
               <h2 className="heritage-preview-title">
-                Rooted in Flathead Valley Numismatic Tradition
+                {settings.heritage_title || "Rooted in Flathead Valley Numismatic Tradition"}
               </h2>
               <p className="heritage-preview-text">
-                Operating from our physical location at {BUSINESS_INFO.street} in Bigfork, Montana, Highlander Gold &amp; Silver offers private collector consultations, direct telephone inquiries, and secure nationwide insured distribution.
+                {settings.heritage_desc || `Operating from our physical location at ${BUSINESS_INFO.street} in Bigfork, Montana, Highlander Gold & Silver offers private collector consultations, direct telephone inquiries, and secure nationwide insured distribution.`}
               </p>
               <div className="heritage-preview-actions">
                 <Link to="/about" className="btn btn-gold">
-                  <span>Learn About Our Storefront</span>
+                  <span>{settings.heritage_btn_primary || "Learn About Our Storefront"}</span>
                   <Icons.ArrowRight size={16} />
                 </Link>
                 <Link to="/contact" className="btn btn-silver">
-                  <span>Contact Our Team</span>
+                  <span>{settings.heritage_btn_secondary || "Contact Our Team"}</span>
                 </Link>
               </div>
             </div>

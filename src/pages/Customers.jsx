@@ -599,11 +599,16 @@ export const Customers = () => {
                   <span className="font-semibold text-purple-700 mt-0.5 block">{viewUser.admin_role || 'Super Admin'}</span>
                 </div>
 
-                <div className="sm:col-span-2">
+                <div>
                   <span className="text-slate-400 block font-medium">Official Staff Title</span>
                   <span className="font-semibold text-slate-800 mt-0.5 block">
                     {viewUser.title || (viewUser.admin_role === 'Super Admin' ? 'Senior Numismatist & Vault Director' : viewUser.admin_role === 'Inventory Manager' ? 'Certified Coin Cataloger & Appraiser' : 'Settlement & Wire Verification Officer')}
                   </span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block font-medium">System Authorization Key</span>
+                  <span className="font-mono text-slate-700 mt-0.5 block">HGS-AUTH-{viewUser.customer_id?.replace(/[^0-9]/g, '') || '001'}-SEC</span>
                 </div>
 
                 <div>
@@ -612,22 +617,10 @@ export const Customers = () => {
                 </div>
 
                 <div>
-                  <span className="text-slate-400 block font-medium">System Authorization Key</span>
-                  <span className="font-mono text-slate-700 mt-0.5 block">HGS-AUTH-{viewUser.customer_id?.replace(/[^0-9]/g, '') || '001'}-SEC</span>
-                </div>
-
-                <div className="sm:col-span-2">
                   <span className="text-slate-400 block font-medium">Account Commissioning Date</span>
                   <span className="font-mono text-slate-600 mt-0.5 block">
                     {new Date(viewUser.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </span>
-                </div>
-
-                <div className="sm:col-span-2 p-3 bg-purple-50/60 border border-purple-200/60 rounded-xl">
-                  <span className="text-[11px] font-semibold text-purple-900 block mb-0.5">Administrative Security Directives &amp; Scope:</span>
-                  <p className="text-xs text-purple-800/90 leading-relaxed font-sans">
-                    {viewUser.notes || 'Authorized staff keyholder with dual-custody access to precious metal inventory, bank wire approvals, customer identity verification, and live spot spread controls.'}
-                  </p>
                 </div>
               </div>
             </div>
@@ -908,13 +901,6 @@ export const Customers = () => {
                     <span className="font-mono text-slate-600 mt-0.5 block">
                       {new Date(viewUser.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </span>
-                  </div>
-
-                  <div className="sm:col-span-2 p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl">
-                    <span className="text-[11px] font-semibold text-amber-900 block mb-0.5">Collector Notes &amp; Instructions:</span>
-                    <p className="text-xs text-amber-800/90 leading-relaxed font-sans">
-                      {viewUser.notes}
-                    </p>
                   </div>
                 </div>
               </div>

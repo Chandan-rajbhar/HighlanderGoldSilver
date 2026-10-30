@@ -67,10 +67,11 @@ export const ItemDetailModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 shrink-0"
               aria-label="Close drawer"
+              title="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-white" strokeWidth={2.5} />
             </button>
           </div>
 
@@ -220,21 +221,7 @@ export const ItemDetailModal = ({
               </p>
             </div>
 
-            {/* Acquisition Terms */}
-            <div className="border-l-4 border-[#C9A23A] bg-[#FFFDF9] p-4 text-xs text-slate-800 rounded-r-xl border-y border-r border-[#EBE3D7]/60">
-              <span className="font-bold text-slate-900 block mb-0.5">Acquisition & Settlement Terms:</span>
-              <p className="text-slate-600 leading-relaxed">
-                {item.payment_note || item.acquisition_terms || 'High-value numismatic acquisition: Direct bank wire payment preferred with HGS wire credit applied on settlement.'}
-              </p>
-            </div>
 
-            {/* HGS Sold Value Guarantee */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-white text-xs space-y-1 shadow-2xs">
-              <span className="font-bold text-[#0B2B4E] block">HGS Sold Value Guarantee:</span>
-              <p className="text-slate-600 leading-relaxed">
-                {item.guarantee_note || 'If proof is presented that any purchased piece was overpriced based on current market state, HGS refunds the difference or accepts as-sold return.'}
-              </p>
-            </div>
 
           </div>
 
