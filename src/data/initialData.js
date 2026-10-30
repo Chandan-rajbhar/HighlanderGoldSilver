@@ -401,6 +401,17 @@ export const initialCategories = [
     display_order: 1
   },
   {
+    id: "cat-4698",
+    name: "925 Silv",
+    slug: "925-silv",
+    description: "Best",
+    metal_type: "Silver",
+    item_count: 0,
+    total_valuation: 0,
+    is_active: true,
+    display_order: 1
+  },
+  {
     id: "cat-morgan",
     name: "Morgan Dollars",
     slug: "morgan-dollars",

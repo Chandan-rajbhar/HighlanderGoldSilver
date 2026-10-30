@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InventoryItem } from '../types';
 import { InventoryService } from '../services/inventoryService';
+import { categoryService } from '../services/categoryService';
 
 export function useInventory() {
   const [allItems, setAllItems] = useState<InventoryItem[]>([]);
@@ -8,6 +9,19 @@ export function useInventory() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentSort, setCurrentSort] = useState<string>('lot-asc');
+
+  // Dynamic categories fetched from database (Supabase / localDB)
+  const [dbCategories, setDbCategories] = useState<string[]>(() => {
+    try {
+      const syncCats = (categoryService as any).getStorefrontCategoryNamesSync?.();
+      if (Array.isArray(syncCats) && syncCats.length > 0) {
+        return syncCats;
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -24,19 +38,52 @@ export function useInventory() {
         }
       });
 
+    // Fetch dynamic categories from database
+    const loadCategories = async () => {
+      try {
+        const catNames = await (categoryService as any).getStorefrontCategoryNames();
+        if (isMounted && Array.isArray(catNames) && catNames.length > 0) {
+          setDbCategories(catNames);
+        }
+      } catch (err) {
+        console.error('Error loading dynamic categories for storefront:', err);
+      }
+    };
+
+    loadCategories();
+
+    // Listen for category updates from admin dashboard
+    const handleCategoryUpdate = () => {
+      loadCategories();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('hgs:categories-updated', handleCategoryUpdate);
+      window.addEventListener('storage', handleCategoryUpdate);
+    }
+
     return () => {
       isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('hgs:categories-updated', handleCategoryUpdate);
+        window.removeEventListener('storage', handleCategoryUpdate);
+      }
     };
   }, []);
 
   const categories = useMemo(() => {
+    // Only show categories that are present and active in the database
+    if (dbCategories.length > 0) {
+      return ['all', ...dbCategories];
+    }
+    // Fallback while loading
     const unique = Array.from(new Set(allItems.map(i => i.category)));
     return ['all', ...unique];
-  }, [allItems]);
+  }, [dbCategories, allItems]);
 
   const filteredItems = useMemo(() => {
     let result = allItems.filter(item => {
-      if (activeCategory !== 'all' && item.category !== activeCategory) {
+      if (activeCategory !== 'all' && (item.category || '').toLowerCase() !== activeCategory.toLowerCase()) {
         return false;
       }
       return true;

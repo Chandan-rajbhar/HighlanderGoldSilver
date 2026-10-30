@@ -9,7 +9,7 @@ const computeLocalCategories = () => {
   const cats = localDB.getCategories();
   const items = localDB.getInventory();
   return cats.map(cat => {
-    const catItems = items.filter(i => i.category === cat.name);
+    const catItems = items.filter(i => (i.category || '').toLowerCase() === (cat.name || '').toLowerCase());
     const val = catItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
     return {
       ...cat,
@@ -34,10 +34,14 @@ export const categoryService = {
         const { data, error } = await supabase
           .from('categories')
           .select(LIST_COLUMNS)
-          .order('display_order', { ascending: true });
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: true });
         if (error) throw error;
-        _cachedCategories = data || [];
-        return _cachedCategories;
+        if (data && data.length > 0) {
+          _cachedCategories = data;
+          localDB.setCategories(_cachedCategories);
+          return _cachedCategories;
+        }
       } catch (err) {
         console.error('Supabase getCategories error:', err);
       }
@@ -47,12 +51,28 @@ export const categoryService = {
     return _cachedCategories;
   },
 
+  // Returns only visible/active category names from the database for the storefront
+  async getStorefrontCategoryNames() {
+    const cats = await this.getCategories();
+    const visible = (cats || []).filter(c => c.is_active !== false && c.name && c.name.trim() !== '');
+    return visible.map(c => c.name);
+  },
+
+  // Instant synchronous category names for 0ms storefront render
+  getStorefrontCategoryNamesSync() {
+    const cats = this.getCategoriesSync();
+    const visible = (cats || []).filter(c => c.is_active !== false && c.name && c.name.trim() !== '');
+    return visible.map(c => c.name);
+  },
+
   async createCategory(catData) {
     const newCat = {
       ...catData,
       id: catData.id || `cat-${Date.now().toString().slice(-4)}`,
       item_count: 0,
       total_valuation: 0,
+      is_active: catData.is_active ?? true,
+      display_order: Number(catData.display_order) || 1,
       created_at: new Date().toISOString()
     };
 
@@ -65,7 +85,13 @@ export const categoryService = {
           .single();
         if (error) throw error;
         _cachedCategories = null;
-        return data;
+        const currentCats = localDB.getCategories();
+        const savedCat = data || newCat;
+        localDB.setCategories([...currentCats, savedCat]);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('hgs:categories-updated', { detail: savedCat }));
+        }
+        return savedCat;
       } catch (err) {
         console.error('Supabase createCategory error:', err);
         throw err;
@@ -76,6 +102,9 @@ export const categoryService = {
     const updated = [...cats, newCat];
     localDB.setCategories(updated);
     _cachedCategories = null;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hgs:categories-updated', { detail: newCat }));
+    }
     return newCat;
   },
 
@@ -90,6 +119,12 @@ export const categoryService = {
           .single();
         if (error) throw error;
         _cachedCategories = null;
+        const currentCats = localDB.getCategories();
+        const updatedCats = currentCats.map(c => c.id === id ? { ...c, ...catData, ...(data || {}) } : c);
+        localDB.setCategories(updatedCats);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('hgs:categories-updated', { detail: data }));
+        }
         return data;
       } catch (err) {
         console.error('Supabase updateCategory error:', err);
@@ -103,6 +138,9 @@ export const categoryService = {
     cats[index] = { ...cats[index], ...catData };
     localDB.setCategories([...cats]);
     _cachedCategories = null;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hgs:categories-updated', { detail: catData }));
+    }
     return cats[index];
   },
 
@@ -114,8 +152,6 @@ export const categoryService = {
           .delete()
           .eq('id', id);
         if (error) throw error;
-        _cachedCategories = null;
-        return true;
       } catch (err) {
         console.error('Supabase deleteCategory error:', err);
         throw err;
@@ -126,6 +162,11 @@ export const categoryService = {
     const filtered = cats.filter(c => c.id !== id);
     localDB.setCategories(filtered);
     _cachedCategories = null;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hgs:categories-updated', { detail: { id, deleted: true } }));
+    }
     return true;
   }
 };
+
+export default categoryService;

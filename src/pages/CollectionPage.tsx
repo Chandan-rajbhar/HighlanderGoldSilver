@@ -120,7 +120,7 @@ export const CollectionPage: React.FC = () => {
           <div className="collection-meta-bar">
             <div className="meta-results-count">
               Showing <span className="active-count-highlight">{filteredItems.length}</span> of {allItems.length} available pieces
-              {activeCategory !== 'All' && (
+              {activeCategory.toLowerCase() !== 'all' && (
                 <span className="active-filter-indicator">
                   in <strong>{activeCategory}</strong>
                 </span>
