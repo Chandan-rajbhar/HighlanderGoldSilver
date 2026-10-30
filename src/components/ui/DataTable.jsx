@@ -109,6 +109,17 @@ export const DataTable = ({
                   >
                     <div className="flex items-center gap-1.5">
                       <span>{col.header}</span>
+                      {isSortable && (
+                        isCurrentSort ? (
+                          sortAsc ? (
+                            <ArrowUp className="w-3.5 h-3.5 text-[#155A96]" />
+                          ) : (
+                            <ArrowDown className="w-3.5 h-3.5 text-[#155A96]" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60 group-hover:opacity-100" />
+                        )
+                      )}
                     </div>
                   </th>
                 );

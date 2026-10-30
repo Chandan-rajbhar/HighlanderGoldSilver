@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   MessageSquareQuote,
   Mail,
@@ -8,6 +8,12 @@ import {
   Clock,
   MessageSquare,
   Eye,
+  Edit3,
+  Trash2,
+  RefreshCw,
+  MoreVertical,
+  ChevronDown,
+  Check,
   Tag,
   Sparkles,
   Inbox
@@ -111,6 +117,183 @@ const formatInquiryDate = (dateString) => {
   return { date, relative };
 };
 
+// Custom row actions menu matching requested design
+const InquiryActionMenu = ({
+  inquiry,
+  onView,
+  onEdit,
+  onReply,
+  onUpdateStatus,
+  onDelete
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setIsChangingStatus(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleSelectStatus = (newStatus) => {
+    onUpdateStatus(newStatus);
+    setIsChangingStatus(false);
+    setIsOpen(false);
+  };
+
+  const statusConfig = {
+    'New': { label: 'New', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+    'In Progress': { label: 'In Progress', dot: 'bg-amber-500', text: 'text-amber-800', bg: 'bg-amber-50 border-amber-200' },
+    'Replied': { label: 'Replied', dot: 'bg-sky-500', text: 'text-sky-700', bg: 'bg-sky-50 border-sky-200' },
+    'Closed': { label: 'Closed', dot: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-100 border-slate-200' }
+  };
+
+  const currentSt = statusConfig[inquiry.status] || statusConfig['New'];
+
+  return (
+    <div className="relative inline-block text-left" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="p-1.5 text-[#64748B] hover:text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
+        aria-label="Actions menu"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+
+      {isOpen && (
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 text-left font-sans"
+        >
+          {/* Top Status Pill (as shown in image) */}
+          <div className="px-3 py-1.5 border-b border-slate-100 flex items-center">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${currentSt.bg} ${currentSt.text}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${currentSt.dot}`} />
+              {currentSt.label}
+            </span>
+          </div>
+
+          {/* View Details */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onView();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+          >
+            <Eye className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>View Details</span>
+          </button>
+
+          {/* Edit Inquiry */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onEdit();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+          >
+            <Edit3 className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>Edit Inquiry</span>
+          </button>
+
+          {/* Reply / Chat */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onReply();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Reply / Chat</span>
+          </button>
+
+          <div className="border-t border-slate-100 my-1" />
+
+          {/* CHANGE STATUS Header */}
+          <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <RefreshCw className="w-3 h-3 text-slate-400" />
+            <span>Change Status</span>
+          </div>
+
+          {/* Status Dropdown Box */}
+          <div className="px-2.5 py-1">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsChangingStatus(!isChangingStatus)}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${currentSt.bg} ${currentSt.text}`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${currentSt.dot}`} />
+                  <span>{currentSt.label}</span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isChangingStatus ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isChangingStatus && (
+                <div className="mt-1 bg-white rounded-lg border border-slate-200 shadow-md py-1 space-y-0.5 animate-in fade-in duration-100">
+                  {['New', 'In Progress', 'Replied', 'Closed'].map(st => {
+                    const cfg = statusConfig[st];
+                    const isSelected = inquiry.status === st;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => handleSelectStatus(st)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer ${
+                          isSelected ? 'font-bold text-slate-900 bg-slate-50' : 'text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                          <span>{cfg.label}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 my-1" />
+
+          {/* Delete */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onDelete();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const Inquiries = () => {
   const { toast } = useToast();
 
@@ -143,7 +326,7 @@ export const Inquiries = () => {
     };
   });
 
-  // Modals
+  // Modals / Slider
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -240,62 +423,90 @@ export const Inquiries = () => {
     }
   };
 
+  // Columns strictly matching user request:
+  // TICKET ID ⇅ | SENDER NAME ⇅ | EMAIL ⇅ | CONTACT NO. | SUBJECT & INQUIRY | STATUS ⇅ | ACTIONS
+  // Note: Message is hidden from the table and displayed exclusively inside the right-side slider drawer.
   const columns = [
     {
-      header: 'Date',
-      accessor: 'created_at',
-      className: 'whitespace-nowrap w-32',
-      render: (row) => {
-        const { date, relative } = formatInquiryDate(row.created_at);
-        return (
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-slate-800">{date}</span>
-            {relative && <span className="text-[11px] text-[#8C9BAE] font-medium">{relative}</span>}
-          </div>
-        );
-      }
+      header: 'Ticket ID',
+      accessor: 'id',
+      sortable: true,
+      className: 'whitespace-nowrap w-28',
+      render: (row) => (
+        <span
+          onClick={() => handleView(row)}
+          className="font-mono text-xs font-bold text-[#0B2D52] hover:text-[#155A96] cursor-pointer transition-colors bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/80 inline-block"
+        >
+          #{row.id}
+        </span>
+      )
     },
     {
-      header: 'Customer',
+      header: 'Sender Name',
       accessor: 'inquirer_name',
-      className: 'min-w-[200px]',
+      sortable: true,
+      className: 'min-w-[180px]',
       render: (row) => {
         const initials = getInitials(row.inquirer_name);
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#E2EEF8] text-[#155A96] flex items-center justify-center text-xs font-bold shrink-0 border border-[#C5DCF0]">
               {initials}
             </div>
-            <div className="min-w-0">
-              <span
-                onClick={() => handleView(row)}
-                className="font-semibold text-slate-900 text-xs sm:text-sm block truncate hover:text-[#155A96] transition-colors cursor-pointer"
-              >
-                {row.inquirer_name}
-              </span>
-              <a
-                href={`mailto:${row.email}`}
-                onClick={(e) => e.stopPropagation()}
-                className="text-[11px] text-slate-500 hover:text-[#155A96] hover:underline block truncate max-w-[180px]"
-                title={row.email}
-              >
-                {row.email}
-              </a>
-            </div>
+            <span
+              onClick={() => handleView(row)}
+              className="font-semibold text-slate-900 text-xs sm:text-sm block truncate hover:text-[#155A96] transition-colors cursor-pointer"
+            >
+              {row.inquirer_name}
+            </span>
           </div>
         );
       }
     },
     {
-      header: 'Subject',
+      header: 'Email',
+      accessor: 'email',
+      sortable: true,
+      className: 'min-w-[180px]',
+      render: (row) => (
+        <a
+          href={`mailto:${row.email}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs text-slate-600 hover:text-[#155A96] hover:underline block truncate max-w-[200px]"
+          title={row.email}
+        >
+          {row.email}
+        </a>
+      )
+    },
+    {
+      header: 'Contact No.',
+      accessor: 'phone',
+      sortable: false,
+      className: 'whitespace-nowrap w-36',
+      render: (row) => row.phone ? (
+        <a
+          href={`tel:${row.phone}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline"
+        >
+          {row.phone}
+        </a>
+      ) : (
+        <span className="text-xs text-slate-400 font-mono">—</span>
+      )
+    },
+    {
+      header: 'Subject & Inquiry',
       accessor: 'lot_title',
-      className: 'min-w-[210px] max-w-[280px]',
+      sortable: false,
+      className: 'min-w-[240px]',
       render: (row) => {
         const subject = cleanSubject(row.lot_title, row.lot_number);
         const category = getInquiryCategory(row.inquiry_type);
 
         return (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 py-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               {row.lot_number && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F1F5F9] text-slate-600 border border-slate-200">
@@ -304,7 +515,7 @@ export const Inquiries = () => {
               )}
               <span
                 onClick={() => handleView(row)}
-                className="font-medium text-slate-800 text-xs truncate max-w-[210px] hover:text-[#155A96] cursor-pointer transition-colors"
+                className="font-medium text-slate-800 text-xs truncate max-w-[240px] hover:text-[#155A96] cursor-pointer transition-colors"
                 title={subject}
               >
                 {subject}
@@ -318,27 +529,27 @@ export const Inquiries = () => {
       }
     },
     {
-      header: 'Message',
-      accessor: 'message',
-      className: 'min-w-[220px] max-w-[340px]',
-      render: (row) => (
-        <div
-          onClick={() => handleView(row)}
-          className="flex items-start gap-2 cursor-pointer group py-0.5"
-          title={row.message}
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#155A96] shrink-0 mt-0.5 transition-colors" />
-          <p className="text-xs text-slate-600 line-clamp-1 group-hover:text-slate-900 transition-colors font-sans">
-            {row.message}
-          </p>
-        </div>
-      )
-    },
-    {
       header: 'Status',
       accessor: 'status',
-      className: 'whitespace-nowrap',
+      sortable: true,
+      className: 'whitespace-nowrap w-28',
       render: (row) => <StatusBadge status={row.status} />
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      sortable: false,
+      className: 'w-16 text-right',
+      render: (row) => (
+        <InquiryActionMenu
+          inquiry={row}
+          onView={() => handleView(row)}
+          onEdit={() => handleView(row)}
+          onReply={() => handleView(row)}
+          onUpdateStatus={(newStatus) => handleUpdateStatus(row.id, newStatus)}
+          onDelete={() => handleDeletePrompt(row)}
+        />
+      )
     }
   ];
 
@@ -470,8 +681,7 @@ export const Inquiries = () => {
         onSearchChange={setSearch}
         searchPlaceholder="Search customer, email, or subject..."
         isLoading={isLoading}
-        onView={handleView}
-        onDelete={handleDeletePrompt}
+        onRowClick={handleView}
         emptyTitle="No customer inquiries found"
         emptyDescription="When visitors submit questions or buyback requests from the storefront, they will appear here."
         filterComponent={
@@ -493,6 +703,7 @@ export const Inquiries = () => {
         }
       />
 
+      {/* Right-Side Slider Drawer for Inquiry Details & Reply */}
       <InquiryDetailModal
         isOpen={isDetailOpen}
         onClose={() => {
@@ -501,6 +712,7 @@ export const Inquiries = () => {
         }}
         inquiry={selectedInquiry}
         onUpdateStatus={handleUpdateStatus}
+        onDelete={handleDeletePrompt}
       />
 
       <ConfirmDialog
@@ -518,4 +730,3 @@ export const Inquiries = () => {
     </div>
   );
 };
-
