@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 
-const LIST_COLUMNS = 'id, full_name, email, phone, city, state, interest, total_spent, orders_count, tier, created_at';
+const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, tier, notes, created_at, updated_at';
 
 export const customerService = {
   // In-memory instant synchronous retrieval for 0ms page transitions
@@ -82,13 +82,14 @@ export const customerService = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
+          const effectiveTotal = count !== null && count !== undefined ? count : data.length;
           return {
             data: data,
-            total: count || data.length,
+            total: effectiveTotal,
             page,
             pageSize,
-            totalPages: Math.ceil((count || data.length) / pageSize),
+            totalPages: Math.ceil(effectiveTotal / pageSize) || 1,
           };
         }
       } catch (err) {
@@ -156,20 +157,31 @@ export const customerService = {
   },
 
   async createCustomer(custData) {
+    const generatedCustId = custData.customer_id || `CUST-${Math.floor(1000 + Math.random() * 9000)}`;
     const newCust = {
       ...custData,
-      id: custData.id || `cust-${Date.now().toString().slice(-4)}`,
+      id: custData.id || `cust-${Date.now().toString().slice(-6)}`,
+      customer_id: generatedCustId,
+      auth_user_id: custData.auth_user_id || null,
+      full_name: custData.full_name || custData.name || 'Collector',
+      email: custData.email,
+      phone: custData.phone || '',
+      city: custData.city || 'Bigfork',
+      state: custData.state || 'MT',
+      interest: custData.interest || 'Precious Metals & Rare Coins',
       total_spent: Number(custData.total_spent) || 0,
       orders_count: Number(custData.orders_count) || 0,
+      account_status: custData.account_status || 'Active',
       tier: custData.tier || 'Collector',
-      created_at: new Date().toISOString()
+      notes: custData.notes || 'Registered via Highlander online portal.',
+      created_at: custData.created_at || new Date().toISOString()
     };
 
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('customers')
-          .insert([newCust])
+          .upsert([newCust], { onConflict: 'email' })
           .select()
           .single();
         if (error) throw error;

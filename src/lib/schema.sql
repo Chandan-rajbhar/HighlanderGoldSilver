@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS public.categories (
     total_valuation NUMERIC(12, 2) DEFAULT 0.00,
     is_active BOOLEAN DEFAULT true,
     display_order INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 3. INVENTORY / PRODUCT CATALOG TABLE
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS public.inventory (
     featured_image TEXT,
     additional_images JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.inventory (
 CREATE TABLE IF NOT EXISTS public.customers (
     id TEXT PRIMARY KEY,
     customer_id TEXT UNIQUE,
+    auth_user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE SET NULL,
     full_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     phone TEXT,
@@ -72,7 +75,8 @@ CREATE TABLE IF NOT EXISTS public.customers (
     account_status TEXT DEFAULT 'Active' CHECK (account_status IN ('Active', 'Suspended', 'Pending Verification')),
     tier TEXT DEFAULT 'Collector' CHECK (tier IN ('Collector', 'VIP Vault', 'Active', 'Inactive')),
     notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 5. ORDERS & SETTLEMENTS TABLE
@@ -90,7 +94,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     payment_status TEXT NOT NULL DEFAULT 'Pending Wire' CHECK (payment_status IN ('Pending Wire', 'Settled', 'Refunded', 'Cancelled')),
     fulfillment_status TEXT NOT NULL DEFAULT 'Awaiting Payment' CHECK (fulfillment_status IN ('Awaiting Payment', 'Vault Dispatch', 'Dispatched', 'Delivered', 'Cancelled')),
     notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 6. PAYMENTS & TRANSACTIONS TABLE
@@ -104,7 +109,8 @@ CREATE TABLE IF NOT EXISTS public.payments (
     payment_method TEXT NOT NULL CHECK (payment_method IN ('Bank Wire', 'PayPal', 'Vault Cash', 'Certified Check', 'Other')),
     payment_status TEXT NOT NULL DEFAULT 'Pending' CHECK (payment_status IN ('Completed', 'Pending', 'Failed', 'Refunded')),
     gateway_reference TEXT,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 7. COUPONS & DISCOUNTS TABLE
@@ -121,7 +127,8 @@ CREATE TABLE IF NOT EXISTS public.coupons (
     valid_from DATE,
     valid_until DATE,
     description TEXT,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 8. ADMIN USERS & STAFF ROLES TABLE (Distinct from Storefront Customers)
@@ -133,7 +140,8 @@ CREATE TABLE IF NOT EXISTS public.admin_users (
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Suspended')),
     two_factor_enabled BOOLEAN DEFAULT true,
     last_login TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 9. INQUIRIES & ACQUISITIONS TABLE
@@ -147,7 +155,8 @@ CREATE TABLE IF NOT EXISTS public.inquiries (
     inquiry_type TEXT NOT NULL CHECK (inquiry_type IN ('Lot Acquisition', 'Condition / Provenance', 'Sell / Appraisal', 'General')),
     message TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'New' CHECK (status IN ('New', 'In Progress', 'Replied', 'Closed')),
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 10. SYSTEM NOTIFICATIONS TABLE
@@ -157,7 +166,8 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     detail TEXT NOT NULL,
     category TEXT CHECK (category IN ('wire', 'order', 'inquiry', 'inventory', 'system')),
     read BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 11. STOREFRONT SETTINGS TABLE

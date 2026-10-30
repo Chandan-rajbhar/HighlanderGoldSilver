@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Mail, 
   Lock, 
@@ -269,6 +269,19 @@ export const Login = () => {
                     </>
                   )}
                 </button>
+
+                {/* Sign Up / Registration Prompt */}
+                <div className="pt-2 text-center border-t border-slate-100">
+                  <p className="text-xs sm:text-sm text-[#64748B]">
+                    Don't have an account yet?{' '}
+                    <Link
+                      to="/signup"
+                      className="font-semibold text-[#155A96] hover:text-[#1685D4] hover:underline transition-colors"
+                    >
+                      Sign Up &amp; Register
+                    </Link>
+                  </p>
+                </div>
               </form>
             </div>
           </div>

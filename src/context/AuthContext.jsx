@@ -41,35 +41,74 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Helper to build the admin user profile from Supabase Auth user + admin_users table
+   * Helper to build the user profile from Supabase Auth user + admin_users / customers table
    */
   const buildUserProfile = async (authUser) => {
     if (!authUser) return null;
     const email = (authUser.email || '').toLowerCase();
-    let matching = null;
+    let adminRecord = null;
+    let customerRecord = null;
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const { data } = await supabase
+        // 1. Check if user is staff/admin
+        const { data: adminData } = await supabase
           .from('admin_users')
           .select('*')
           .or(`auth_user_id.eq.${authUser.id},email.ilike.${email}`)
           .limit(1);
-        matching = data?.[0];
+        adminRecord = adminData?.[0];
+
+        // 2. If not admin, check customer profile
+        if (!adminRecord) {
+          const { data: custData } = await supabase
+            .from('customers')
+            .select('*')
+            .or(`auth_user_id.eq.${authUser.id},email.ilike.${email}`)
+            .limit(1);
+          customerRecord = custData?.[0];
+        }
       } catch (err) {
-        console.warn('Could not query admin_users record:', err);
+        console.warn('Could not query user record from database:', err);
       }
     }
 
+    if (adminRecord) {
+      return {
+        id: adminRecord.id || authUser.id,
+        auth_user_id: authUser.id,
+        email: authUser.email,
+        name: adminRecord.name || authUser.user_metadata?.full_name || 'Staff Administrator',
+        role: adminRecord.role || 'Super Admin',
+        title: adminRecord.title || 'Senior Numismatist & Vault Director',
+        location: adminRecord.location || 'Bigfork Storefront & Vault, MT',
+        badge: adminRecord.role || 'Super Admin',
+        is_admin: true,
+        account_status: adminRecord.status || 'Active'
+      };
+    }
+
+    // Customer / Registered Collector profile
+    const meta = authUser.user_metadata || {};
+    const custName = customerRecord?.full_name || meta.full_name || email.split('@')[0];
+    const city = customerRecord?.city || meta.city || 'Bigfork';
+    const state = customerRecord?.state || meta.state || 'MT';
+    const tier = customerRecord?.tier || 'Collector';
+
     return {
-      id: matching?.id || authUser.id,
+      id: customerRecord?.id || authUser.id,
+      customer_id: customerRecord?.customer_id || null,
       auth_user_id: authUser.id,
       email: authUser.email,
-      name: matching?.name || authUser.user_metadata?.full_name || 'Alexander MacLeod',
-      role: matching?.role || authUser.user_metadata?.role || 'Super Admin',
-      title: matching?.title || 'Senior Numismatist & Vault Director',
-      location: matching?.location || 'Bigfork Storefront & Vault, MT',
-      badge: matching?.role || 'Super Admin'
+      name: custName,
+      role: 'Customer',
+      title: `${tier} Member`,
+      location: `${city}, ${state}`,
+      phone: customerRecord?.phone || meta.phone || '',
+      badge: tier,
+      tier: tier,
+      is_admin: false,
+      account_status: customerRecord?.account_status || 'Active'
     };
   };
 
@@ -276,13 +315,118 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Stub for signup to prevent accidental staff self-registration
+   * Dynamic customer/collector registration handler
+   * Registers user with Supabase Auth and provisions customer profile in public.customers
    */
-  const signup = async () => {
-    return {
-      success: false,
-      error: 'Self-registration is disabled. Administrator accounts are provisioned via Supabase Auth console.'
-    };
+  const signup = async ({
+    email,
+    password,
+    fullName,
+    phone = '',
+    city = 'Bigfork',
+    state = 'MT',
+    interest = 'Precious Metals & Rare Coins'
+  }) => {
+    setIsLoadingAuth(true);
+    try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanName = (fullName || '').trim();
+
+      if (!cleanEmail) {
+        return { success: false, error: 'Email address is required.' };
+      }
+      if (!password || password.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters long.' };
+      }
+      if (!cleanName) {
+        return { success: false, error: 'Full name is required.' };
+      }
+
+      if (!isSupabaseConfigured() || !supabase) {
+        return { success: false, error: 'Supabase client is not configured.' };
+      }
+
+      // 1. Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: password,
+        options: {
+          data: {
+            full_name: cleanName,
+            phone: phone.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            interest: interest
+          }
+        }
+      });
+
+      if (authError) {
+        let msg = authError.message;
+        if (msg.toLowerCase().includes('already registered')) {
+          msg = 'An account with this email address already exists. Please sign in instead.';
+        }
+        return { success: false, error: msg };
+      }
+
+      const authUser = authData?.user;
+      if (!authUser) {
+        return { success: false, error: 'Registration failed. No user was returned.' };
+      }
+
+      // 2. Direct insertion/upsert into public.customers
+      const generatedCustId = `CUST-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newCustRecord = {
+        id: `cust-${Date.now().toString().slice(-6)}`,
+        customer_id: generatedCustId,
+        auth_user_id: authUser.id,
+        full_name: cleanName,
+        email: cleanEmail,
+        phone: phone.trim(),
+        city: city.trim() || 'Bigfork',
+        state: state.trim() || 'MT',
+        interest: interest,
+        total_spent: 0.00,
+        orders_count: 0,
+        account_status: 'Active',
+        tier: 'Collector',
+        notes: 'Self-registered via Highlander online portal.',
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        await supabase
+          .from('customers')
+          .upsert([newCustRecord], { onConflict: 'email' });
+      } catch (insertErr) {
+        console.warn('Customer table insert warning (will be handled by DB trigger if installed):', insertErr);
+      }
+
+      // Check if session was returned (email confirmation disabled in Supabase)
+      const hasSession = Boolean(authData.session);
+      let profile = null;
+
+      if (hasSession && authUser) {
+        profile = await buildUserProfile(authUser);
+        setSession(authData.session);
+        setAdminUser(profile);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      }
+
+      return {
+        success: true,
+        user: profile || { email: cleanEmail, name: cleanName },
+        requiresEmailConfirmation: !hasSession,
+        message: hasSession
+          ? 'Registration successful! Welcome to Highlander Gold & Silver.'
+          : 'Registration successful! Please check your inbox to confirm your email, then sign in.'
+      };
+    } catch (err) {
+      console.error('Signup error:', err);
+      return { success: false, error: err.message || 'An unexpected registration error occurred.' };
+    } finally {
+      setIsLoadingAuth(false);
+    }
   };
 
   return (

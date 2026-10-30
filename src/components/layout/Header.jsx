@@ -45,6 +45,15 @@ export const Header = ({ onMobileMenuClick }) => {
 
   const unreadCount = notifications?.filter((n) => !n.read)?.length || 0;
 
+  const userInitials = React.useMemo(() => {
+    if (!adminUser?.name) return 'HG';
+    const parts = adminUser.name.trim().split(' ').filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return adminUser.name.slice(0, 2).toUpperCase();
+  }, [adminUser?.name]);
+
   // Close popovers on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -158,7 +167,7 @@ export const Header = ({ onMobileMenuClick }) => {
             className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-[#F5F8FC] transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-sans">
-              AM
+              {userInitials}
             </div>
             <div className="hidden sm:flex flex-col text-left">
               <span className="text-xs font-semibold text-[#111827] leading-tight">

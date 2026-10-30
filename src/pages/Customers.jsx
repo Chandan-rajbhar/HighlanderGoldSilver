@@ -302,12 +302,16 @@ export const Customers = () => {
         }
       } else {
         await customerService.createCustomer({
-          name: formData.full_name,
+          customer_id: formData.customer_id,
+          full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone,
           city: formData.city,
+          state: formData.state,
+          interest: formData.interest,
           tier: formData.tier || 'Collector',
-          account_status: formData.account_status || 'Active'
+          account_status: formData.account_status || 'Active',
+          notes: formData.notes || ''
         });
         toast.success(`User "${formData.full_name}" registered!`);
       }
