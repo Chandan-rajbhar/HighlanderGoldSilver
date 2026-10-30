@@ -417,18 +417,18 @@ export const Inquiries = () => {
     }
   };
 
-  // Professional column width proportions:
-  // TICKET ID (14%) | SENDER NAME (18%) | EMAIL (20%) | CONTACT NO. (15%) | SUBJECT & INQUIRY (20%) | STATUS (11%) | ACTIONS (2%)
+  // Responsive, balanced column width proportions fitting 100% width with NO horizontal scrollbar:
+  // TICKET ID (14%) | SENDER NAME (17%) | EMAIL (20%) | CONTACT NO. (14%) | SUBJECT & INQUIRY (20%) | STATUS (10%) | ACTIONS (5%)
   const columns = [
     {
       header: 'Ticket ID',
       accessor: 'id',
       sortable: true,
-      className: 'w-[14%] min-w-[130px] px-5 py-4',
+      className: 'w-[14%] px-3.5 py-3.5',
       render: (row) => (
         <span
           onClick={() => handleView(row)}
-          className="font-mono text-xs font-bold text-[#0B2D52] hover:text-[#155A96] cursor-pointer transition-colors bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/80 inline-block"
+          className="font-mono text-xs font-bold text-[#0B2D52] hover:text-[#155A96] cursor-pointer transition-colors bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/80 inline-block truncate max-w-full"
         >
           #{row.id}
         </span>
@@ -438,12 +438,12 @@ export const Inquiries = () => {
       header: 'Sender Name',
       accessor: 'inquirer_name',
       sortable: true,
-      className: 'w-[18%] min-w-[180px] px-5 py-4',
+      className: 'w-[17%] px-3.5 py-3.5',
       render: (row) => {
         const initials = getInitials(row.inquirer_name);
         return (
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#E2EEF8] text-[#155A96] flex items-center justify-center text-xs font-bold shrink-0 border border-[#C5DCF0]">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-full bg-[#E2EEF8] text-[#155A96] flex items-center justify-center text-xs font-bold shrink-0 border border-[#C5DCF0]">
               {initials}
             </div>
             <span
@@ -460,12 +460,12 @@ export const Inquiries = () => {
       header: 'Email',
       accessor: 'email',
       sortable: true,
-      className: 'w-[20%] min-w-[190px] px-5 py-4',
+      className: 'w-[20%] px-3.5 py-3.5',
       render: (row) => (
         <a
           href={`mailto:${row.email}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs text-slate-600 hover:text-[#155A96] hover:underline block truncate max-w-[200px]"
+          className="text-xs text-slate-600 hover:text-[#155A96] hover:underline block truncate"
           title={row.email}
         >
           {row.email}
@@ -476,12 +476,12 @@ export const Inquiries = () => {
       header: 'Contact No.',
       accessor: 'phone',
       sortable: false,
-      className: 'w-[15%] min-w-[140px] px-5 py-4',
+      className: 'w-[14%] px-3.5 py-3.5',
       render: (row) => row.phone ? (
         <a
           href={`tel:${row.phone}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline font-mono"
+          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline font-mono block truncate"
         >
           {row.phone}
         </a>
@@ -493,14 +493,14 @@ export const Inquiries = () => {
       header: 'Subject & Inquiry',
       accessor: 'lot_title',
       sortable: false,
-      className: 'w-[20%] min-w-[210px] px-5 py-4',
+      className: 'w-[20%] px-3.5 py-3.5',
       render: (row) => {
         const subject = cleanSubject(row.lot_title, row.lot_number);
 
         return (
           <span
             onClick={() => handleView(row)}
-            className="font-medium text-slate-800 text-xs sm:text-sm truncate block max-w-sm hover:text-[#155A96] cursor-pointer transition-colors py-0.5"
+            className="font-medium text-slate-800 text-xs sm:text-sm truncate block hover:text-[#155A96] cursor-pointer transition-colors"
             title={subject}
           >
             {subject}
@@ -512,14 +512,14 @@ export const Inquiries = () => {
       header: 'Status',
       accessor: 'status',
       sortable: true,
-      className: 'w-[11%] min-w-[110px] px-5 py-4',
+      className: 'w-[10%] px-3.5 py-3.5',
       render: (row) => <StatusBadge status={row.status} />
     },
     {
       header: 'Actions',
       key: 'actions',
       sortable: false,
-      className: 'w-[2%] min-w-[50px] text-right px-5 py-4',
+      className: 'w-[5%] text-right px-3 py-3.5',
       render: (row, _val, rowIdx, totalRows) => (
         <InquiryActionMenu
           inquiry={row}
@@ -664,7 +664,7 @@ export const Inquiries = () => {
         searchPlaceholder="Search customer, email, or subject..."
         isLoading={isLoading}
         onRowClick={handleView}
-        tableClassName="table-fixed min-w-[960px]"
+        tableClassName="w-full table-fixed"
         emptyTitle="No customer inquiries found"
         emptyDescription="When visitors submit questions or buyback requests from the storefront, they will appear here."
         filterComponent={
