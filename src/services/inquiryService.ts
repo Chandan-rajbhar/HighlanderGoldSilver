@@ -1,3 +1,5 @@
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { localDB } from './storageService';
 import { BUSINESS_INFO } from '../data/businessInfo';
 
 export interface CustomerInquiryPayload {
@@ -10,9 +12,10 @@ export interface CustomerInquiryPayload {
 }
 
 export interface InquiryRecord extends CustomerInquiryPayload {
+  id?: string;
   referenceId: string;
   createdAt: string;
-  status: 'received' | 'processed';
+  status: 'received' | 'processed' | 'New' | 'In Progress' | 'Replied' | 'Closed';
 }
 
 export class InquiryService {
@@ -28,8 +31,8 @@ export class InquiryService {
   }
 
   /**
-   * Submits a customer inquiry: persists locally to browser storage,
-   * generates mailto fallback, and provides structured response.
+   * Submits a customer inquiry: persists to Supabase database, localDB,
+   * localStorage, and returns structured result with mailto fallback.
    */
   static async submitInquiry(
     payload: CustomerInquiryPayload
@@ -46,8 +49,12 @@ export class InquiryService {
     }
 
     const referenceId = this.generateReferenceId();
+    const shortId = Math.random().toString(36).substring(2, 10);
+    const dbId = `inq-${shortId}`;
+
     const record: InquiryRecord = {
       ...payload,
+      id: dbId,
       fullName: payload.fullName.trim(),
       email: payload.email.trim(),
       phone: payload.phone?.trim() || undefined,
@@ -58,7 +65,69 @@ export class InquiryService {
       status: 'received'
     };
 
-    // Persist to localStorage
+    // Clean mapped inquiry type to match Supabase definitions
+    let mappedType = payload.inquiryType || 'General';
+    if (mappedType.includes('Authentication') || mappedType.includes('Grading')) {
+      mappedType = 'Authentication';
+    } else if (mappedType.includes('Payment') || mappedType.includes('Order')) {
+      mappedType = 'Order / Payment';
+    } else if (mappedType.includes('Shipping')) {
+      mappedType = 'Shipping';
+    } else if (mappedType.includes('Product')) {
+      mappedType = 'Product Inquiry';
+    }
+
+    const lotTitle = payload.productRef?.trim() || (mappedType !== 'General' ? `${mappedType} Inquiry` : 'General Inquiry');
+
+    // Extract lot number if present in productRef (e.g. "Lot #101" or "#42")
+    let lotNumber: string | null = null;
+    if (payload.productRef) {
+      const match = payload.productRef.match(/(?:lot\s*#?|#)\s*([A-Za-z0-9-]+)/i);
+      if (match) {
+        lotNumber = match[1];
+      }
+    }
+
+    // Database row representation matching public.inquiries table schema
+    const dbRow = {
+      id: dbId,
+      lot_number: lotNumber,
+      lot_title: lotTitle,
+      inquirer_name: payload.fullName.trim(),
+      email: payload.email.trim(),
+      phone: payload.phone?.trim() || null,
+      inquiry_type: mappedType,
+      message: payload.message.trim(),
+      status: 'New',
+      created_at: record.createdAt,
+      updated_at: record.createdAt
+    };
+
+    // 1. Insert directly into Supabase public.inquiries table
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { error } = await supabase
+          .from('inquiries')
+          .insert([dbRow]);
+        if (error) {
+          console.warn('Supabase inquiry insert warning:', error);
+        } else {
+          console.log('Inquiry successfully recorded in Supabase:', dbId);
+        }
+      } catch (dbErr) {
+        console.error('Error inserting inquiry into Supabase:', dbErr);
+      }
+    }
+
+    // 2. Persist to localDB so Admin Dashboard shows it in fallback mode
+    try {
+      const existingInqs = localDB.getInquiries();
+      localDB.setInquiries([dbRow, ...existingInqs]);
+    } catch (e) {
+      console.warn('Unable to sync inquiry to localDB', e);
+    }
+
+    // 3. Persist to browser localStorage for client receipt
     try {
       const existing = localStorage.getItem(this.STORAGE_KEY);
       const inquiries: InquiryRecord[] = existing ? JSON.parse(existing) : [];
@@ -68,7 +137,7 @@ export class InquiryService {
       console.warn('Unable to persist inquiry to localStorage', e);
     }
 
-    // Generate mailto link for direct client transmission
+    // 4. Generate mailto link for direct client transmission
     const subject = encodeURIComponent(
       `[${referenceId}] ${payload.inquiryType}${payload.productRef ? ` - ${payload.productRef}` : ''} - ${payload.fullName}`
     );
@@ -87,9 +156,6 @@ export class InquiryService {
     );
     const mailtoUrl = `mailto:${BUSINESS_INFO.email}?subject=${subject}&body=${body}`;
 
-    // Return structured result after brief async simulated network cycle (400ms)
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
     return {
       success: true,
       record,
@@ -97,3 +163,5 @@ export class InquiryService {
     };
   }
 }
+
+export default InquiryService;
