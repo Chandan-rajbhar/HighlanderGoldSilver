@@ -503,28 +503,15 @@ export const Inquiries = () => {
       className: 'min-w-[240px]',
       render: (row) => {
         const subject = cleanSubject(row.lot_title, row.lot_number);
-        const category = getInquiryCategory(row.inquiry_type);
 
         return (
-          <div className="flex flex-col gap-1 py-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {row.lot_number && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F1F5F9] text-slate-600 border border-slate-200">
-                  Item #{row.lot_number}
-                </span>
-              )}
-              <span
-                onClick={() => handleView(row)}
-                className="font-medium text-slate-800 text-xs truncate max-w-[240px] hover:text-[#155A96] cursor-pointer transition-colors"
-                title={subject}
-              >
-                {subject}
-              </span>
-            </div>
-            <span className={`inline-flex items-center w-fit px-2 py-0.5 rounded-full text-[10px] font-medium border ${category.style}`}>
-              {category.label}
-            </span>
-          </div>
+          <span
+            onClick={() => handleView(row)}
+            className="font-medium text-slate-800 text-xs sm:text-sm truncate block max-w-md hover:text-[#155A96] cursor-pointer transition-colors py-1"
+            title={subject}
+          >
+            {subject}
+          </span>
         );
       }
     },
