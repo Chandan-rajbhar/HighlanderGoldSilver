@@ -44,7 +44,7 @@ export const App = () => {
             <Routes>
               {/* Public Authentication Screens */}
               <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
+              <Route path="/signup" element={<Navigate to="/login" replace />} />
 
               {/* Primary Admin Console Layout: Protected Session Required */}
               <Route
