@@ -39,6 +39,7 @@ export const DataTable = ({
   onView,
   onEdit,
   onDelete,
+  tableClassName = '',
   onChangeStatus = null,
   statusOptions = ['Completed', 'Pending', 'Refunded'],
   statusField = 'payment_status',
@@ -91,7 +92,7 @@ export const DataTable = ({
 
       {/* Main Table Responsive Container */}
       <div className="overflow-x-auto min-h-[300px]">
-        <table className="w-full text-left text-sm text-[#64748B] border-collapse">
+        <table className={`w-full text-left text-sm text-[#64748B] border-collapse ${tableClassName}`.trim()}>
           {/* Table Header */}
           <thead className="bg-[#F5F8FC] text-xs text-[#64748B] uppercase font-semibold border-b border-[#DCE5F0]">
             <tr>
@@ -189,7 +190,7 @@ export const DataTable = ({
                           key={col.key || col.accessor || col.header}
                           className={`px-4 py-3.5 ${col.className || ''}`}
                         >
-                          {col.render ? col.render(row, cellValue) : (cellValue ?? '—')}
+                          {col.render ? col.render(row, cellValue, rowIdx, data.length) : (cellValue ?? '—')}
                         </td>
                       );
                     })}

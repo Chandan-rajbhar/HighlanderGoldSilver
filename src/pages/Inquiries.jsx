@@ -12,7 +12,6 @@ import {
   Trash2,
   RefreshCw,
   MoreVertical,
-  ChevronDown,
   Check,
   Tag,
   Sparkles,
@@ -117,9 +116,11 @@ const formatInquiryDate = (dateString) => {
   return { date, relative };
 };
 
-// Custom row actions menu matching requested design
+// Custom row actions menu with smart dropup and 1-click status pills (Zero scrolling required)
 const InquiryActionMenu = ({
   inquiry,
+  rowIdx = 0,
+  totalRows = 1,
   onView,
   onEdit,
   onReply,
@@ -127,14 +128,15 @@ const InquiryActionMenu = ({
   onDelete
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isChangingStatus, setIsChangingStatus] = useState(false);
   const menuRef = useRef(null);
+
+  // Auto-detect placement: if near the bottom or table is short, open upwards
+  const isDropup = totalRows <= 3 || rowIdx >= Math.max(0, totalRows - 2);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setIsOpen(false);
-        setIsChangingStatus(false);
       }
     };
     if (isOpen) {
@@ -145,7 +147,6 @@ const InquiryActionMenu = ({
 
   const handleSelectStatus = (newStatus) => {
     onUpdateStatus(newStatus);
-    setIsChangingStatus(false);
     setIsOpen(false);
   };
 
@@ -175,9 +176,11 @@ const InquiryActionMenu = ({
       {isOpen && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 text-left font-sans"
+          className={`absolute right-0 ${
+            isDropup ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'
+          } w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 text-left font-sans`}
         >
-          {/* Top Status Pill (as shown in image) */}
+          {/* Top Status Pill Preview */}
           <div className="px-3 py-1.5 border-b border-slate-100 flex items-center">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${currentSt.bg} ${currentSt.text}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${currentSt.dot}`} />
@@ -227,51 +230,42 @@ const InquiryActionMenu = ({
           <div className="border-t border-slate-100 my-1" />
 
           {/* CHANGE STATUS Header */}
-          <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            <RefreshCw className="w-3 h-3 text-slate-400" />
-            <span>Change Status</span>
+          <div className="px-3 pt-1 pb-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5">
+              <RefreshCw className="w-3 h-3 text-slate-400" />
+              <span>Change Status</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-normal">1-click</span>
           </div>
 
-          {/* Status Dropdown Box */}
-          <div className="px-2.5 py-1">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsChangingStatus(!isChangingStatus)}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${currentSt.bg} ${currentSt.text}`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${currentSt.dot}`} />
-                  <span>{currentSt.label}</span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isChangingStatus ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isChangingStatus && (
-                <div className="mt-1 bg-white rounded-lg border border-slate-200 shadow-md py-1 space-y-0.5 animate-in fade-in duration-100">
-                  {['New', 'In Progress', 'Replied', 'Closed'].map(st => {
-                    const cfg = statusConfig[st];
-                    const isSelected = inquiry.status === st;
-                    return (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => handleSelectStatus(st)}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer ${
-                          isSelected ? 'font-bold text-slate-900 bg-slate-50' : 'text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                          <span>{cfg.label}</span>
-                        </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          {/* Professional 2x2 Status Selector Grid (Zero scrolling required!) */}
+          <div className="px-2.5 pb-1 grid grid-cols-2 gap-1.5">
+            {[
+              { id: 'New', label: 'New', dot: 'bg-emerald-500', active: 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400/30' },
+              { id: 'In Progress', label: 'In Progress', dot: 'bg-amber-500', active: 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400/30' },
+              { id: 'Replied', label: 'Replied', dot: 'bg-sky-500', active: 'bg-sky-50 text-sky-800 border-sky-300 ring-1 ring-sky-400/30' },
+              { id: 'Closed', label: 'Closed', dot: 'bg-slate-400', active: 'bg-slate-100 text-slate-800 border-slate-300 ring-1 ring-slate-400/30' },
+            ].map(st => {
+              const isSelected = inquiry.status === st.id;
+              return (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => handleSelectStatus(st.id)}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                    isSelected
+                      ? `${st.active} shadow-2xs font-bold`
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
+                    <span className="truncate">{st.label}</span>
+                  </span>
+                  {isSelected && <Check className="w-3 h-3 shrink-0 text-emerald-600" />}
+                </button>
+              );
+            })}
           </div>
 
           <div className="border-t border-slate-100 my-1" />
@@ -423,15 +417,14 @@ export const Inquiries = () => {
     }
   };
 
-  // Columns strictly matching user request:
-  // TICKET ID ⇅ | SENDER NAME ⇅ | EMAIL ⇅ | CONTACT NO. | SUBJECT & INQUIRY | STATUS ⇅ | ACTIONS
-  // Note: Message is hidden from the table and displayed exclusively inside the right-side slider drawer.
+  // Professional column width proportions:
+  // TICKET ID (14%) | SENDER NAME (18%) | EMAIL (20%) | CONTACT NO. (15%) | SUBJECT & INQUIRY (20%) | STATUS (11%) | ACTIONS (2%)
   const columns = [
     {
       header: 'Ticket ID',
       accessor: 'id',
       sortable: true,
-      className: 'whitespace-nowrap w-28',
+      className: 'w-[14%] min-w-[130px] px-5 py-4',
       render: (row) => (
         <span
           onClick={() => handleView(row)}
@@ -445,7 +438,7 @@ export const Inquiries = () => {
       header: 'Sender Name',
       accessor: 'inquirer_name',
       sortable: true,
-      className: 'min-w-[180px]',
+      className: 'w-[18%] min-w-[180px] px-5 py-4',
       render: (row) => {
         const initials = getInitials(row.inquirer_name);
         return (
@@ -467,7 +460,7 @@ export const Inquiries = () => {
       header: 'Email',
       accessor: 'email',
       sortable: true,
-      className: 'min-w-[180px]',
+      className: 'w-[20%] min-w-[190px] px-5 py-4',
       render: (row) => (
         <a
           href={`mailto:${row.email}`}
@@ -483,12 +476,12 @@ export const Inquiries = () => {
       header: 'Contact No.',
       accessor: 'phone',
       sortable: false,
-      className: 'whitespace-nowrap w-36',
+      className: 'w-[15%] min-w-[140px] px-5 py-4',
       render: (row) => row.phone ? (
         <a
           href={`tel:${row.phone}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline"
+          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline font-mono"
         >
           {row.phone}
         </a>
@@ -500,14 +493,14 @@ export const Inquiries = () => {
       header: 'Subject & Inquiry',
       accessor: 'lot_title',
       sortable: false,
-      className: 'min-w-[240px]',
+      className: 'w-[20%] min-w-[210px] px-5 py-4',
       render: (row) => {
         const subject = cleanSubject(row.lot_title, row.lot_number);
 
         return (
           <span
             onClick={() => handleView(row)}
-            className="font-medium text-slate-800 text-xs sm:text-sm truncate block max-w-md hover:text-[#155A96] cursor-pointer transition-colors py-1"
+            className="font-medium text-slate-800 text-xs sm:text-sm truncate block max-w-sm hover:text-[#155A96] cursor-pointer transition-colors py-0.5"
             title={subject}
           >
             {subject}
@@ -519,17 +512,19 @@ export const Inquiries = () => {
       header: 'Status',
       accessor: 'status',
       sortable: true,
-      className: 'whitespace-nowrap w-28',
+      className: 'w-[11%] min-w-[110px] px-5 py-4',
       render: (row) => <StatusBadge status={row.status} />
     },
     {
       header: 'Actions',
       key: 'actions',
       sortable: false,
-      className: 'w-16 text-right',
-      render: (row) => (
+      className: 'w-[2%] min-w-[50px] text-right px-5 py-4',
+      render: (row, _val, rowIdx, totalRows) => (
         <InquiryActionMenu
           inquiry={row}
+          rowIdx={rowIdx}
+          totalRows={totalRows}
           onView={() => handleView(row)}
           onEdit={() => handleView(row)}
           onReply={() => handleView(row)}
@@ -651,7 +646,7 @@ export const Inquiries = () => {
         </div>
       </div>
 
-      {/* Main Table */}
+      {/* Main Table with Professional Fixed Proportions */}
       <DataTable
         columns={columns}
         data={inquiries}
@@ -669,6 +664,7 @@ export const Inquiries = () => {
         searchPlaceholder="Search customer, email, or subject..."
         isLoading={isLoading}
         onRowClick={handleView}
+        tableClassName="table-fixed min-w-[960px]"
         emptyTitle="No customer inquiries found"
         emptyDescription="When visitors submit questions or buyback requests from the storefront, they will appear here."
         filterComponent={
