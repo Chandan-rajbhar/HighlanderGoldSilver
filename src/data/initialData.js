@@ -412,6 +412,17 @@ export const initialCategories = [
     display_order: 1
   },
   {
+    id: "cat-7736",
+    name: "white Gold",
+    slug: "white-gold",
+    description: "White Gold",
+    metal_type: "Other",
+    item_count: 1,
+    total_valuation: 4850444,
+    is_active: true,
+    display_order: 1
+  },
+  {
     id: "cat-morgan",
     name: "Morgan Dollars",
     slug: "morgan-dollars",
@@ -449,8 +460,8 @@ export const initialCategories = [
     name: "Ancient",
     slug: "ancient",
     description: "Ancient Greek, Roman, and Hellenistic silver coinage with certified provenance.",
-    metal_type: "Silver",
-    item_count: 1,
+    metal_type: "Mixed",
+    item_count: 0,
     total_valuation: 235,
     is_active: true,
     display_order: 5

@@ -24,10 +24,10 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
       {categories.map((cat) => {
         const isAll = cat.toLowerCase() === 'all';
         const label = isAll ? 'All Pieces' : cat;
-        const count = allItems && Array.isArray(allItems) && allItems.length > 0
-          ? (isAll ? allItems.length : allItems.filter((i) => (i.category || '').toLowerCase() === cat.toLowerCase()).length)
-          : null;
-        const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+        const count = isAll 
+          ? (allItems?.length || 0)
+          : (allItems || []).filter((i) => (i.category || '').trim().toLowerCase() === cat.trim().toLowerCase()).length;
+        const isActive = activeCategory.trim().toLowerCase() === cat.trim().toLowerCase();
 
         return (
           <button
@@ -40,14 +40,14 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
             aria-selected={isActive}
           >
             {label}
-            {count !== null && (
-              <span style={{ opacity: 0.65, fontSize: '0.65rem', marginLeft: '0.35rem' }}>
-                ({count})
-              </span>
-            )}
+            <span style={{ opacity: 0.65, fontSize: '0.65rem', marginLeft: '0.35rem' }}>
+              ({count})
+            </span>
           </button>
         );
       })}
     </div>
   );
 };
+
+export default CategoryPills;

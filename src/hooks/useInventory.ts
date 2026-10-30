@@ -25,18 +25,24 @@ export function useInventory() {
 
   useEffect(() => {
     let isMounted = true;
-    InventoryService.getInventory()
-      .then(items => {
-        if (isMounted) {
-          setAllItems(items);
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      });
+
+    // Load inventory pieces from database
+    const loadItems = () => {
+      InventoryService.getInventory()
+        .then(items => {
+          if (isMounted) {
+            setAllItems(items);
+            setIsLoading(false);
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        });
+    };
+
+    loadItems();
 
     // Fetch dynamic categories from database
     const loadCategories = async () => {
@@ -52,21 +58,24 @@ export function useInventory() {
 
     loadCategories();
 
-    // Listen for category updates from admin dashboard
-    const handleCategoryUpdate = () => {
+    // Listen for category and inventory updates from admin dashboard
+    const handleUpdate = () => {
       loadCategories();
+      loadItems();
     };
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('hgs:categories-updated', handleCategoryUpdate);
-      window.addEventListener('storage', handleCategoryUpdate);
+      window.addEventListener('hgs:categories-updated', handleUpdate);
+      window.addEventListener('hgs:inventory-updated', handleUpdate);
+      window.addEventListener('storage', handleUpdate);
     }
 
     return () => {
       isMounted = false;
       if (typeof window !== 'undefined') {
-        window.removeEventListener('hgs:categories-updated', handleCategoryUpdate);
-        window.removeEventListener('storage', handleCategoryUpdate);
+        window.removeEventListener('hgs:categories-updated', handleUpdate);
+        window.removeEventListener('hgs:inventory-updated', handleUpdate);
+        window.removeEventListener('storage', handleUpdate);
       }
     };
   }, []);
@@ -83,7 +92,7 @@ export function useInventory() {
 
   const filteredItems = useMemo(() => {
     let result = allItems.filter(item => {
-      if (activeCategory !== 'all' && (item.category || '').toLowerCase() !== activeCategory.toLowerCase()) {
+      if (activeCategory !== 'all' && (item.category || '').trim().toLowerCase() !== activeCategory.trim().toLowerCase()) {
         return false;
       }
       return true;
@@ -149,3 +158,5 @@ export function useInventory() {
     hasActiveFilters
   };
 }
+
+export default useInventory;

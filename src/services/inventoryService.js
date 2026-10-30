@@ -239,6 +239,7 @@ export const inventoryService = {
         if (data) {
           const items = localDB.getInventory();
           localDB.setInventory([data, ...items.filter(i => i.id !== data.id)]);
+          if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hgs:inventory-updated", { detail: data }));
           return data;
         }
       } catch (err) {
@@ -249,6 +250,7 @@ export const inventoryService = {
     const items = localDB.getInventory();
     const updated = [newItem, ...items.filter(i => i.id !== newItem.id)];
     localDB.setInventory(updated);
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hgs:inventory-updated", { detail: newItem }));
     return newItem;
   },
 
@@ -275,6 +277,7 @@ export const inventoryService = {
             items[index] = { ...items[index], ...data };
             localDB.setInventory([...items]);
           }
+          if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hgs:inventory-updated", { detail: data }));
           return data;
         }
       } catch (err) {
@@ -287,6 +290,7 @@ export const inventoryService = {
     if (index !== -1) {
       items[index] = { ...items[index], ...updatedFields };
       localDB.setInventory([...items]);
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hgs:inventory-updated", { detail: items[index] }));
       return items[index];
     }
     return { id, ...updatedFields };
@@ -308,6 +312,7 @@ export const inventoryService = {
     const items = localDB.getInventory();
     const filtered = items.filter(i => i.id !== id);
     localDB.setInventory(filtered);
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hgs:inventory-updated", { detail: { id, deleted: true } }));
     return true;
   }
 };
