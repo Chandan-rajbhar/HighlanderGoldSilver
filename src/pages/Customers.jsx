@@ -1072,9 +1072,6 @@ export const Customers = () => {
                     {viewUser.full_name}
                   </h1>
                   <StatusBadge status={viewUser.account_status || 'Active'} />
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-blue-50 text-blue-700 border-blue-200">
-                    Role: Collector
-                  </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
