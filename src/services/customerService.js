@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 
-const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, tier, notes, created_at, updated_at';
+const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at';
 
 export const customerService = {
   // In-memory instant synchronous retrieval for 0ms page transitions
@@ -172,7 +172,6 @@ export const customerService = {
       total_spent: Number(custData.total_spent) || 0,
       orders_count: Number(custData.orders_count) || 0,
       account_status: custData.account_status || 'Active',
-      tier: custData.tier || 'Collector',
       notes: custData.notes || 'Registered via Highlander online portal.',
       created_at: custData.created_at || new Date().toISOString()
     };

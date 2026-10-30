@@ -73,7 +73,6 @@ CREATE TABLE IF NOT EXISTS public.customers (
     total_spent NUMERIC(12, 2) DEFAULT 0.00,
     orders_count INTEGER DEFAULT 0,
     account_status TEXT DEFAULT 'Active' CHECK (account_status IN ('Active', 'Suspended', 'Pending Verification')),
-    tier TEXT DEFAULT 'Collector' CHECK (tier IN ('Collector', 'VIP Vault', 'Active', 'Inactive')),
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL

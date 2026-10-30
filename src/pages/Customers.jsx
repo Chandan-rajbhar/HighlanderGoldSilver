@@ -1066,7 +1066,7 @@ export const Customers = () => {
                   </h1>
                   <StatusBadge status={viewUser.account_status || 'Active'} />
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border bg-blue-50 text-blue-700 border-blue-200">
-                    Role: Collector ({viewUser.tier || 'Collector'})
+                    Role: Collector
                   </span>
                 </div>
 
@@ -1265,9 +1265,9 @@ export const Customers = () => {
                   </div>
 
                   <div>
-                    <span className="text-slate-400 block font-medium">Assigned Tier</span>
+                    <span className="text-slate-400 block font-medium">Interest</span>
                     <span className="font-semibold text-[#071A35] mt-0.5 block">
-                      {viewUser.tier || 'Collector'}
+                      {viewUser.interest || 'Precious Metals'}
                     </span>
                   </div>
 

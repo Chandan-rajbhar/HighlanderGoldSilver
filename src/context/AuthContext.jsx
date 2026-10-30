@@ -93,7 +93,6 @@ export const AuthProvider = ({ children }) => {
     const custName = customerRecord?.full_name || meta.full_name || email.split('@')[0];
     const city = customerRecord?.city || meta.city || 'Bigfork';
     const state = customerRecord?.state || meta.state || 'MT';
-    const tier = customerRecord?.tier || 'Collector';
 
     return {
       id: customerRecord?.id || authUser.id,
@@ -102,11 +101,11 @@ export const AuthProvider = ({ children }) => {
       email: authUser.email,
       name: custName,
       role: 'Customer',
-      title: `${tier} Member`,
+      title: 'Registered Collector',
       location: `${city}, ${state}`,
       phone: customerRecord?.phone || meta.phone || '',
-      badge: tier,
-      tier: tier,
+      badge: 'Collector',
+      interest: customerRecord?.interest || meta.interest || 'Precious Metals',
       is_admin: false,
       account_status: customerRecord?.account_status || 'Active'
     };
@@ -389,7 +388,6 @@ export const AuthProvider = ({ children }) => {
         total_spent: 0.00,
         orders_count: 0,
         account_status: 'Active',
-        tier: 'Collector',
         notes: 'Self-registered via Highlander online portal.',
         created_at: new Date().toISOString()
       };
