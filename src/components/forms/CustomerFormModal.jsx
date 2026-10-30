@@ -23,13 +23,12 @@ export const CustomerFormModal = ({
     role: 'Customer', // 'Customer' | 'Admin'
     admin_role: 'Super Admin',
     title: 'Administrative Staff',
-    city: 'Bigfork',
-    state: 'MT',
+    city: '',
+    state: '',
     interest: 'Morgan Dollars & Bullion',
     total_spent: 0,
     orders_count: 0,
     account_status: 'Active',
-    tier: 'Collector',
     notes: '',
   });
 
@@ -46,13 +45,12 @@ export const CustomerFormModal = ({
         role: isAdm ? 'Admin' : 'Customer',
         admin_role: initialData.admin_role || initialData.role || 'Super Admin',
         title: initialData.title || (isAdm ? 'Senior Numismatist & Vault Director' : ''),
-        city: initialData.city || (initialData.location ? initialData.location.split(' ')[0] : 'Bigfork'),
-        state: initialData.state || 'MT',
+        city: initialData.city || '',
+        state: initialData.state || '',
         interest: initialData.interest || '',
         total_spent: initialData.total_spent || 0,
         orders_count: initialData.orders_count || 0,
         account_status: initialData.account_status || initialData.status || 'Active',
-        tier: initialData.tier || 'Collector',
         notes: initialData.notes || '',
       });
     } else {
@@ -65,13 +63,12 @@ export const CustomerFormModal = ({
         role: 'Customer',
         admin_role: 'Super Admin',
         title: 'Senior Numismatist',
-        city: 'Bigfork',
-        state: 'MT',
+        city: '',
+        state: '',
         interest: 'Gold & Rare Morgan Dollars',
         total_spent: 0,
         orders_count: 0,
         account_status: 'Active',
-        tier: 'Collector',
         notes: '',
       });
     }

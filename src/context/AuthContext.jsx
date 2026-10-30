@@ -91,8 +91,9 @@ export const AuthProvider = ({ children }) => {
     // Customer / Registered Collector profile
     const meta = authUser.user_metadata || {};
     const custName = customerRecord?.full_name || meta.full_name || email.split('@')[0];
-    const city = customerRecord?.city || meta.city || 'Bigfork';
-    const state = customerRecord?.state || meta.state || 'MT';
+    const city = customerRecord?.city || meta.city || '';
+    const state = customerRecord?.state || meta.state || '';
+    const locationDisplay = city ? `${city}${state ? `, ${state}` : ''}` : '';
 
     return {
       id: customerRecord?.id || authUser.id,
@@ -102,7 +103,7 @@ export const AuthProvider = ({ children }) => {
       name: custName,
       role: 'Customer',
       title: 'Registered Collector',
-      location: `${city}, ${state}`,
+      location: locationDisplay,
       phone: customerRecord?.phone || meta.phone || '',
       badge: 'Collector',
       interest: customerRecord?.interest || meta.interest || 'Precious Metals',
@@ -322,8 +323,8 @@ export const AuthProvider = ({ children }) => {
     password,
     fullName,
     phone = '',
-    city = 'Bigfork',
-    state = 'MT',
+    city = '',
+    state = '',
     interest = 'Precious Metals & Rare Coins'
   }) => {
     setIsLoadingAuth(true);
@@ -382,8 +383,8 @@ export const AuthProvider = ({ children }) => {
         full_name: cleanName,
         email: cleanEmail,
         phone: phone.trim(),
-        city: city.trim() || 'Bigfork',
-        state: state.trim() || 'MT',
+        city: city.trim() ? city.trim() : null,
+        state: state.trim() ? state.trim() : null,
         interest: interest,
         total_spent: 0.00,
         orders_count: 0,

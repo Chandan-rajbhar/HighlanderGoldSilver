@@ -29,7 +29,7 @@ export const SignUp = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('MT');
+  const [state, setState] = useState('');
   const [interest, setInterest] = useState('Precious Metals & Rare Coins');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,8 +90,8 @@ export const SignUp = () => {
         password: password,
         fullName: fullName.trim(),
         phone: phone.trim(),
-        city: city.trim() || 'Bigfork',
-        state: state.trim() || 'MT',
+        city: city.trim() ? city.trim() : null,
+        state: state.trim() ? state.trim() : null,
         interest: interest
       });
 

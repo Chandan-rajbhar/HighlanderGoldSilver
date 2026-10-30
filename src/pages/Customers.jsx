@@ -100,9 +100,9 @@ export const Customers = () => {
         full_name: c.name || c.full_name || 'Collector',
         email: c.email,
         phone: c.phone || '',
-        city: c.city || 'Bigfork',
-        state: c.state || 'MT',
-        address: c.address || 'Highlander Secured Depository, Bigfork, MT',
+        city: c.city || '',
+        state: c.state || '',
+        address: c.address || (c.city ? `${c.city}${c.state ? `, ${c.state}` : ''}` : '—'),
         customer_id: c.customer_id || `CUST-${c.id?.slice(-4).toUpperCase() || '1000'}`,
         role: 'Customer',
         is_admin: false,
@@ -289,7 +289,7 @@ export const Customers = () => {
             phone: formData.phone !== undefined ? formData.phone : prev.phone,
             city: formData.city !== undefined ? formData.city : prev.city,
             state: formData.state !== undefined ? formData.state : prev.state,
-            location: formData.location || `${formData.city || 'Bigfork'}, ${formData.state || 'MT'}`,
+            location: formData.location || (formData.city ? `${formData.city}${formData.state ? `, ${formData.state}` : ''}` : ''),
             role: formData.role || prev.role,
             admin_role: formData.admin_role || prev.admin_role,
             title: formData.title || prev.title,
@@ -386,10 +386,17 @@ export const Customers = () => {
             <span className="font-bold text-slate-900 text-sm hover:text-[#C9A23A] transition-colors block text-left">
               {row.full_name}
             </span>
-            <span className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
-              <MapPin className="w-3 h-3 text-slate-400" />
-              {row.city || 'Bigfork'}, {row.state || 'MT'}
-            </span>
+            {row.city ? (
+              <span className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
+                <MapPin className="w-3 h-3 text-slate-400" />
+                {row.city}{row.state ? `, ${row.state}` : ''}
+              </span>
+            ) : (
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                <MapPin className="w-3 h-3 text-slate-300" />
+                Location not set
+              </span>
+            )}
           </div>
         </div>
       )
@@ -1261,7 +1268,9 @@ export const Customers = () => {
 
                   <div>
                     <span className="text-slate-400 block font-medium">Location</span>
-                    <span className="font-semibold text-slate-800 mt-0.5 block">{viewUser.city || 'Bigfork'}, {viewUser.state || 'MT'}</span>
+                    <span className="font-semibold text-slate-800 mt-0.5 block">
+                      {viewUser.city ? `${viewUser.city}${viewUser.state ? `, ${viewUser.state}` : ''}` : 'Not provided'}
+                    </span>
                   </div>
 
                   <div>
