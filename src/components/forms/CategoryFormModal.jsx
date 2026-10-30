@@ -22,10 +22,19 @@ export const CategoryFormModal = ({
     is_active: true
   });
 
+  const [selectedMetal, setSelectedMetal] = useState('Gold');
+  const [customMetal, setCustomMetal] = useState('');
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
+      const standardMetals = ['Gold', 'Silver', 'Platinum', 'Mixed'];
+      const isStandard = standardMetals.includes(initialData.metal_type);
+      const isOther = !isStandard;
+
+      setSelectedMetal(isOther ? 'Other' : (initialData.metal_type || 'Gold'));
+      setCustomMetal(isOther ? (initialData.metal_type === 'Other' ? '' : (initialData.metal_type || '')) : '');
+
       setFormData({
         name: initialData.name || '',
         slug: initialData.slug || '',
@@ -35,6 +44,8 @@ export const CategoryFormModal = ({
         is_active: initialData.is_active ?? true
       });
     } else {
+      setSelectedMetal('Gold');
+      setCustomMetal('');
       setFormData({
         name: '',
         slug: '',
@@ -68,6 +79,29 @@ export const CategoryFormModal = ({
     }));
   };
 
+  const handleMetalSelect = (val) => {
+    setSelectedMetal(val);
+    if (val === 'Other') {
+      setFormData(prev => ({
+        ...prev,
+        metal_type: customMetal.trim() || 'Other'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        metal_type: val
+      }));
+    }
+  };
+
+  const handleCustomMetalChange = (val) => {
+    setCustomMetal(val);
+    setFormData(prev => ({
+      ...prev,
+      metal_type: val.trim() || 'Other'
+    }));
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Category name is required';
@@ -79,8 +113,10 @@ export const CategoryFormModal = ({
     e.preventDefault();
     if (!validate()) return;
     const autoSlug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const finalMetalType = selectedMetal === 'Other' ? (customMetal.trim() || 'Other') : selectedMetal;
     onSave({
       ...formData,
+      metal_type: finalMetalType,
       slug: autoSlug,
       is_active: formData.is_active ?? true
     });
@@ -154,8 +190,8 @@ export const CategoryFormModal = ({
                   Primary Metal
                 </label>
                 <Select
-                  value={formData.metal_type}
-                  onChange={(e) => setFormData({ ...formData, metal_type: e.target.value })}
+                  value={selectedMetal}
+                  onChange={(e) => handleMetalSelect(e.target.value)}
                   options={METALS.map(m => ({ value: m, label: m }))}
                   className="w-full"
                 />
@@ -174,6 +210,26 @@ export const CategoryFormModal = ({
                 />
               </div>
             </div>
+
+            {/* When 'Other' is chosen, let user type any custom metal name */}
+            {selectedMetal === 'Other' && (
+              <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Specify Metal / Material Name *
+                </label>
+                <input
+                  type="text"
+                  value={customMetal}
+                  onChange={(e) => handleCustomMetalChange(e.target.value)}
+                  placeholder="e.g. Copper, Palladium, White Gold, Bronze, Rhodium..."
+                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all"
+                  autoFocus
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Type the custom metal classification for this category.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">

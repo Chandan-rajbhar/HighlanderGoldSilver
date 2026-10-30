@@ -59,6 +59,8 @@ export const CatalogItemFormDrawer = ({
   };
 
   const [formData, setFormData] = useState(defaultFormData);
+  const [selectedMetal, setSelectedMetal] = useState('Gold');
+  const [customMetal, setCustomMetal] = useState('');
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
   const [images, setImages] = useState([]);
@@ -72,6 +74,13 @@ export const CatalogItemFormDrawer = ({
           : (Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.featured_image ? [item.featured_image] : []));
         const initialImgs = rawImgs.length > 0 ? rawImgs : ['/assets/items/lot1_morgan_gold_gem.jpg'];
         setImages(initialImgs);
+
+        const standardMetals = ['Gold', 'Silver', 'Platinum', 'Palladium', 'Copper'];
+        const isStandard = standardMetals.includes(item.metal);
+        const isOther = item.metal && !isStandard;
+        setSelectedMetal(isOther ? 'Other' : (item.metal || 'Gold'));
+        setCustomMetal(isOther ? (item.metal === 'Other' ? '' : item.metal) : '');
+
         setFormData({
           title: item.title || '',
           lot_number: item.lot_number || '',
@@ -93,6 +102,8 @@ export const CatalogItemFormDrawer = ({
         const randomNum = Math.floor(1 + Math.random() * 99);
         const defaultImgs = ['/assets/items/lot1_morgan_gold_gem.jpg'];
         setImages(defaultImgs);
+        setSelectedMetal('Gold');
+        setCustomMetal('');
         setFormData({
           ...defaultFormData,
           lot_number: String(randomNum),
@@ -145,6 +156,20 @@ export const CatalogItemFormDrawer = ({
     const cat = (formData.category || 'GOLD').slice(0, 4).toUpperCase();
     const num = formData.lot_number || Math.floor(100 + Math.random() * 900);
     updateField('sku', `HGS-${cat}-${num}`);
+  };
+
+  const handleMetalChange = (val) => {
+    setSelectedMetal(val);
+    if (val === 'Other') {
+      updateField('metal', customMetal.trim() || 'Other');
+    } else {
+      updateField('metal', val);
+    }
+  };
+
+  const handleCustomMetalChange = (val) => {
+    setCustomMetal(val);
+    updateField('metal', val.trim() || 'Other');
   };
 
   const handleMultipleFilesChange = (e) => {
@@ -221,8 +246,10 @@ export const CatalogItemFormDrawer = ({
     if (!validate()) return;
 
     const finalImages = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : ['/assets/items/lot1_morgan_gold_gem.jpg']);
+    const finalMetal = selectedMetal === 'Other' ? (customMetal.trim() || 'Other') : selectedMetal;
     onSave({
       ...formData,
+      metal: finalMetal,
       featured_image: finalImages[0],
       additional_images: finalImages,
       price: Number(formData.price),
@@ -536,11 +563,25 @@ export const CatalogItemFormDrawer = ({
                     Metal Type *
                   </label>
                   <Select
-                    value={formData.metal}
-                    onChange={(e) => updateField('metal', e.target.value)}
+                    value={selectedMetal}
+                    onChange={(e) => handleMetalChange(e.target.value)}
                     options={METALS.map(m => ({ value: m, label: m }))}
                     className="w-full"
                   />
+                  {selectedMetal === 'Other' && (
+                    <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <label className="block text-[11px] font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                        Specify Metal Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={customMetal}
+                        onChange={(e) => handleCustomMetalChange(e.target.value)}
+                        placeholder="e.g. White Gold, Bronze, Brass, Rhodium..."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
