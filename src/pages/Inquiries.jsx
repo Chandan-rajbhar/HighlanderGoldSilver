@@ -7,7 +7,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  MessageSquare,
   Eye,
   Trash2,
   RefreshCw,
@@ -127,7 +126,6 @@ const formatInquiryDate = (dateString) => {
 const InquiryActionMenu = ({
   inquiry,
   onView,
-  onReply,
   onUpdateStatus,
   onDelete
 }) => {
@@ -140,7 +138,7 @@ const InquiryActionMenu = ({
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const menuWidth = 236;
-    const menuHeight = 252;
+    const menuHeight = 214;
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
@@ -286,19 +284,6 @@ const InquiryActionMenu = ({
             >
               <Eye className="w-4 h-4 text-slate-500 shrink-0" />
               <span>View Inquiry</span>
-            </button>
-
-            {/* Reply to Customer */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                onReply();
-              }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4 text-[#155A96] shrink-0" />
-              <span>Reply to Customer</span>
             </button>
 
             <div className="border-t border-slate-100 my-1" />
@@ -605,7 +590,6 @@ export const Inquiries = () => {
           <InquiryActionMenu
             inquiry={row}
             onView={() => handleView(row)}
-            onReply={() => handleView(row)}
             onUpdateStatus={(newStatus) => handleUpdateStatus(row.id, newStatus)}
             onDelete={() => handleDeletePrompt(row)}
           />
