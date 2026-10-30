@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MessageSquareQuote,
   Mail,
@@ -8,14 +9,16 @@ import {
   Clock,
   MessageSquare,
   Eye,
-  Edit3,
   Trash2,
   RefreshCw,
   MoreVertical,
   Check,
   Tag,
   Sparkles,
-  Inbox
+  Inbox,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { inquiryService } from '../services/inquiryService';
 import { DataTable } from '../components/ui/DataTable';
@@ -116,33 +119,93 @@ const formatInquiryDate = (dateString) => {
   return { date, relative };
 };
 
-// Custom row actions menu with smart dropup and 1-click status pills (Zero scrolling required)
+/**
+ * Enterprise Portal Action Menu
+ * Renders into document.body to prevent table overflow clipping and z-index issues.
+ * Calculates dynamic positioning based on viewport space.
+ */
 const InquiryActionMenu = ({
   inquiry,
-  rowIdx = 0,
-  totalRows = 1,
   onView,
-  onEdit,
   onReply,
   onUpdateStatus,
   onDelete
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, isUpward: false });
+  const triggerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Auto-detect placement: if near the bottom or table is short, open upwards
-  const isDropup = totalRows <= 3 || rowIdx >= Math.max(0, totalRows - 2);
+  const calculatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const menuWidth = 236;
+    const menuHeight = 252;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Open upward if space below is limited and space above is greater
+    const isUpward = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+
+    let top = isUpward ? rect.top - 6 : rect.bottom + 6;
+    // Align right edge of menu to right edge of trigger button
+    let left = rect.right - menuWidth;
+
+    // Viewport boundaries clamp
+    if (left < 12) left = 12;
+    if (left + menuWidth > viewportWidth - 12) {
+      left = viewportWidth - menuWidth - 12;
+    }
+
+    setCoords({ top, left, isUpward });
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      calculatePosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+    if (!isOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(e.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    const handleScrollOrResize = () => {
+      calculatePosition();
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [isOpen]);
 
   const handleSelectStatus = (newStatus) => {
@@ -160,131 +223,144 @@ const InquiryActionMenu = ({
   const currentSt = statusConfig[inquiry.status] || statusConfig['New'];
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
+    <>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="p-1.5 text-[#64748B] hover:text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
+        onClick={handleToggle}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer border ${
+          isOpen 
+            ? 'bg-[#155A96]/10 text-[#155A96] border-[#155A96]/30' 
+            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100 border-transparent hover:border-slate-200'
+        }`}
         aria-label="Actions menu"
       >
         <MoreVertical className="w-4 h-4" />
       </button>
 
-      {isOpen && (
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          className={`absolute right-0 ${
-            isDropup ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'
-          } w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 text-left font-sans`}
-        >
-          {/* Top Status Pill Preview */}
-          <div className="px-3 py-1.5 border-b border-slate-100 flex items-center">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${currentSt.bg} ${currentSt.text}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${currentSt.dot}`} />
-              {currentSt.label}
-            </span>
-          </div>
-
-          {/* View Details */}
-          <button
-            type="button"
-            onClick={() => {
+      {/* Render via React Portal to prevent container clipping */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <>
+          {/* Backdrop layer */}
+          <div 
+            className="fixed inset-0 z-[9998]"
+            onClick={(e) => {
+              e.stopPropagation();
               setIsOpen(false);
-              onView();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
-          >
-            <Eye className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>View Details</span>
-          </button>
+          />
 
-          {/* Edit Inquiry */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsOpen(false);
-              onEdit();
+          {/* Floating Dropdown Panel */}
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: coords.isUpward ? 'auto' : `${coords.top}px`,
+              bottom: coords.isUpward ? `${window.innerHeight - coords.top}px` : 'auto',
+              left: `${coords.left}px`,
+              width: '236px',
+              zIndex: 9999
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-150 text-left font-sans select-none"
           >
-            <Edit3 className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>Edit Inquiry</span>
-          </button>
-
-          {/* Reply / Chat */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsOpen(false);
-              onReply();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
-          >
-            <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Reply / Chat</span>
-          </button>
-
-          <div className="border-t border-slate-100 my-1" />
-
-          {/* CHANGE STATUS Header */}
-          <div className="px-3 pt-1 pb-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            <div className="flex items-center gap-1.5">
-              <RefreshCw className="w-3 h-3 text-slate-400" />
-              <span>Change Status</span>
+            {/* Top Status Pill Preview */}
+            <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Inquiry
+              </span>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${currentSt.bg} ${currentSt.text}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${currentSt.dot}`} />
+                {currentSt.label}
+              </span>
             </div>
-            <span className="text-[10px] text-slate-400 font-normal">1-click</span>
+
+            {/* View Inquiry */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onView();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-slate-500 shrink-0" />
+              <span>View Inquiry</span>
+            </button>
+
+            {/* Reply to Customer */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onReply();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-800 hover:bg-slate-50 transition-colors font-medium text-left cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4 text-[#155A96] shrink-0" />
+              <span>Reply to Customer</span>
+            </button>
+
+            <div className="border-t border-slate-100 my-1" />
+
+            {/* CHANGE STATUS Header */}
+            <div className="px-3.5 pt-1 pb-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5">
+                <RefreshCw className="w-3 h-3 text-slate-400" />
+                <span>Change Status</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-normal">1-click</span>
+            </div>
+
+            {/* 1-Click Status Grid (Zero scrolling needed) */}
+            <div className="px-3 pb-1.5 grid grid-cols-2 gap-1.5">
+              {[
+                { id: 'New', label: 'New', dot: 'bg-emerald-500', active: 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400/30' },
+                { id: 'In Progress', label: 'In Progress', dot: 'bg-amber-500', active: 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400/30' },
+                { id: 'Replied', label: 'Replied', dot: 'bg-sky-500', active: 'bg-sky-50 text-sky-800 border-sky-300 ring-1 ring-sky-400/30' },
+                { id: 'Closed', label: 'Closed', dot: 'bg-slate-400', active: 'bg-slate-100 text-slate-800 border-slate-300 ring-1 ring-slate-400/30' },
+              ].map(st => {
+                const isSelected = inquiry.status === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => handleSelectStatus(st.id)}
+                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      isSelected
+                        ? `${st.active} shadow-2xs font-bold`
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
+                      <span className="truncate">{st.label}</span>
+                    </span>
+                    {isSelected && <Check className="w-3 h-3 shrink-0 text-emerald-600" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-slate-100 my-1" />
+
+            {/* Delete Inquiry (Visually separated subtle red) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onDelete();
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Delete Inquiry</span>
+            </button>
           </div>
-
-          {/* Professional 2x2 Status Selector Grid (Zero scrolling required!) */}
-          <div className="px-2.5 pb-1 grid grid-cols-2 gap-1.5">
-            {[
-              { id: 'New', label: 'New', dot: 'bg-emerald-500', active: 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-400/30' },
-              { id: 'In Progress', label: 'In Progress', dot: 'bg-amber-500', active: 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400/30' },
-              { id: 'Replied', label: 'Replied', dot: 'bg-sky-500', active: 'bg-sky-50 text-sky-800 border-sky-300 ring-1 ring-sky-400/30' },
-              { id: 'Closed', label: 'Closed', dot: 'bg-slate-400', active: 'bg-slate-100 text-slate-800 border-slate-300 ring-1 ring-slate-400/30' },
-            ].map(st => {
-              const isSelected = inquiry.status === st.id;
-              return (
-                <button
-                  key={st.id}
-                  type="button"
-                  onClick={() => handleSelectStatus(st.id)}
-                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    isSelected
-                      ? `${st.active} shadow-2xs font-bold`
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 truncate">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
-                    <span className="truncate">{st.label}</span>
-                  </span>
-                  {isSelected && <Check className="w-3 h-3 shrink-0 text-emerald-600" />}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="border-t border-slate-100 my-1" />
-
-          {/* Delete */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsOpen(false);
-              onDelete();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>Delete</span>
-          </button>
-        </div>
+        </>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
 
@@ -320,7 +396,7 @@ export const Inquiries = () => {
     };
   });
 
-  // Modals / Slider
+  // Slider Drawer & Confirm Dialog
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -417,18 +493,20 @@ export const Inquiries = () => {
     }
   };
 
-  // Responsive, balanced column width proportions fitting 100% width with NO horizontal scrollbar:
-  // TICKET ID (14%) | SENDER NAME (17%) | EMAIL (20%) | CONTACT NO. (14%) | SUBJECT & INQUIRY (20%) | STATUS (10%) | ACTIONS (5%)
+  // Enterprise Layout strictly adhering to specification:
+  // Ticket ID: 12% | Sender Name: 15% | Email: 19% | Contact Number: 13% | Subject & Inquiry: 25% | Status: 10% | Actions: 6%
+  // Sum = 100% (No horizontal scrollbar, perfect enterprise alignment)
   const columns = [
     {
       header: 'Ticket ID',
       accessor: 'id',
       sortable: true,
-      className: 'w-[14%] px-3.5 py-3.5',
+      className: 'w-[12%] px-4 py-3.5',
       render: (row) => (
         <span
           onClick={() => handleView(row)}
-          className="font-mono text-xs font-bold text-[#0B2D52] hover:text-[#155A96] cursor-pointer transition-colors bg-slate-100/90 px-2 py-0.5 rounded border border-slate-200/80 inline-block truncate max-w-full"
+          className="font-mono text-xs font-bold text-[#0B2D52] hover:text-[#155A96] cursor-pointer transition-colors bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/80 inline-block truncate max-w-full"
+          title={`Ticket #${row.id}`}
         >
           #{row.id}
         </span>
@@ -438,17 +516,18 @@ export const Inquiries = () => {
       header: 'Sender Name',
       accessor: 'inquirer_name',
       sortable: true,
-      className: 'w-[17%] px-3.5 py-3.5',
+      className: 'w-[15%] px-4 py-3.5',
       render: (row) => {
         const initials = getInitials(row.inquirer_name);
         return (
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-7 h-7 rounded-full bg-[#E2EEF8] text-[#155A96] flex items-center justify-center text-xs font-bold shrink-0 border border-[#C5DCF0]">
               {initials}
             </div>
             <span
               onClick={() => handleView(row)}
-              className="font-semibold text-slate-900 text-xs sm:text-sm block truncate hover:text-[#155A96] transition-colors cursor-pointer"
+              className="font-semibold text-slate-900 text-xs sm:text-sm truncate hover:text-[#155A96] transition-colors cursor-pointer"
+              title={row.inquirer_name}
             >
               {row.inquirer_name}
             </span>
@@ -460,12 +539,12 @@ export const Inquiries = () => {
       header: 'Email',
       accessor: 'email',
       sortable: true,
-      className: 'w-[20%] px-3.5 py-3.5',
+      className: 'w-[19%] px-4 py-3.5',
       render: (row) => (
         <a
           href={`mailto:${row.email}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs text-slate-600 hover:text-[#155A96] hover:underline block truncate"
+          className="text-xs text-slate-600 hover:text-[#155A96] hover:underline truncate block"
           title={row.email}
         >
           {row.email}
@@ -473,15 +552,16 @@ export const Inquiries = () => {
       )
     },
     {
-      header: 'Contact No.',
+      header: 'Contact Number',
       accessor: 'phone',
       sortable: false,
-      className: 'w-[14%] px-3.5 py-3.5',
+      className: 'w-[13%] px-4 py-3.5',
       render: (row) => row.phone ? (
         <a
           href={`tel:${row.phone}`}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline font-mono block truncate"
+          className="text-xs font-medium text-slate-700 hover:text-[#155A96] hover:underline font-mono truncate block"
+          title={row.phone}
         >
           {row.phone}
         </a>
@@ -493,7 +573,7 @@ export const Inquiries = () => {
       header: 'Subject & Inquiry',
       accessor: 'lot_title',
       sortable: false,
-      className: 'w-[20%] px-3.5 py-3.5',
+      className: 'w-[25%] px-4 py-3.5',
       render: (row) => {
         const subject = cleanSubject(row.lot_title, row.lot_number);
 
@@ -512,25 +592,24 @@ export const Inquiries = () => {
       header: 'Status',
       accessor: 'status',
       sortable: true,
-      className: 'w-[10%] px-3.5 py-3.5',
+      className: 'w-[10%] px-4 py-3.5',
       render: (row) => <StatusBadge status={row.status} />
     },
     {
       header: 'Actions',
       key: 'actions',
       sortable: false,
-      className: 'w-[5%] text-right px-3 py-3.5',
-      render: (row, _val, rowIdx, totalRows) => (
-        <InquiryActionMenu
-          inquiry={row}
-          rowIdx={rowIdx}
-          totalRows={totalRows}
-          onView={() => handleView(row)}
-          onEdit={() => handleView(row)}
-          onReply={() => handleView(row)}
-          onUpdateStatus={(newStatus) => handleUpdateStatus(row.id, newStatus)}
-          onDelete={() => handleDeletePrompt(row)}
-        />
+      className: 'w-[6%] text-right px-4 py-3.5',
+      render: (row) => (
+        <div className="flex items-center justify-end">
+          <InquiryActionMenu
+            inquiry={row}
+            onView={() => handleView(row)}
+            onReply={() => handleView(row)}
+            onUpdateStatus={(newStatus) => handleUpdateStatus(row.id, newStatus)}
+            onDelete={() => handleDeletePrompt(row)}
+          />
+        </div>
       )
     }
   ];
@@ -646,7 +725,7 @@ export const Inquiries = () => {
         </div>
       </div>
 
-      {/* Main Table with Professional Fixed Proportions */}
+      {/* Main Table with Exact Suggested Proportions (100% Fit, No Scrollbar) */}
       <DataTable
         columns={columns}
         data={inquiries}
