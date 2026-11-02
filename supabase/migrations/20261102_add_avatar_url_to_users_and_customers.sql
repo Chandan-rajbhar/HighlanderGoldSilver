@@ -14,3 +14,4 @@ ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
 -- 3. Reload PostgREST schema cache immediately
 NOTIFY pgrst, 'reload schema';
+
