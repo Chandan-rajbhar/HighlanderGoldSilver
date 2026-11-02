@@ -1,7 +1,9 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
+import { getCachedAvatar, saveCachedAvatar } from '../utils/avatarStorage';
 
-const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at';
+const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at, avatar_url';
+const LIST_COLUMNS_FALLBACK = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at';
 
 export const customerService = {
   // In-memory instant synchronous retrieval for 0ms page transitions
@@ -79,15 +81,35 @@ export const customerService = {
 
         query = query.order(sortBy, { ascending: sortAsc }).range(from, to);
 
-        const { data, error, count } = await query;
+        let { data, error, count } = await query;
+        if (error && (error.message?.includes('avatar_url') || error.code === '42703' || error.code === 'PGRST204')) {
+          let retryQuery = supabase
+            .from('customers')
+            .select(LIST_COLUMNS_FALLBACK, { count: 'exact' });
+          if (tier && tier !== 'All') retryQuery = retryQuery.eq('tier', tier);
+          if (search && search.trim() !== '') {
+            const s = search.trim();
+            retryQuery = retryQuery.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%,city.ilike.%${s}%`);
+          }
+          retryQuery = retryQuery.order(sortBy, { ascending: sortAsc }).range(from, to);
+          const retryRes = await retryQuery;
+          data = retryRes.data;
+          error = retryRes.error;
+          count = retryRes.count;
+        }
         if (error) throw error;
 
+        const mergedData = (data || []).map(c => ({
+          ...c,
+          avatar_url: c.avatar_url || getCachedAvatar(c.id || c.customer_id, c.email) || ''
+        }));
+
         return {
-          data: data || [],
-          total: count !== null && count !== undefined ? count : (data?.length || 0),
+          data: mergedData,
+          total: count !== null && count !== undefined ? count : (mergedData?.length || 0),
           page,
           pageSize,
-          totalPages: Math.ceil((count !== null && count !== undefined ? count : (data?.length || 0)) / pageSize) || 1,
+          totalPages: Math.ceil((count !== null && count !== undefined ? count : (mergedData?.length || 0)) / pageSize) || 1,
         };
       } catch (err) {
         console.error('Supabase getCustomers error:', err);
@@ -141,17 +163,29 @@ export const customerService = {
         const { data, error } = await supabase
           .from('customers')
           .select('*')
-          .eq('id', id)
+          .or(`id.eq.${id},customer_id.eq.${id}`)
           .single();
-        if (error) throw error;
-        return data;
+        if (error && error.code !== 'PGRST116') throw error;
+        if (data) {
+          return {
+            ...data,
+            avatar_url: data.avatar_url || getCachedAvatar(data.id || data.customer_id, data.email) || ''
+          };
+        }
       } catch (err) {
         console.error('Supabase getCustomerById error:', err);
       }
     }
 
     const custs = localDB.getCustomers();
-    return custs.find(c => c.id === id) || null;
+    const found = custs.find(c => c.id === id || c.customer_id === id);
+    if (found) {
+      return {
+        ...found,
+        avatar_url: found.avatar_url || getCachedAvatar(found.id || found.customer_id, found.email) || ''
+      };
+    }
+    return null;
   },
 
   async createCustomer(custData) {
@@ -213,7 +247,8 @@ export const customerService = {
       'total_spent',
       'orders_count',
       'account_status',
-      'notes'
+      'notes',
+      'avatar_url'
     ];
 
     const cleanPayload = {};
@@ -254,20 +289,51 @@ export const customerService = {
           error = retryRes.error;
         }
 
+        if (error && (error.message?.includes('avatar_url') || error.code === '42703' || error.code === 'PGRST204')) {
+          const { avatar_url, ...fallbackPayload } = cleanPayload;
+          const retryRes = await supabase
+            .from('customers')
+            .update(fallbackPayload)
+            .eq('id', id)
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
+        // Also update Supabase Auth metadata if current auth user matches
+        try {
+          if (cleanPayload.avatar_url && supabase?.auth?.getUser) {
+            await supabase.auth.updateUser({
+              data: {
+                avatar_url: cleanPayload.avatar_url,
+                full_name: cleanPayload.full_name
+              }
+            });
+          }
+        } catch (_) {}
+
+        if (cleanPayload.avatar_url) {
+          saveCachedAvatar(id, cleanPayload.avatar_url, cleanPayload.email);
+        }
+
         if (error) {
           console.warn('Supabase updateCustomer warning, falling back to local update:', error);
         } else if (data?.[0]) {
           const custs = localDB.getCustomers();
           const idx = custs.findIndex(c => c.id === id || c.customer_id === id || c.email === cleanPayload.email);
           if (idx !== -1) {
-            custs[idx] = { ...custs[idx], ...data[0] };
+            custs[idx] = { ...custs[idx], ...data[0], avatar_url: cleanPayload.avatar_url || custs[idx].avatar_url };
             localDB.setCustomers([...custs]);
           }
-          return data[0];
+          return { ...data[0], avatar_url: cleanPayload.avatar_url || data[0].avatar_url };
         }
       } catch (err) {
         console.warn('Supabase updateCustomer error, saving to localDB:', err);
       }
+    }
+
+    if (cleanPayload.avatar_url) {
+      saveCachedAvatar(id, cleanPayload.avatar_url, cleanPayload.email);
     }
 
     const custs = localDB.getCustomers();

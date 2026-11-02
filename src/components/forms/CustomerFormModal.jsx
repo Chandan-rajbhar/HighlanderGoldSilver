@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, ShieldCheck, Check } from 'lucide-react';
+import { X, User, ShieldCheck, Check, Camera, Upload, Trash2 } from 'lucide-react';
 import { Select } from '../ui/Select';
+import { compressImageFile } from '../../utils/imageUtils';
 
 
 export const CustomerFormModal = ({
@@ -19,6 +20,7 @@ export const CustomerFormModal = ({
     full_name: '',
     email: '',
     phone: '',
+    avatar_url: '',
     role: 'Customer', // 'Customer' | 'Admin'
     admin_role: '',
     title: 'Administrative Staff',
@@ -41,6 +43,7 @@ export const CustomerFormModal = ({
         full_name: initialData.full_name || initialData.name || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
+        avatar_url: initialData.avatar_url || '',
         role: isAdm ? 'Admin' : 'Customer',
         admin_role: initialData.admin_role || (initialData.role && initialData.role !== 'Admin' && initialData.role !== 'Customer' ? initialData.role : '') || '',
         title: initialData.title || (isAdm ? 'Senior Numismatist & Vault Director' : ''),
@@ -59,6 +62,7 @@ export const CustomerFormModal = ({
         full_name: '',
         email: '',
         phone: '',
+        avatar_url: '',
         role: 'Customer',
         admin_role: '',
         title: 'Senior Numismatist',
@@ -73,6 +77,18 @@ export const CustomerFormModal = ({
     }
     setErrors({});
   }, [initialData, isOpen]);
+
+  const handleAvatarFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    try {
+      const compressed = await compressImageFile(file, 320, 320, 0.88);
+      setFormData(prev => ({ ...prev, avatar_url: compressed }));
+    } catch (err) {
+      console.error('Failed to compress avatar image:', err);
+    }
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -137,6 +153,56 @@ export const CustomerFormModal = ({
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               
+              {/* Profile Photo Uploader */}
+              <div className="rounded-2xl border border-[#DCE5F0] p-4 bg-white">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 uppercase tracking-wider mb-3">
+                  <Camera className="w-4 h-4 text-[#071A35]" />
+                  <span>Profile Photo</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] flex items-center justify-center text-[#C9A23A] font-bold text-lg overflow-hidden shrink-0 shadow-xs">
+                    {formData.avatar_url ? (
+                      <img src={formData.avatar_url} alt="Profile preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{formData.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || (formData.role === 'Admin' ? 'AD' : 'CU')}</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-800">
+                      Upload Profile Picture
+                    </p>
+                    <p className="text-[11px] text-slate-500 mb-2.5">
+                      Accepts PNG, JPG, or WebP. Photo will automatically sync to header, sidebar, and profile.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-2xs">
+                        <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
+                        <span>Choose Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarFile}
+                        />
+                      </label>
+
+                      {formData.avatar_url && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors font-medium border border-rose-200"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Account Role & Identifier */}
               <div className="rounded-2xl border border-[#DCE5F0] p-4 bg-white space-y-3.5">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 uppercase tracking-wider">

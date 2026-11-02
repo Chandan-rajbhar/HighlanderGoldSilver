@@ -264,10 +264,14 @@ export const Sidebar = ({
               <Link
                 to={{ pathname: '/customers', search: '?view=admin' }}
                 state={{ openAdminProfile: Date.now() }}
-                className="w-10 h-10 rounded-full bg-[#0F2D52] border border-[#D6AD43] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs hover:ring-2 hover:ring-[#F5B52E]/30 transition-all cursor-pointer"
+                className="w-10 h-10 rounded-full bg-[#0F2D52] border border-[#D6AD43] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs hover:ring-2 hover:ring-[#F5B52E]/30 transition-all cursor-pointer overflow-hidden"
                 title={`${adminUser?.name || 'Alexander MacLeod'} (Senior Numismatist & Vault Director) - Click to view profile`}
               >
-                AM
+                {adminUser?.avatar_url ? (
+                  <img src={adminUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  adminUser?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AM'
+                )}
               </Link>
               <button
                 onClick={() => setIsCollapsed(false)}
@@ -287,8 +291,12 @@ export const Sidebar = ({
                 className="flex items-center gap-2.5 overflow-hidden group cursor-pointer flex-1 min-w-0 pr-2"
                 title="View Admin Profile"
               >
-                <div className="w-9 h-9 rounded-full bg-[#0F2D52] border border-[#D6AD43]/70 group-hover:border-[#F5B52E] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs transition-colors">
-                  AM
+                <div className="w-9 h-9 rounded-full bg-[#0F2D52] border border-[#D6AD43]/70 group-hover:border-[#F5B52E] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs transition-colors overflow-hidden">
+                  {adminUser?.avatar_url ? (
+                  <img src={adminUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  adminUser?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AM'
+                )}
                 </div>
                 <div className="flex flex-col truncate">
                   <span className="text-[13px] font-semibold text-white truncate font-sans group-hover:text-[#F5B52E] transition-colors">

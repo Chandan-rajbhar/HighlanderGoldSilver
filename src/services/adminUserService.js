@@ -1,7 +1,9 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
+import { getCachedAvatar, saveCachedAvatar } from '../utils/avatarStorage';
 
-const LIST_COLUMNS = 'id, name, email, role, title, status, location, last_login, created_at';
+const LIST_COLUMNS = 'id, name, email, role, title, status, location, last_login, created_at, avatar_url';
+const LIST_COLUMNS_FALLBACK = 'id, name, email, role, title, status, location, last_login, created_at';
 
 export const adminUserService = {
   async getAdminUsers({
@@ -18,9 +20,24 @@ export const adminUserService = {
           const s = search.trim();
           query = query.or(`name.ilike.%${s}%,email.ilike.%${s}%,title.ilike.%${s}%`);
         }
-        const { data, error } = await query.order('created_at', { ascending: true });
+        let { data, error } = await query.order('created_at', { ascending: true });
+        if (error && (error.message?.includes('avatar_url') || error.code === '42703' || error.code === 'PGRST204')) {
+          let fallbackQuery = supabase.from('admin_users').select(LIST_COLUMNS_FALLBACK);
+          if (role && role !== 'All') fallbackQuery = fallbackQuery.eq('role', role);
+          if (status && status !== 'All') fallbackQuery = fallbackQuery.eq('status', status);
+          if (search && search.trim() !== '') {
+            const s = search.trim();
+            fallbackQuery = fallbackQuery.or(`name.ilike.%${s}%,email.ilike.%${s}%,title.ilike.%${s}%`);
+          }
+          const fallbackRes = await fallbackQuery.order('created_at', { ascending: true });
+          data = fallbackRes.data;
+          error = fallbackRes.error;
+        }
         if (error) throw error;
-        return data || [];
+        return (data || []).map(item => ({
+          ...item,
+          avatar_url: item.avatar_url || getCachedAvatar(item.id, item.email) || ''
+        }));
       } catch (err) {
         console.error('Supabase getAdminUsers error:', err);
         return [];
@@ -72,7 +89,7 @@ export const adminUserService = {
   },
 
   async updateAdminUser(id, userData) {
-    const validFields = ['name', 'email', 'role', 'status', 'two_factor_enabled', 'title', 'location'];
+    const validFields = ['name', 'email', 'role', 'status', 'two_factor_enabled', 'title', 'location', 'avatar_url'];
     const cleanPayload = {};
     validFields.forEach(col => {
       if (userData[col] !== undefined) cleanPayload[col] = userData[col];
@@ -83,25 +100,65 @@ export const adminUserService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('admin_users')
           .update(cleanPayload)
           .eq('id', id)
           .select();
-        if (error) {
-          console.warn('Supabase updateAdminUser warning, falling back to local:', error);
-        } else if (data?.[0]) {
+
+        // If no rows matched by id and email was provided, try matching by email
+        if (!error && (!data || data.length === 0) && cleanPayload.email) {
+          const retryRes = await supabase
+            .from('admin_users')
+            .update(cleanPayload)
+            .ilike('email', cleanPayload.email)
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
+        if (error && (error.message?.includes('avatar_url') || error.code === '42703' || error.code === 'PGRST204')) {
+          const { avatar_url, ...fallbackPayload } = cleanPayload;
+          let retryRes = await supabase.from('admin_users').update(fallbackPayload).eq('id', id).select();
+          if (!retryRes.error && (!retryRes.data || retryRes.data.length === 0) && cleanPayload.email) {
+            retryRes = await supabase.from('admin_users').update(fallbackPayload).ilike('email', cleanPayload.email).select();
+          }
+          data = retryRes.data;
+        }
+
+        // Also update Supabase Auth user metadata if logged in
+        try {
+          if (cleanPayload.avatar_url && supabase?.auth?.getUser) {
+            await supabase.auth.updateUser({
+              data: {
+                avatar_url: cleanPayload.avatar_url,
+                full_name: cleanPayload.name
+              }
+            });
+          }
+        } catch (_) {}
+
+        if (cleanPayload.avatar_url) {
+          saveCachedAvatar(id, cleanPayload.avatar_url, cleanPayload.email);
+        }
+
+        if (data?.[0]) {
           const users = localDB.getAdminUsers();
-          const idx = users.findIndex(u => u.id === id);
+          const idx = users.findIndex(u => u.id === id || (cleanPayload.email && u.email?.toLowerCase() === cleanPayload.email.toLowerCase()));
+          const merged = { ...data[0], avatar_url: cleanPayload.avatar_url ?? data[0].avatar_url };
           if (idx !== -1) {
-            users[idx] = { ...users[idx], ...data[0] };
+            users[idx] = { ...users[idx], ...merged };
             localDB.setAdminUsers([...users]);
           }
-          return data[0];
+          return merged;
         }
       } catch (err) {
         console.warn('Supabase updateAdminUser error, saving to localDB:', err);
       }
+    }
+
+    if (cleanPayload.avatar_url) {
+      saveCachedAvatar(id, cleanPayload.avatar_url, cleanPayload.email);
     }
 
     const users = localDB.getAdminUsers();

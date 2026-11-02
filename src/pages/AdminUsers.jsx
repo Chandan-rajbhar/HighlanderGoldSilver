@@ -112,8 +112,8 @@ export const AdminUsers = () => {
       className: 'font-sans font-semibold text-slate-900',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-aubergine text-gold font-bold text-xs flex items-center justify-center shrink-0 border border-gold/40 shadow-sm">
-            {row.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+          <div className="w-9 h-9 rounded-full bg-aubergine text-gold font-bold text-xs flex items-center justify-center shrink-0 border border-gold/40 shadow-sm overflow-hidden">{row.avatar_url ? <img src={row.avatar_url} alt="" className="w-full h-full object-cover" /> : null}
+            {!row.avatar_url && row.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </div>
           <div>
             <span className="font-bold text-slate-900 text-sm block font-sans">{row.name}</span>

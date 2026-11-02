@@ -2,14 +2,27 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
 import { notificationService, getBroadcastChannel } from '../services/notificationService';
+import { getCachedAvatar, saveCachedAvatar } from '../utils/avatarStorage';
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = 'hgs_admin_session';
 
 export const AuthProvider = ({ children }) => {
-  // Session and user state
-  const [adminUser, setAdminUser] = useState(null);
+  // Session and user state (instantly restore from localStorage with cached avatar to eliminate refresh wipeout)
+  const [adminUser, setAdminUser] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (stored) {
+        const cached = getCachedAvatar(stored.id, stored.email);
+        return {
+          ...stored,
+          avatar_url: stored.avatar_url || cached || ''
+        };
+      }
+    } catch (_) {}
+    return null;
+  });
   const [session, setSession] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
@@ -175,6 +188,46 @@ export const AuthProvider = ({ children }) => {
     };
   }, [toast]);
 
+  // Cross-tab avatar synchronization listener
+  useEffect(() => {
+    let bc;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('hgs_avatar_sync');
+        bc.onmessage = (event) => {
+          const { type, id, email, avatar_url } = event.data || {};
+          if (type === 'AVATAR_UPDATED' && avatar_url) {
+            setAdminUser(prev => {
+              if (!prev) return prev;
+              const match = (id && prev.id === id) || (email && prev.email?.toLowerCase() === email?.toLowerCase());
+              if (match) {
+                const updated = { ...prev, avatar_url };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                return updated;
+              }
+              return prev;
+            });
+          } else if (type === 'AVATAR_REMOVED') {
+            setAdminUser(prev => {
+              if (!prev) return prev;
+              const match = (id && prev.id === id) || (email && prev.email?.toLowerCase() === email?.toLowerCase());
+              if (match) {
+                const updated = { ...prev, avatar_url: '' };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                return updated;
+              }
+              return prev;
+            });
+          }
+        };
+      }
+    } catch (_) {}
+
+    return () => {
+      try { bc?.close(); } catch (_) {}
+    };
+  }, []);
+
   /**
    * Helper to build the user profile from Supabase Auth user + admin_users / customers table
    */
@@ -209,6 +262,17 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (adminRecord) {
+      const cached = getCachedAvatar(adminRecord.id || authUser.id, authUser.email);
+      let sessionAvatar = '';
+      try {
+        sessionAvatar = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}').avatar_url || '';
+      } catch (_) {}
+
+      const avatar = adminRecord.avatar_url || authUser.user_metadata?.avatar_url || cached || sessionAvatar || '';
+      if (avatar) {
+        saveCachedAvatar(adminRecord.id || authUser.id, avatar, authUser.email);
+      }
+
       return {
         id: adminRecord.id || authUser.id,
         auth_user_id: authUser.id,
@@ -218,6 +282,7 @@ export const AuthProvider = ({ children }) => {
         title: adminRecord.title || 'Senior Numismatist & Vault Director',
         location: adminRecord.location || 'Bigfork Storefront & Vault, MT',
         badge: adminRecord.role || 'Super Admin',
+        avatar_url: avatar,
         is_admin: true,
         account_status: adminRecord.status || 'Active'
       };
@@ -230,6 +295,12 @@ export const AuthProvider = ({ children }) => {
     const state = customerRecord?.state || meta.state || '';
     const locationDisplay = city ? `${city}${state ? `, ${state}` : ''}` : '';
 
+    const cachedCust = getCachedAvatar(customerRecord?.id || authUser.id, authUser.email);
+    const custAvatar = customerRecord?.avatar_url || meta.avatar_url || cachedCust || '';
+    if (custAvatar) {
+      saveCachedAvatar(customerRecord?.id || authUser.id, custAvatar, authUser.email);
+    }
+
     return {
       id: customerRecord?.id || authUser.id,
       customer_id: customerRecord?.customer_id || null,
@@ -241,6 +312,7 @@ export const AuthProvider = ({ children }) => {
       location: locationDisplay,
       phone: customerRecord?.phone || meta.phone || '',
       badge: 'Collector',
+      avatar_url: custAvatar,
       interest: customerRecord?.interest || meta.interest || 'Precious Metals',
       is_admin: false,
       account_status: customerRecord?.account_status || 'Active'

@@ -30,8 +30,11 @@ import {
   Package,
   Clock,
   ChevronRight,
-  FileText
+  FileText,
+  Camera,
+  Upload
 } from 'lucide-react';
+import { compressImageFile } from '../utils/imageUtils';
 import { customerService } from '../services/customerService';
 import { adminUserService } from '../services/adminUserService';
 import { orderService } from '../services/orderService';
@@ -46,13 +49,15 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { initialAdminUsers } from '../data/initialData';
 import { localDB } from '../services/storageService';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { getCachedAvatar, saveCachedAvatar, removeCachedAvatar } from '../utils/avatarStorage';
 
 export const Customers = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { adminUser } = useAuth();
+  const { adminUser, setAdminUser } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
@@ -81,21 +86,23 @@ export const Customers = () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get('view') === 'admin') {
         const staffRef = initialAdminUsers?.[0] || {};
+        const storedSession = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
         return {
-          id: staffRef.id || 'adm-001',
-          full_name: staffRef.name || 'Alexander MacLeod',
-          email: staffRef.email || 'stratford1955@icloud.com',
-          phone: '(406) 883-2210',
+          id: storedSession.id || staffRef.id || 'adm-001',
+          full_name: storedSession.name || staffRef.name || 'Alexander MacLeod',
+          email: storedSession.email || staffRef.email || 'stratford1955@icloud.com',
+          phone: storedSession.phone || '(406) 883-2210',
           city: 'Bigfork',
           state: 'MT',
-          location: staffRef.location || 'Bigfork Storefront & Vault, MT',
+          location: storedSession.location || staffRef.location || 'Bigfork Storefront & Vault, MT',
           address: 'Highlander Vault HQ, Montana',
           customer_id: 'STAFF-1001',
           role: 'Admin',
-          admin_role: staffRef.role || 'Super Admin',
-          title: staffRef.title || 'Senior Numismatist & Vault Director',
+          admin_role: storedSession.role || staffRef.role || 'Super Admin',
+          title: storedSession.title || staffRef.title || 'Senior Numismatist & Vault Director',
+          avatar_url: storedSession.avatar_url || getCachedAvatar(storedSession.id || staffRef.id, storedSession.email || staffRef.email) || staffRef.avatar_url || '',
           is_admin: true,
-          account_status: staffRef.status || 'Active',
+          account_status: storedSession.account_status || staffRef.status || 'Active',
           orders_count: 0,
           total_spent: 0,
           notes: 'Full administrative access and cryptographic vault keyholder authority.',
@@ -144,6 +151,7 @@ export const Customers = () => {
         orders_count: c.orders_count || 0,
         total_spent: c.total_spent || 0,
         tier: c.tier || 'Collector',
+        avatar_url: c.avatar_url || getCachedAvatar(c.id, c.email) || '',
         notes: c.notes || 'Prefers insured overnight bullion transport and direct wire clearance.',
         created_at: c.created_at || '2026-09-01T00:00:00Z'
       }));
@@ -166,6 +174,7 @@ export const Customers = () => {
         role: 'Admin',
         admin_role: a.role || a.admin_role || 'Super Admin',
         title: a.title || 'Senior Numismatist & Vault Director',
+        avatar_url: a.avatar_url || getCachedAvatar(a.id, a.email) || (adminUser && (adminUser.id === a.id || adminUser.email === a.email) ? adminUser.avatar_url : '') || '',
         is_admin: true,
         account_status: a.status || a.account_status || 'Active',
         orders_count: 0,
@@ -240,6 +249,153 @@ export const Customers = () => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Real-time synchronization of customer & admin profile photo updates from client-side UI
+  useEffect(() => {
+    // 1. Cross-tab BroadcastChannel listener
+    let bc;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('hgs_avatar_sync');
+        bc.onmessage = (event) => {
+          const { type, id, email, avatar_url } = event.data || {};
+          if (type === 'AVATAR_UPDATED' && avatar_url) {
+            setUsers(prev => prev.map(u => {
+              if ((id && (u.id === id || u.customer_id === id)) || (email && u.email?.toLowerCase() === email?.toLowerCase())) {
+                return { ...u, avatar_url };
+              }
+              return u;
+            }));
+            setViewUser(prev => {
+              if (!prev) return prev;
+              if ((id && (prev.id === id || prev.customer_id === id)) || (email && prev.email?.toLowerCase() === email?.toLowerCase())) {
+                return { ...prev, avatar_url };
+              }
+              return prev;
+            });
+            if (adminUser && ((id && adminUser.id === id) || (email && adminUser.email?.toLowerCase() === email?.toLowerCase()))) {
+              setAdminUser(prev => ({ ...prev, avatar_url }));
+            }
+          } else if (type === 'AVATAR_REMOVED') {
+            setUsers(prev => prev.map(u => {
+              if ((id && (u.id === id || u.customer_id === id)) || (email && u.email?.toLowerCase() === email?.toLowerCase())) {
+                return { ...u, avatar_url: '' };
+              }
+              return u;
+            }));
+            setViewUser(prev => {
+              if (!prev) return prev;
+              if ((id && (prev.id === id || prev.customer_id === id)) || (email && prev.email?.toLowerCase() === email?.toLowerCase())) {
+                return { ...prev, avatar_url: '' };
+              }
+              return prev;
+            });
+          }
+        };
+      }
+    } catch (_) {}
+
+    // 2. Storage event listener (syncs across tabs and windows when localStorage changes)
+    const handleStorage = (e) => {
+      if (e.key === 'hgs_user_avatars' || e.key === 'hgs_admin_session') {
+        fetchUsers();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 3. Supabase Realtime listeners for DB updates from client-side storefront
+    let custChannel = null;
+    let adminChannel = null;
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        custChannel = supabase
+          .channel('realtime_customers_sync')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'customers' },
+            (payload) => {
+              const updated = payload.new;
+              if (!updated) return;
+              const avatar = updated.avatar_url || getCachedAvatar(updated.id || updated.customer_id, updated.email);
+              if (avatar) {
+                saveCachedAvatar(updated.id || updated.customer_id, avatar, updated.email);
+              }
+              setUsers(prev => prev.map(u => {
+                if (u.id === updated.id || u.customer_id === updated.customer_id || (updated.email && u.email?.toLowerCase() === updated.email.toLowerCase())) {
+                  return {
+                    ...u,
+                    ...updated,
+                    avatar_url: avatar || u.avatar_url
+                  };
+                }
+                return u;
+              }));
+              setViewUser(prev => {
+                if (!prev) return prev;
+                if (prev.id === updated.id || prev.customer_id === updated.customer_id || (updated.email && prev.email?.toLowerCase() === updated.email.toLowerCase())) {
+                  return {
+                    ...prev,
+                    ...updated,
+                    avatar_url: avatar || prev.avatar_url
+                  };
+                }
+                return prev;
+              });
+            }
+          )
+          .subscribe();
+
+        adminChannel = supabase
+          .channel('realtime_admin_users_sync')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'admin_users' },
+            (payload) => {
+              const updated = payload.new;
+              if (!updated) return;
+              const avatar = updated.avatar_url || getCachedAvatar(updated.id, updated.email);
+              if (avatar) {
+                saveCachedAvatar(updated.id, avatar, updated.email);
+              }
+              setUsers(prev => prev.map(u => {
+                if (u.id === updated.id || (updated.email && u.email?.toLowerCase() === updated.email.toLowerCase())) {
+                  return {
+                    ...u,
+                    ...updated,
+                    avatar_url: avatar || u.avatar_url
+                  };
+                }
+                return u;
+              }));
+              setViewUser(prev => {
+                if (!prev) return prev;
+                if (prev.id === updated.id || (updated.email && prev.email?.toLowerCase() === updated.email.toLowerCase())) {
+                  return {
+                    ...prev,
+                    ...updated,
+                    avatar_url: avatar || prev.avatar_url
+                  };
+                }
+                return prev;
+              });
+              if (adminUser && (adminUser.id === updated.id || (updated.email && adminUser.email?.toLowerCase() === updated.email.toLowerCase()))) {
+                setAdminUser(prev => ({ ...prev, ...updated, avatar_url: avatar || prev?.avatar_url }));
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime avatar sync subscription warning:', err);
+      }
+    }
+
+    return () => {
+      try { bc?.close(); } catch (_) {}
+      window.removeEventListener('storage', handleStorage);
+      if (custChannel && supabase) supabase.removeChannel(custChannel);
+      if (adminChannel && supabase) supabase.removeChannel(adminChannel);
+    };
+  }, [fetchUsers, adminUser, setAdminUser]);
+
   // Handle direct navigation to admin profile (?view=admin or state.openAdminProfile)
   useEffect(() => {
     const isViewAdmin = searchParams.get('view') === 'admin' || location.state?.openAdminProfile;
@@ -256,7 +412,10 @@ export const Customers = () => {
       ) || users.find(u => u.is_admin);
 
       if (matched) {
-        setViewUser(matched);
+        setViewUser(prev => ({
+          ...matched,
+          avatar_url: matched.avatar_url || prev?.avatar_url || getCachedAvatar(matched.id, matched.email) || ''
+        }));
       } else {
         const staffRef = initialAdminUsers?.[0] || {};
         setViewUser(prev => prev?.is_admin ? prev : {
@@ -272,6 +431,7 @@ export const Customers = () => {
           role: 'Admin',
           admin_role: adminUser?.role || staffRef.role || 'Super Admin',
           title: adminUser?.title || staffRef.title || 'Senior Numismatist & Vault Director',
+          avatar_url: adminUser?.avatar_url || getCachedAvatar(adminUser?.id || staffRef.id, adminUser?.email || staffRef.email) || staffRef.avatar_url || '',
           is_admin: true,
           account_status: adminUser?.status || staffRef.status || 'Active',
           orders_count: 0,
@@ -348,12 +508,112 @@ export const Customers = () => {
     setIsConfirmOpen(true);
   };
 
+  const handleDirectAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    try {
+      const dataUrl = await compressImageFile(file, 320, 320, 0.88);
+      const updatedUser = { ...viewUser, avatar_url: dataUrl };
+      setViewUser(updatedUser);
+
+      // Save to local cache immediately so it never disappears on refresh
+      saveCachedAvatar(viewUser.id, dataUrl, viewUser.email);
+
+      if (viewUser.is_admin) {
+        if (setAdminUser) {
+          setAdminUser(prev => ({ ...(prev || {}), ...updatedUser, avatar_url: dataUrl }));
+        }
+        try {
+          const stored = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
+          localStorage.setItem('hgs_admin_session', JSON.stringify({ ...stored, avatar_url: dataUrl }));
+        } catch (_) {}
+        await adminUserService.updateAdminUser(viewUser.id, {
+          avatar_url: dataUrl,
+          email: viewUser.email,
+          name: viewUser.full_name
+        });
+      } else {
+        await customerService.updateCustomer(viewUser.id, {
+          avatar_url: dataUrl,
+          email: viewUser.email,
+          customer_id: viewUser.customer_id
+        });
+      }
+
+      setUsers(prev => prev.map(u => (u.id === viewUser.id || u.customer_id === viewUser.customer_id || (u.email && viewUser.email && u.email.toLowerCase() === viewUser.email.toLowerCase())) ? { ...u, avatar_url: dataUrl } : u));
+      toast.success('Profile photo updated successfully!');
+    } catch (err) {
+      console.error('Direct avatar upload error:', err);
+      toast.error('Failed to update profile photo.');
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      const updatedUser = { ...viewUser, avatar_url: '' };
+      setViewUser(updatedUser);
+      removeCachedAvatar(viewUser.id, viewUser.email);
+
+      if (viewUser.is_admin) {
+        if (setAdminUser) {
+          setAdminUser(prev => ({ ...(prev || {}), avatar_url: '' }));
+        }
+        try {
+          const stored = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
+          stored.avatar_url = '';
+          localStorage.setItem('hgs_admin_session', JSON.stringify(stored));
+        } catch (_) {}
+        await adminUserService.updateAdminUser(viewUser.id, {
+          avatar_url: '',
+          email: viewUser.email
+        });
+      } else {
+        await customerService.updateCustomer(viewUser.id, {
+          avatar_url: '',
+          email: viewUser.email
+        });
+      }
+
+      setUsers(prev => prev.map(u => (u.id === viewUser.id || u.customer_id === viewUser.customer_id || (u.email && viewUser.email && u.email.toLowerCase() === viewUser.email.toLowerCase())) ? { ...u, avatar_url: '' } : u));
+      toast.success('Profile photo removed.');
+    } catch (err) {
+      toast.error('Failed to remove profile photo.');
+    }
+  };
+
   const handleSaveUser = async (formData) => {
     setIsSaving(true);
     try {
       if (selectedUser) {
         if (selectedUser.is_admin) {
           await adminUserService.updateAdminUser(selectedUser.id, formData);
+          if (setAdminUser) {
+            setAdminUser(prev => ({
+              ...(prev || {}),
+              name: formData.full_name || formData.name || prev?.name,
+              email: formData.email || prev?.email,
+              avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : prev?.avatar_url,
+              role: formData.admin_role || formData.role || prev?.role,
+              title: formData.title || prev?.title,
+              location: formData.location || prev?.location
+            }));
+          }
+          try {
+            const stored = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
+            localStorage.setItem('hgs_admin_session', JSON.stringify({
+              ...stored,
+              name: formData.full_name || formData.name || stored.name,
+              email: formData.email || stored.email,
+              avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : stored.avatar_url,
+              role: formData.admin_role || formData.role || stored.role,
+              title: formData.title || stored.title
+            }));
+          } catch (_) {}
         } else {
           await customerService.updateCustomer(selectedUser.id, {
             ...formData,
@@ -364,10 +624,11 @@ export const Customers = () => {
         toast.success(`User "${formData.full_name || formData.name}" updated successfully!`);
 
         // Real-time update of currently open profile view
-        if (viewUser && (viewUser.id === selectedUser.id || viewUser.customer_id === selectedUser.customer_id)) {
+        if (viewUser && (viewUser.id === selectedUser.id || viewUser.customer_id === selectedUser.customer_id || (viewUser.email && selectedUser.email && viewUser.email.toLowerCase() === selectedUser.email.toLowerCase()))) {
           setViewUser(prev => ({
             ...prev,
             ...formData,
+            avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : prev.avatar_url,
             full_name: formData.full_name || formData.name || prev.full_name,
             name: formData.full_name || formData.name || prev.name,
             email: formData.email !== undefined ? formData.email : prev.email,
@@ -463,8 +724,12 @@ export const Customers = () => {
           <div className={`w-9 h-9 rounded-full ${row.is_admin
               ? 'bg-[#071A35] text-[#C9A23A] border-[#C9A23A]/50 font-bold'
               : 'bg-[#F5F8FC] text-[#071A35] border-[#DCE5F0] font-bold'
-            } text-xs flex items-center justify-center shrink-0 border shadow-2xs font-sans`}>
-            {row.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || (row.is_admin ? 'AD' : 'CU')}
+            } text-xs flex items-center justify-center shrink-0 border shadow-2xs font-sans overflow-hidden`}>
+            {row.avatar_url ? (
+              <img src={row.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              row.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || (row.is_admin ? 'AD' : 'CU')
+            )}
           </div>
           <div>
             <span className="font-bold text-slate-900 text-sm hover:text-[#C9A23A] transition-colors block text-left">
@@ -581,8 +846,27 @@ export const Customers = () => {
 
             {/* Left: Avatar & Identity Details */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
-                {viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AD'}
+              <div className="relative group/avatar w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans overflow-hidden">
+                {viewUser.avatar_url ? (
+                  <img src={viewUser.avatar_url} alt={viewUser.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AD'
+                )}
+
+                {/* Direct 1-Click Upload Overlay */}
+                <label 
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[9px] font-semibold text-center p-1"
+                  title="Click to change profile photo"
+                >
+                  <Camera className="w-4 h-4 text-[#C9A23A] mb-0.5" />
+                  <span>Change</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleDirectAvatarUpload}
+                  />
+                </label>
               </div>
 
               <div>
@@ -591,6 +875,28 @@ export const Customers = () => {
                     {viewUser.full_name}
                   </h1>
                   <StatusBadge status={viewUser.account_status || 'Active'} />
+
+                  {/* Quick Photo Upload Button */}
+                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#071A35] text-[11px] font-semibold transition-colors cursor-pointer border border-slate-200 shadow-2xs">
+                    <Camera className="w-3.5 h-3.5 text-[#C9A23A]" />
+                    <span>{viewUser.avatar_url ? 'Change Photo' : 'Add Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleDirectAvatarUpload}
+                    />
+                  </label>
+
+                  {viewUser.avatar_url && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="text-[11px] text-rose-600 hover:text-rose-700 hover:underline font-medium cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
@@ -767,8 +1073,27 @@ export const Customers = () => {
 
             {/* Left: Avatar & Identity Details */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans">
-                {viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'CU'}
+              <div className="relative group/avatar w-16 h-16 rounded-full bg-[#071A35] border-2 border-[#C9A23A] text-[#C9A23A] text-xl font-bold flex items-center justify-center shadow-sm shrink-0 font-sans overflow-hidden">
+                {viewUser.avatar_url ? (
+                  <img src={viewUser.avatar_url} alt={viewUser.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  viewUser.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'CU'
+                )}
+
+                {/* Direct 1-Click Upload Overlay */}
+                <label 
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[9px] font-semibold text-center p-1"
+                  title="Click to change profile photo"
+                >
+                  <Camera className="w-4 h-4 text-[#C9A23A] mb-0.5" />
+                  <span>Change</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleDirectAvatarUpload}
+                  />
+                </label>
               </div>
 
               <div>

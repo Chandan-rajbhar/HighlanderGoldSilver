@@ -1,7 +1,9 @@
 import { Select } from '../ui/Select';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
-import { ShieldCheck, Check } from 'lucide-react';
+import { ShieldCheck, Check, Camera, Upload, Trash2 } from 'lucide-react';
+import { compressImageFile } from '../../utils/imageUtils';
+import { getCachedAvatar } from '../../utils/avatarStorage';
 
 const ROLES = ['Super Admin', 'Admin', 'Inventory Manager', 'Order Manager'];
 const STATUSES = ['Active', 'Suspended'];
@@ -21,7 +23,8 @@ export const AdminUserFormModal = ({
     role: 'Inventory Manager',
     title: '',
     location: 'Bigfork Storefront & Vault',
-    status: 'Active'
+    status: 'Active',
+    avatar_url: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -34,7 +37,8 @@ export const AdminUserFormModal = ({
         role: initialData.role || 'Inventory Manager',
         title: initialData.title || '',
         location: initialData.location || 'Bigfork Storefront & Vault',
-        status: initialData.status || 'Active'
+        status: initialData.status || 'Active',
+        avatar_url: initialData.avatar_url || getCachedAvatar(initialData.id, initialData.email) || ''
       });
     } else {
       setFormData({
@@ -43,11 +47,23 @@ export const AdminUserFormModal = ({
         role: 'Inventory Manager',
         title: 'Vault Specialist',
         location: 'Bigfork Storefront & Vault',
-        status: 'Active'
+        status: 'Active',
+        avatar_url: ''
       });
     }
     setErrors({});
   }, [initialData, isOpen]);
+
+  const handleAvatarFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImageFile(file, 320, 320, 0.88);
+      setFormData(prev => ({ ...prev, avatar_url: dataUrl }));
+    } catch (err) {
+      console.error('Image compression error:', err);
+    }
+  };
 
   const validate = () => {
     const errs = {};
@@ -72,6 +88,49 @@ export const AdminUserFormModal = ({
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Profile Photo Uploader */}
+        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/50">
+          <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-2">
+            Staff Profile Photo
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-[#071A35] border-2 border-[#C9A23A] flex items-center justify-center text-[#C9A23A] font-bold text-sm overflow-hidden shrink-0 shadow-xs">
+              {formData.avatar_url ? (
+                <img src={formData.avatar_url} alt="Staff preview" className="w-full h-full object-cover" />
+              ) : (
+                <span>{formData.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AD'}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-2xs">
+                  <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
+                  <span>Choose Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarFile}
+                  />
+                </label>
+                {formData.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
+                    className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors font-medium border border-rose-200"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Remove</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                PNG, JPG or WebP. Syncs across the admin dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
             Full Name *
@@ -165,4 +224,3 @@ export const AdminUserFormModal = ({
     </Modal>
   );
 };
-

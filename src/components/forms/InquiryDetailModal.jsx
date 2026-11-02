@@ -11,6 +11,7 @@ import {
   Copy
 } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
+import { getCachedAvatar } from '../../utils/avatarStorage';
 
 const INQUIRY_STATUSES = ['New', 'In Progress', 'Replied', 'Closed'];
 
@@ -173,9 +174,17 @@ export const InquiryDetailModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-[11px] text-slate-400 font-medium block">Sender Name</span>
-                  <span className="text-sm font-bold text-slate-900 mt-0.5 block">
-                    {inquiry.inquirer_name || 'Anonymous Visitor'}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    {(() => {
+                      const avatarUrl = inquiry.avatar_url || getCachedAvatar(inquiry.customer_id, inquiry.email);
+                      return avatarUrl ? (
+                        <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0" />
+                      ) : null;
+                    })()}
+                    <span className="text-sm font-bold text-slate-900 block truncate">
+                      {inquiry.inquirer_name || 'Anonymous Visitor'}
+                    </span>
+                  </div>
                 </div>
 
                 <div>

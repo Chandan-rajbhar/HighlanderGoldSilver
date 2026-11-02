@@ -140,8 +140,12 @@ export const Header = ({ onMobileMenuClick }) => {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-[#F5F8FC] transition-colors border border-transparent hover:border-[#DCE5F0] cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-sans">
-              {userInitials}
+            <div className="w-8 h-8 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-sans overflow-hidden shrink-0">
+              {adminUser?.avatar_url ? (
+                <img src={adminUser.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                userInitials
+              )}
             </div>
             <div className="hidden sm:flex flex-col text-left">
               <span className="text-xs font-semibold text-[#111827] leading-tight">
@@ -156,12 +160,21 @@ export const Header = ({ onMobileMenuClick }) => {
 
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-elevated border border-[#DCE5F0] p-2 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="p-3 border-b border-[#DCE5F0]">
-                <p className="text-xs font-bold text-[#111827] font-sans">{adminUser?.name || 'Alexander MacLeod'}</p>
-                <p className="text-[11px] text-[#64748B]">{adminUser?.email || 'admin@highlandergoldsilver.com'}</p>
-                <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5F8FC] text-[#111827] text-[10px] font-semibold border border-[#DCE5F0] font-sans">
-                  <ShieldCheck className="w-3 h-3 text-[#D6AD45]" />
-                  {adminUser?.role || 'Vault Director'}
+              <div className="p-3 border-b border-[#DCE5F0] flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#111827] text-white font-bold text-xs flex items-center justify-center border border-[#D6AD45] shadow-xs font-sans overflow-hidden shrink-0">
+                  {adminUser?.avatar_url ? (
+                    <img src={adminUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    userInitials
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[#111827] font-sans truncate">{adminUser?.name || 'Alexander MacLeod'}</p>
+                  <p className="text-[11px] text-[#64748B] truncate">{adminUser?.email || 'admin@highlandergoldsilver.com'}</p>
+                  <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F5F8FC] text-[#111827] text-[10px] font-semibold border border-[#DCE5F0] font-sans">
+                    <ShieldCheck className="w-3 h-3 text-[#D6AD45]" />
+                    {adminUser?.role || 'Vault Director'}
+                  </div>
                 </div>
               </div>
 

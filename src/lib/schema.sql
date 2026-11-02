@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
     total_spent NUMERIC(12, 2) DEFAULT 0.00,
     orders_count INTEGER DEFAULT 0,
     account_status TEXT DEFAULT 'Active' CHECK (account_status IN ('Active', 'Suspended', 'Pending Verification')),
+    avatar_url TEXT,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS public.admin_users (
     role TEXT NOT NULL CHECK (role IN ('Super Admin', 'Vault Director', 'Inventory Manager', 'Order Manager', 'Auditor')),
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Suspended')),
     two_factor_enabled BOOLEAN DEFAULT true,
+    avatar_url TEXT,
     last_login TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
