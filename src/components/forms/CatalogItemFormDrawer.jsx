@@ -372,7 +372,7 @@ export const CatalogItemFormDrawer = ({
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#0B2348]/20 hover:border-[#0B2348] text-[#0B2348] text-xs font-medium transition-colors cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5 text-[#C9A23A]" />
-                          + Add More Photos
+                          Add More Photos
                         </button>
 
                         <button
@@ -402,7 +402,7 @@ export const CatalogItemFormDrawer = ({
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-medium transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-[#C9A23A]" />
-                      + Upload More
+                      Upload More
                     </button>
                   </div>
 

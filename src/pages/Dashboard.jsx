@@ -11,7 +11,6 @@ import {
   BarChart3,
   Plus,
   CreditCard,
-  AlertTriangle,
   ShieldCheck
 } from 'lucide-react';
 import {
@@ -254,27 +253,6 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {/* Stock Alert Warning if any items low/unavailable */}
-      {summary?.lowStockItems > 0 && (
-        <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 shadow-xs">
-          <div className="flex items-center gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-            <div>
-              <p className="text-xs font-bold font-sans">Vault Stock Notice</p>
-              <p className="text-xs text-amber-800">
-                {summary.lowStockItems} lot item(s) are low stock or unavailable in the storefront catalog.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/products"
-            className="text-xs font-semibold underline text-amber-900 hover:text-amber-950 shrink-0"
-          >
-            Review Catalog →
-          </Link>
-        </div>
-      )}
 
       {/* Top Grid: Catalog Overview (Left) + Latest Inquiries (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   ShoppingBag, 
-  SlidersHorizontal,
   Copy,
   Eye, 
   Edit3, 
@@ -282,14 +281,6 @@ export const Orders = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => toast.info('Order status pipeline: Processing → Shipped → Delivered')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-            Manage Statuses
-          </button>
-
           <button
             onClick={handleAddNew}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2B4E] hover:bg-[#114275] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
