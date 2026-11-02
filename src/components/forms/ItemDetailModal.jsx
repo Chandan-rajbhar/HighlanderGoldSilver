@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  ShieldCheck, 
   DollarSign,
   Tag,
   CheckCircle2,
@@ -122,17 +121,6 @@ export const ItemDetailModal = ({
                   ))}
                 </div>
               )}
-
-              {/* Certified Vault Badge */}
-              <div className="p-3 rounded-xl bg-[#F5EFE6]/70 border border-[#E5DAC8] flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-slate-800 font-bold font-sans">
-                  <ShieldCheck className="w-4 h-4 text-[#C9A23A] shrink-0" />
-                  <span>Certified & Inspected by HGS Vault</span>
-                </div>
-                <span className="text-[11px] text-slate-500 font-sans">
-                  Bigfork, Montana Armory Inventory
-                </span>
-              </div>
             </div>
 
             {/* Price Banner Card */}

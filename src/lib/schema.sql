@@ -248,14 +248,20 @@ CREATE POLICY "Public Read Inventory" ON public.inventory FOR SELECT USING (true
 CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Public Read Settings" ON public.store_settings FOR SELECT USING (true);
 
--- Allow authenticated/admin operations
-CREATE POLICY "Allow All on Inventory" ON public.inventory FOR ALL USING (true);
-CREATE POLICY "Allow All on Categories" ON public.categories FOR ALL USING (true);
-CREATE POLICY "Allow All on Customers" ON public.customers FOR ALL USING (true);
-CREATE POLICY "Allow All on Orders" ON public.orders FOR ALL USING (true);
-CREATE POLICY "Allow All on Payments" ON public.payments FOR ALL USING (true);
-CREATE POLICY "Allow All on Coupons" ON public.coupons FOR ALL USING (true);
-CREATE POLICY "Allow All on Admin Users" ON public.admin_users FOR ALL USING (true);
-CREATE POLICY "Allow All on Inquiries" ON public.inquiries FOR ALL USING (true);
-CREATE POLICY "Allow All on Notifications" ON public.notifications FOR ALL USING (true);
-CREATE POLICY "Allow All on Settings" ON public.store_settings FOR ALL USING (true);
+-- Allow authenticated/admin & storefront operations with full check
+CREATE POLICY "Allow All on Inventory" ON public.inventory FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Categories" ON public.categories FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Customers" ON public.customers FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Orders" ON public.orders FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Payments" ON public.payments FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Coupons" ON public.coupons FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Admin Users" ON public.admin_users FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Inquiries" ON public.inquiries FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Notifications" ON public.notifications FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All on Settings" ON public.store_settings FOR ALL TO public USING (true) WITH CHECK (true);
+
+-- Enable Supabase Realtime for instant cross-device updates
+ALTER PUBLICATION supabase_realtime ADD TABLE public.inquiries;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;

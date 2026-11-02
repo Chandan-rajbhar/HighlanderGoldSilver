@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { useToast } from './ToastContext';
+import { notificationService, getBroadcastChannel } from '../services/notificationService';
 
 const AuthContext = createContext(null);
 
@@ -11,34 +13,167 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Administrative Notifications
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'New Bank Wire Settlement Request',
-      detail: 'Lot #1 (1876 George T. Morgan $100) — Col. Harrison Bradley',
-      time: '12m ago',
-      read: false
-    },
-    {
-      id: 2,
-      title: 'Low Stock Alert',
-      detail: 'Scottsdale 10 oz Silver Stacker is currently marked Unavailable',
-      time: '1h ago',
-      read: false
-    },
-    {
-      id: 3,
-      title: 'New Collector Acquisition Inquiry',
-      detail: 'David K. Campbell inquired regarding estate buyback appraisal',
-      time: '3h ago',
-      read: true
-    }
-  ]);
+  const { toast } = useToast();
 
-  const markAllNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  // Administrative Notifications loaded from service
+  const [notifications, setNotifications] = useState(() => notificationService.getNotifications());
+
+  const markAllNotificationsRead = async () => {
+    const updated = await notificationService.markAllAsRead();
+    setNotifications(updated);
   };
+
+  const markNotificationRead = async (id) => {
+    const updated = await notificationService.markAsRead(id);
+    setNotifications(updated);
+  };
+
+  const deleteNotification = async (id) => {
+    const updated = await notificationService.deleteNotification(id);
+    setNotifications(updated);
+  };
+
+  // Real-time synchronization & live toast notification subscription
+  useEffect(() => {
+    // 1. Initial live fetch from Supabase
+    notificationService.fetchNotifications()
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setNotifications(data);
+        }
+      })
+      .catch(() => {});
+
+    // Common notification handler for all incoming sources
+    const handleIncomingNotification = (newNotif) => {
+      if (!newNotif || !newNotif.id) return;
+      setNotifications(prev => {
+        if (prev.some(n => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev];
+      });
+      // Live popup notification in Admin Dashboard!
+      if (toast?.info) {
+        toast.info(`🔔 ${newNotif.title}: ${newNotif.detail}`);
+      }
+    };
+
+    // 2. Cross-tab BroadcastChannel listener (Instant 0ms across Storefront and Admin tabs)
+    const bc = getBroadcastChannel();
+    const handleBroadcastMessage = (event) => {
+      if (event?.data?.type === 'NEW_NOTIFICATION' && event.data.payload) {
+        handleIncomingNotification(event.data.payload);
+      } else if (event?.data?.type === 'NOTIFICATIONS_UPDATED' && Array.isArray(event.data.payload)) {
+        setNotifications(event.data.payload);
+      }
+    };
+    if (bc) {
+      bc.addEventListener('message', handleBroadcastMessage);
+    }
+
+    // 3. Instant local event listener (for same-tab actions)
+    const handleLocalNotif = (e) => {
+      const newNotif = e.detail;
+      if (newNotif) {
+        handleIncomingNotification(newNotif);
+      }
+    };
+    window.addEventListener('hgs:new-notification', handleLocalNotif);
+
+    // 4. Cross-tab storage fallback listener
+    const handleStorageEvent = (e) => {
+      if (e.key === 'hgs_admin_notifications' && e.newValue) {
+        try {
+          const list = JSON.parse(e.newValue);
+          if (Array.isArray(list) && list.length > 0) {
+            const newest = list[0];
+            handleIncomingNotification(newest);
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    // 5. Supabase Realtime listeners (for notifications and customer inquiries)
+    let notifChannel = null;
+    let inqChannel = null;
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        // Listen to notifications table
+        notifChannel = supabase
+          .channel('realtime:admin_notifications')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications' },
+            (payload) => {
+              if (payload?.new) {
+                handleIncomingNotification(payload.new);
+              }
+            }
+          )
+          .subscribe();
+
+        // Listen directly to customer inquiries table (cross-device inquiry push)
+        inqChannel = supabase
+          .channel('realtime:admin_inquiries_listener')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'inquiries' },
+            (payload) => {
+              const inq = payload?.new;
+              if (inq) {
+                const syntheticNotif = {
+                  id: `notif-inq-${inq.id || Date.now()}`,
+                  title: 'New Collector Acquisition Inquiry',
+                  detail: `${inq.inquirer_name || 'Collector'} inquired regarding ${inq.lot_title || inq.inquiry_type || 'General'}`,
+                  category: 'inquiry',
+                  read: false,
+                  created_at: inq.created_at || new Date().toISOString()
+                };
+                handleIncomingNotification(syntheticNotif);
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Supabase Realtime notifications subscription note:', err);
+      }
+    }
+
+    // 6. Polling fallback (runs every 4s to catch any external submissions)
+    const pollTimer = setInterval(() => {
+      notificationService.fetchNotifications()
+        .then(latestList => {
+          if (Array.isArray(latestList) && latestList.length > 0) {
+            setNotifications(prev => {
+              const prevIds = new Set(prev.map(p => p.id));
+              const freshNotifs = latestList.filter(n => !prevIds.has(n.id) && !n.read);
+              if (freshNotifs.length > 0) {
+                freshNotifs.forEach(n => {
+                  if (toast?.info) toast.info(`🔔 ${n.title}: ${n.detail}`);
+                });
+              }
+              return latestList;
+            });
+          }
+        })
+        .catch(() => {});
+    }, 4000);
+
+    return () => {
+      if (bc) {
+        bc.removeEventListener('message', handleBroadcastMessage);
+      }
+      window.removeEventListener('hgs:new-notification', handleLocalNotif);
+      window.removeEventListener('storage', handleStorageEvent);
+      clearInterval(pollTimer);
+      if (notifChannel && supabase) {
+        supabase.removeChannel(notifChannel);
+      }
+      if (inqChannel && supabase) {
+        supabase.removeChannel(inqChannel);
+      }
+    };
+  }, [toast]);
 
   /**
    * Helper to build the user profile from Supabase Auth user + admin_users / customers table
@@ -441,7 +576,9 @@ export const AuthProvider = ({ children }) => {
         requestPasswordReset,
         logout,
         notifications,
-        markAllNotificationsRead
+        markAllNotificationsRead,
+        markNotificationRead,
+        deleteNotification
       }}
     >
       {children}

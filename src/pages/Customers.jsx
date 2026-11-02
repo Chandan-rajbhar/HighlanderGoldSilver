@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Users,
@@ -43,10 +43,16 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { CustomerFormModal } from '../components/forms/CustomerFormModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
+import { initialAdminUsers } from '../data/initialData';
+import { localDB } from '../services/storageService';
 
 export const Customers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { adminUser } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
@@ -69,8 +75,36 @@ export const Customers = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // Full Profile View state
-  const [viewUser, setViewUser] = useState(null);
+  // Full Profile View state (direct instant load if navigated with ?view=admin)
+  const [viewUser, setViewUser] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'admin') {
+        const staffRef = initialAdminUsers?.[0] || {};
+        return {
+          id: staffRef.id || 'adm-001',
+          full_name: staffRef.name || 'Alexander MacLeod',
+          email: staffRef.email || 'stratford1955@icloud.com',
+          phone: '(406) 883-2210',
+          city: 'Bigfork',
+          state: 'MT',
+          location: staffRef.location || 'Bigfork Storefront & Vault, MT',
+          address: 'Highlander Vault HQ, Montana',
+          customer_id: 'STAFF-1001',
+          role: 'Admin',
+          admin_role: staffRef.role || 'Super Admin',
+          title: staffRef.title || 'Senior Numismatist & Vault Director',
+          is_admin: true,
+          account_status: staffRef.status || 'Active',
+          orders_count: 0,
+          total_spent: 0,
+          notes: 'Full administrative access and cryptographic vault keyholder authority.',
+          created_at: staffRef.created_at || '2026-01-10T00:00:00Z'
+        };
+      }
+    } catch (_) {}
+    return null;
+  });
   const [profileTab, setProfileTab] = useState('overview'); // 'overview' | 'orders' | 'payments' | 'inquiries' | 'permissions' | 'audit'
   const [userOrders, setUserOrders] = useState([]);
   const [userPayments, setUserPayments] = useState([]);
@@ -114,25 +148,29 @@ export const Customers = () => {
         created_at: c.created_at || '2026-09-01T00:00:00Z'
       }));
 
-      // Normalize admins directly from Supabase admin_users table
-      const adminList = (adminRes || []).map(a => ({
+      // Normalize admins directly from Supabase admin_users table (fallback to localDB / initialAdminUsers)
+      const rawAdminList = (Array.isArray(adminRes) && adminRes.length > 0)
+        ? adminRes
+        : (localDB?.getAdminUsers?.()?.length ? localDB.getAdminUsers() : initialAdminUsers);
+
+      const adminList = (rawAdminList || []).map(a => ({
         ...a,
         id: a.id,
-        full_name: a.name,
-        email: a.email,
+        full_name: a.name || a.full_name || 'Alexander MacLeod',
+        email: a.email || 'stratford1955@icloud.com',
         phone: a.phone || '(406) 883-2210',
         city: a.location ? a.location.split(' ')[0] : 'Bigfork',
         state: 'MT',
         address: 'Highlander Vault HQ, Montana',
-        customer_id: `STAFF-${a.id?.replace('adm-', '00').toUpperCase() || '001'}`,
+        customer_id: a.customer_id || `STAFF-${a.id?.replace(/[^0-9]/g, '').padStart(3, '0') || '001'}`,
         role: 'Admin',
-        admin_role: a.role || 'Super Admin',
+        admin_role: a.role || a.admin_role || 'Super Admin',
         title: a.title || 'Senior Numismatist & Vault Director',
         is_admin: true,
-        account_status: a.status || 'Active',
+        account_status: a.status || a.account_status || 'Active',
         orders_count: 0,
         total_spent: 0,
-        notes: 'Full administrative access and cryptographic vault keyholder authority.',
+        notes: a.notes || 'Full administrative access and cryptographic vault keyholder authority.',
         created_at: a.created_at || '2026-01-10T00:00:00Z'
       }));
 
@@ -201,6 +239,49 @@ export const Customers = () => {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Handle direct navigation to admin profile (?view=admin or state.openAdminProfile)
+  useEffect(() => {
+    const isViewAdmin = searchParams.get('view') === 'admin' || location.state?.openAdminProfile;
+    if (isViewAdmin) {
+      const email = (adminUser?.email || 'stratford1955@icloud.com').toLowerCase().trim();
+      const name = (adminUser?.name || 'Alexander MacLeod').toLowerCase().trim();
+
+      const matched = users.find(u =>
+        u.is_admin && (
+          (u.email && u.email.toLowerCase().trim() === email) ||
+          (u.full_name && u.full_name.toLowerCase().trim() === name) ||
+          u.admin_role === 'Super Admin'
+        )
+      ) || users.find(u => u.is_admin);
+
+      if (matched) {
+        setViewUser(matched);
+      } else {
+        const staffRef = initialAdminUsers?.[0] || {};
+        setViewUser(prev => prev?.is_admin ? prev : {
+          id: adminUser?.id || staffRef.id || 'adm-001',
+          full_name: adminUser?.name || staffRef.name || 'Alexander MacLeod',
+          email: adminUser?.email || staffRef.email || 'stratford1955@icloud.com',
+          phone: adminUser?.phone || '(406) 883-2210',
+          city: 'Bigfork',
+          state: 'MT',
+          location: adminUser?.location || staffRef.location || 'Bigfork Storefront & Vault, MT',
+          address: 'Highlander Vault HQ, Montana',
+          customer_id: 'STAFF-1001',
+          role: 'Admin',
+          admin_role: adminUser?.role || staffRef.role || 'Super Admin',
+          title: adminUser?.title || staffRef.title || 'Senior Numismatist & Vault Director',
+          is_admin: true,
+          account_status: adminUser?.status || staffRef.status || 'Active',
+          orders_count: 0,
+          total_spent: 0,
+          notes: 'Full administrative access and cryptographic vault keyholder authority.',
+          created_at: adminUser?.created_at || staffRef.created_at || '2026-01-10T00:00:00Z'
+        });
+      }
+    }
+  }, [searchParams, location.search, location.state, users, adminUser]);
 
   // Load related profile data whenever a user is selected
   useEffect(() => {
@@ -464,7 +545,10 @@ export const Customers = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setViewUser(null)}
+              onClick={() => {
+                setViewUser(null);
+                navigate('/customers', { replace: true });
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-slate-500" />
@@ -647,7 +731,10 @@ export const Customers = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setViewUser(null)}
+              onClick={() => {
+                setViewUser(null);
+                navigate('/customers', { replace: true });
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCE5F0] hover:border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-slate-500" />

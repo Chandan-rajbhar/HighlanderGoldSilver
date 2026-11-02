@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
+import { notificationService, getBroadcastChannel } from './notificationService';
 
 export const inquiryService = {
   // In-memory instant synchronous retrieval for 0ms page transitions
@@ -174,6 +175,8 @@ export const inquiryService = {
       updated_at: payload.updated_at || now
     };
 
+    let savedRecord = newRecord;
+
     if (isSupabaseConfigured() && supabase) {
       try {
         const { data, error } = await supabase
@@ -181,16 +184,43 @@ export const inquiryService = {
           .insert([newRecord])
           .select()
           .single();
-        if (error) throw error;
-        return data || newRecord;
+        if (!error && data) {
+          savedRecord = data;
+        }
       } catch (err) {
         console.error('Supabase createInquiry error:', err);
       }
     }
 
     const inqs = localDB.getInquiries();
-    localDB.setInquiries([newRecord, ...inqs]);
-    return newRecord;
+    localDB.setInquiries([savedRecord, ...inqs]);
+
+    // Create real-time notification for Admin Dashboard (guaranteed broadcast across tabs)
+    try {
+      notificationService.createNotification({
+        title: 'New Collector Acquisition Inquiry',
+        detail: `${savedRecord.inquirer_name} submitted inquiry on ${savedRecord.lot_title}`,
+        category: 'inquiry',
+        type: 'inquiry'
+      }).catch(e => console.warn('Could not record notification:', e));
+    } catch (e) {
+      console.warn('Notification trigger note:', e);
+    }
+
+    // Broadcast inquiry update to Inquiries page
+    const bc = getBroadcastChannel();
+    if (bc) {
+      try {
+        bc.postMessage({ type: 'NEW_INQUIRY', payload: savedRecord });
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new CustomEvent('hgs:new-inquiry', { detail: savedRecord }));
+      } catch (e) {}
+    }
+
+    return savedRecord;
   },
 
   async updateInquiryStatus(id, newStatus) {
@@ -239,3 +269,27 @@ export const inquiryService = {
     return true;
   }
 };
+
+// Compatibility export for CustomerInquiryForm
+export const InquiryService = {
+  submitInquiry: async (payload) => {
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const referenceId = `HGS-INQ-${randomSuffix}`;
+    const saved = await inquiryService.createInquiry({
+      ...payload,
+      id: `inq-${Math.random().toString(36).substring(2, 10)}`,
+      referenceId
+    });
+    return {
+      success: true,
+      record: {
+        ...saved,
+        fullName: saved.inquirer_name || payload.fullName,
+        referenceId
+      },
+      mailtoUrl: `mailto:Stratford1955@icloud.com?subject=Customer%20Inquiry%20${referenceId}`
+    };
+  }
+};
+
+export default inquiryService;

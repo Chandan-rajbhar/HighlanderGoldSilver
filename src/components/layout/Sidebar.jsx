@@ -128,7 +128,7 @@ export const Sidebar = ({
         className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col text-slate-100 border-r border-[#D8EBFA]/20 transition-all duration-300 ease-in-out shadow-[4px_0_24px_-2px_rgba(11,45,82,0.28)] overflow-hidden backdrop-blur-xl ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
-          isCollapsed ? 'lg:w-20' : 'lg:w-64 w-72'
+          isCollapsed ? 'lg:w-20' : 'lg:w-72 w-80'
         }`}
         style={{
           background: 'linear-gradient(180deg, #0B2B4E 0%, #114275 32%, #165A96 68%, #0D3560 100%)'
@@ -158,7 +158,7 @@ export const Sidebar = ({
                 <img
                   src="/assets/brand/highlander_dashboard_logo.png"
                   alt="Highlander Gold & Silver"
-                  className="w-full max-w-[200px] h-auto object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
+                  className="w-full max-w-[215px] h-auto object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
                   onError={(e) => {
                     e.currentTarget.src = "/highlander_original_logo.png";
                   }}
@@ -199,7 +199,7 @@ export const Sidebar = ({
           {navGroups.map((group, groupIdx) => (
             <div key={group.group || groupIdx} className="space-y-1">
               {!isCollapsed && (
-                <div className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#D8EBFA]/75 font-sans">
+                <div className="px-3.5 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#D8EBFA]/75 font-sans">
                   {group.group}
                 </div>
               )}
@@ -216,7 +216,7 @@ export const Sidebar = ({
                     onClick={() => setIsMobileOpen(false)}
                     title={isCollapsed ? item.label : undefined}
                     className={() =>
-                      `flex items-center gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all group relative ${
+                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all group relative ${
                         isCurrentActive
                           ? 'bg-white/15 text-white font-semibold shadow-[0_2px_12px_rgba(22,133,212,0.25),inset_0_1px_0_rgba(255,255,255,0.2)] border border-[#D6AD43]/75 backdrop-blur-xs'
                           : 'text-slate-200 hover:bg-white/[0.12] hover:text-white border border-transparent'
@@ -230,7 +230,7 @@ export const Sidebar = ({
                     />
 
                     {!isCollapsed && (
-                      <span className="flex-1 whitespace-nowrap text-xs font-medium tracking-tight" title={item.label}>{item.label}</span>
+                      <span className="flex-1 whitespace-nowrap text-[13px] font-medium tracking-normal" title={item.label}>{item.label}</span>
                     )}
 
                     {!isCollapsed && isCurrentActive && (
@@ -262,7 +262,8 @@ export const Sidebar = ({
             /* Collapsed view: Perfectly centered avatar and expand arrow below without clipping */
             <div className="flex flex-col items-center gap-2 w-full">
               <Link
-                to="/customers"
+                to={{ pathname: '/customers', search: '?view=admin' }}
+                state={{ openAdminProfile: Date.now() }}
                 className="w-10 h-10 rounded-full bg-[#0F2D52] border border-[#D6AD43] flex items-center justify-center text-[#F5B52E] font-bold text-xs shrink-0 font-serif shadow-xs hover:ring-2 hover:ring-[#F5B52E]/30 transition-all cursor-pointer"
                 title={`${adminUser?.name || 'Alexander MacLeod'} (Senior Numismatist & Vault Director) - Click to view profile`}
               >
@@ -281,7 +282,8 @@ export const Sidebar = ({
             /* Expanded view: Full profile with avatar, name, role and collapse arrow */
             <>
               <Link
-                to="/customers"
+                to={{ pathname: '/customers', search: '?view=admin' }}
+                state={{ openAdminProfile: Date.now() }}
                 className="flex items-center gap-2.5 overflow-hidden group cursor-pointer flex-1 min-w-0 pr-2"
                 title="View Admin Profile"
               >
@@ -289,10 +291,10 @@ export const Sidebar = ({
                   AM
                 </div>
                 <div className="flex flex-col truncate">
-                  <span className="text-xs font-semibold text-white truncate font-sans group-hover:text-[#F5B52E] transition-colors">
+                  <span className="text-[13px] font-semibold text-white truncate font-sans group-hover:text-[#F5B52E] transition-colors">
                     {adminUser?.name || 'Alexander MacLeod'}
                   </span>
-                  <span className="text-[10px] text-slate-300 truncate font-sans">
+                  <span className="text-[11px] text-slate-300 truncate font-sans">
                     {adminUser?.role || 'Senior Numismatist & Vault Director'}
                   </span>
                 </div>

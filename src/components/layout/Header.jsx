@@ -11,6 +11,7 @@ import {
   Building
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationDrawer } from './NotificationDrawer';
 
 const ROUTE_TITLES = {
   '/': { title: 'Dashboard Overview', breadcrumb: 'Dashboard' },
@@ -25,23 +26,33 @@ const ROUTE_TITLES = {
   '/payments': { title: 'Payments & Transactions', breadcrumb: 'Payments' },
   '/spot-prices': { title: 'Precious Metals Spot Benchmark', breadcrumb: 'Spot Benchmark' },
   '/settings': { title: 'Settings', breadcrumb: 'Settings' },
+  '/notifications': { title: 'Notifications & Vault Feeds', breadcrumb: 'Notifications' },
 };
 
 export const Header = ({ onMobileMenuClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { adminUser, notifications, markAllNotificationsRead, logout } = useAuth();
+  const { 
+    adminUser, 
+    notifications, 
+    markAllNotificationsRead, 
+    markNotificationRead, 
+    deleteNotification,
+    logout 
+  } = useAuth();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
 
   const profileRef = useRef(null);
-  const notifRef = useRef(null);
 
-  const routeInfo = ROUTE_TITLES[location.pathname] || {
-    title: 'Highlander Admin Console',
-    breadcrumb: 'Console'
-  };
+  const isViewAdmin = location.pathname === '/customers' && new URLSearchParams(location.search).get('view') === 'admin';
+  const routeInfo = isViewAdmin
+    ? { title: 'Administrative Staff Profile', breadcrumb: 'Admin Profile' }
+    : (ROUTE_TITLES[location.pathname] || {
+        title: 'Highlander Admin Console',
+        breadcrumb: 'Console'
+      });
 
   const unreadCount = notifications?.filter((n) => !n.read)?.length || 0;
 
@@ -54,14 +65,11 @@ export const Header = ({ onMobileMenuClick }) => {
     return adminUser.name.slice(0, 2).toUpperCase();
   }, [adminUser?.name]);
 
-  // Close popovers on click outside
+  // Close profile on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setIsProfileOpen(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setIsNotifOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -101,64 +109,30 @@ export const Header = ({ onMobileMenuClick }) => {
 
       {/* Right: Notifications & Profile Dropdown */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Notifications Popover */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setIsNotifOpen(!isNotifOpen)}
-            className="relative p-2 text-[#64748B] hover:text-[#111827] hover:bg-[#F5F8FC] rounded-xl transition-colors cursor-pointer"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
-            )}
-          </button>
-
-          {isNotifOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-elevated border border-[#DCE5F0] p-0 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-4 py-3 border-b border-[#DCE5F0] flex items-center justify-between bg-[#F5F8FC]">
-                <span className="font-semibold text-xs text-[#111827] uppercase tracking-wider font-sans">
-                  Notifications & Alerts
-                </span>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllNotificationsRead}
-                      className="text-[11px] text-[#111827] hover:text-[#D6AD45] flex items-center gap-1 font-medium cursor-pointer"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      Mark read
-                    </button>
-                  )}
-                  <Link
-                    to="/notifications"
-                    onClick={() => setIsNotifOpen(false)}
-                    className="text-[11px] text-[#64748B] hover:text-[#111827] underline"
-                  >
-                    View all
-                  </Link>
-                </div>
-              </div>
-
-              <div className="max-h-72 overflow-y-auto divide-y divide-[#DCE5F0]/60 text-xs">
-                {(notifications || []).map((n) => (
-                  <div
-                    key={n.id}
-                    className={`p-3.5 hover:bg-[#F5F8FC]/70 transition-colors ${
-                      !n.read ? 'bg-amber-50/50' : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-[#111827]">{n.title}</p>
-                      <span className="text-[10px] text-[#64748B] shrink-0">{n.time}</span>
-                    </div>
-                    <p className="text-[#64748B] mt-1 leading-relaxed">{n.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Notifications Slide-Over Drawer Trigger */}
+        <button
+          onClick={() => setIsNotifDrawerOpen(true)}
+          className="relative p-2 text-[#64748B] hover:text-[#111827] hover:bg-[#F5F8FC] rounded-xl transition-all duration-200 cursor-pointer active:scale-95"
+          aria-label="Open notifications drawer"
+          title="Notifications & Alerts"
+        >
+          <Bell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-xs animate-pulse">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
           )}
-        </div>
+        </button>
+
+        {/* Ultra-Luxury Slide-Over Notification Drawer */}
+        <NotificationDrawer
+          isOpen={isNotifDrawerOpen}
+          onClose={() => setIsNotifDrawerOpen(false)}
+          notifications={notifications}
+          onMarkAllRead={markAllNotificationsRead}
+          onMarkRead={markNotificationRead}
+          onDeleteNotification={deleteNotification}
+        />
 
         {/* User Profile Dropdown */}
         <div className="relative" ref={profileRef}>
@@ -193,7 +167,8 @@ export const Header = ({ onMobileMenuClick }) => {
 
               <div className="py-1">
                 <Link
-                  to="/customers"
+                  to={{ pathname: '/customers', search: '?view=admin' }}
+                  state={{ openAdminProfile: Date.now() }}
                   onClick={() => setIsProfileOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors"
                 >

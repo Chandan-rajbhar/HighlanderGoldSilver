@@ -27,6 +27,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { InquiryDetailModal } from '../components/forms/InquiryDetailModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
+import { getBroadcastChannel } from '../services/notificationService';
 
 // De-jargon and clean up numismatic grading/technical terms
 const cleanSubject = (rawTitle, lotNumber) => {
@@ -429,24 +430,51 @@ export const Inquiries = () => {
     fetchStats();
   }, [fetchStats]);
 
-  // Real-time Supabase subscription for dynamic live updates across storefront & database
+  // Real-time subscription & cross-tab broadcast for dynamic live updates across storefront & database
   useEffect(() => {
-    if (!isSupabaseConfigured() || !supabase) return;
+    // 1. Cross-tab BroadcastChannel listener
+    const bc = getBroadcastChannel();
+    const handleBroadcast = (event) => {
+      if (event?.data?.type === 'NEW_INQUIRY') {
+        fetchInquiries();
+        fetchStats();
+      }
+    };
+    if (bc) {
+      bc.addEventListener('message', handleBroadcast);
+    }
 
-    const channel = supabase
-      .channel('admin-inquiries-live-sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'inquiries' },
-        () => {
-          fetchInquiries();
-          fetchStats();
-        }
-      )
-      .subscribe();
+    // 2. Local window event listener
+    const handleLocalInquiry = () => {
+      fetchInquiries();
+      fetchStats();
+    };
+    window.addEventListener('hgs:new-inquiry', handleLocalInquiry);
+
+    // 3. Supabase Realtime subscription
+    let channel = null;
+    if (isSupabaseConfigured() && supabase) {
+      channel = supabase
+        .channel('admin-inquiries-live-sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'inquiries' },
+          () => {
+            fetchInquiries();
+            fetchStats();
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (bc) {
+        bc.removeEventListener('message', handleBroadcast);
+      }
+      window.removeEventListener('hgs:new-inquiry', handleLocalInquiry);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [fetchInquiries, fetchStats]);
 

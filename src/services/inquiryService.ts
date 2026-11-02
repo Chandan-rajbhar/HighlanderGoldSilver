@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
 import { BUSINESS_INFO } from '../data/businessInfo';
+import { notificationService, getBroadcastChannel } from './notificationService';
 
 export interface CustomerInquiryPayload {
   fullName: string;
@@ -125,6 +126,33 @@ export class InquiryService {
       localDB.setInquiries([dbRow, ...existingInqs]);
     } catch (e) {
       console.warn('Unable to sync inquiry to localDB', e);
+    }
+
+    // 3. Create real-time notification for Admin Dashboard (guaranteed broadcast across tabs)
+    try {
+      const notifTitle = 'New Collector Acquisition Inquiry';
+      const notifDetail = `${payload.fullName} inquired regarding ${lotTitle || mappedType}`;
+      notificationService.createNotification({
+        title: notifTitle,
+        detail: notifDetail,
+        category: 'inquiry',
+        type: 'inquiry'
+      }).catch((e: any) => console.warn('Could not record notification:', e));
+
+      // Broadcast inquiry event across all tabs for live list refresh
+      const bc = getBroadcastChannel();
+      if (bc) {
+        try {
+          bc.postMessage({ type: 'NEW_INQUIRY', payload: dbRow });
+        } catch (e) {}
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('hgs:new-inquiry', { detail: dbRow }));
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('Notification trigger note:', e);
     }
 
     // 3. Persist to browser localStorage for client receipt
