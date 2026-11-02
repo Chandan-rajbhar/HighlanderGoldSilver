@@ -11,7 +11,7 @@ import {
   Copy
 } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
-import { getCachedAvatar } from '../../utils/avatarStorage';
+import { getCachedAvatar, extractAvatarUrl } from '../../utils/avatarStorage';
 
 const INQUIRY_STATUSES = ['New', 'In Progress', 'Replied', 'Closed'];
 
@@ -176,7 +176,7 @@ export const InquiryDetailModal = ({
                   <span className="text-[11px] text-slate-400 font-medium block">Sender Name</span>
                   <div className="flex items-center gap-2 mt-1">
                     {(() => {
-                      const avatarUrl = inquiry.avatar_url || getCachedAvatar(inquiry.customer_id, inquiry.email);
+                      const avatarUrl = extractAvatarUrl(inquiry);
                       return avatarUrl ? (
                         <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0" />
                       ) : null;

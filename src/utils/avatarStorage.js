@@ -85,3 +85,50 @@ export const removeCachedAvatar = (id, email) => {
   }
 };
 
+/**
+ * Extract avatar URL from any user or customer object.
+ * Checks item.avatar_url, item.notes (if JSON encoded by storefront),
+ * auth user_metadata, and fallback local cache.
+ * Automatically persists to local cache if found.
+ */
+export const extractAvatarUrl = (item) => {
+  if (!item) return '';
+
+  let url = '';
+  if (item.avatar_url && typeof item.avatar_url === 'string' && item.avatar_url.trim()) {
+    url = item.avatar_url.trim();
+  }
+
+  // Check if storefront stored avatar_url inside notes JSON (e.g. {"avatar_url":"https://..."})
+  if (!url && item.notes && typeof item.notes === 'string' && item.notes.includes('avatar_url')) {
+    try {
+      const parsed = JSON.parse(item.notes);
+      if (parsed?.avatar_url && typeof parsed.avatar_url === 'string') {
+        url = parsed.avatar_url.trim();
+      }
+    } catch (_) {
+      const match = item.notes.match(/"avatar_url"\s*:\s*"([^"]+)"/);
+      if (match && match[1]) {
+        url = match[1].trim();
+      }
+    }
+  }
+
+  // Check user_metadata
+  if (!url && item.user_metadata?.avatar_url) {
+    url = item.user_metadata.avatar_url;
+  }
+
+  // Fallback to local cache by id or email
+  if (!url) {
+    url = getCachedAvatar(item.id || item.customer_id, item.email);
+  }
+
+  // If found, ensure it is cached in local cache
+  if (url && (item.id || item.customer_id || item.email)) {
+    saveCachedAvatar(item.id || item.customer_id, url, item.email);
+  }
+
+  return url;
+};
+

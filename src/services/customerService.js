@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
-import { getCachedAvatar, saveCachedAvatar } from '../utils/avatarStorage';
+import { getCachedAvatar, saveCachedAvatar, extractAvatarUrl } from '../utils/avatarStorage';
 
 const LIST_COLUMNS = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at, avatar_url';
 const LIST_COLUMNS_FALLBACK = 'id, customer_id, auth_user_id, full_name, email, phone, city, state, interest, total_spent, orders_count, account_status, notes, created_at, updated_at';
@@ -101,7 +101,7 @@ export const customerService = {
 
         const mergedData = (data || []).map(c => ({
           ...c,
-          avatar_url: c.avatar_url || getCachedAvatar(c.id || c.customer_id, c.email) || ''
+          avatar_url: extractAvatarUrl(c)
         }));
 
         return {
@@ -169,7 +169,7 @@ export const customerService = {
         if (data) {
           return {
             ...data,
-            avatar_url: data.avatar_url || getCachedAvatar(data.id || data.customer_id, data.email) || ''
+            avatar_url: extractAvatarUrl(data)
           };
         }
       } catch (err) {
@@ -182,7 +182,7 @@ export const customerService = {
     if (found) {
       return {
         ...found,
-        avatar_url: found.avatar_url || getCachedAvatar(found.id || found.customer_id, found.email) || ''
+        avatar_url: extractAvatarUrl(found)
       };
     }
     return null;

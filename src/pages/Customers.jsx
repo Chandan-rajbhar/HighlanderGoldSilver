@@ -50,7 +50,7 @@ import { useAuth } from '../context/AuthContext';
 import { initialAdminUsers } from '../data/initialData';
 import { localDB } from '../services/storageService';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
-import { getCachedAvatar, saveCachedAvatar, removeCachedAvatar } from '../utils/avatarStorage';
+import { getCachedAvatar, saveCachedAvatar, removeCachedAvatar, extractAvatarUrl } from '../utils/avatarStorage';
 
 export const Customers = () => {
   const navigate = useNavigate();
@@ -151,7 +151,7 @@ export const Customers = () => {
         orders_count: c.orders_count || 0,
         total_spent: c.total_spent || 0,
         tier: c.tier || 'Collector',
-        avatar_url: c.avatar_url || getCachedAvatar(c.id, c.email) || '',
+        avatar_url: extractAvatarUrl(c),
         notes: c.notes || 'Prefers insured overnight bullion transport and direct wire clearance.',
         created_at: c.created_at || '2026-09-01T00:00:00Z'
       }));
@@ -174,7 +174,7 @@ export const Customers = () => {
         role: 'Admin',
         admin_role: a.role || a.admin_role || 'Super Admin',
         title: a.title || 'Senior Numismatist & Vault Director',
-        avatar_url: a.avatar_url || getCachedAvatar(a.id, a.email) || (adminUser && (adminUser.id === a.id || adminUser.email === a.email) ? adminUser.avatar_url : '') || '',
+        avatar_url: extractAvatarUrl(a) || (adminUser && (adminUser.id === a.id || adminUser.email === a.email) ? adminUser.avatar_url : ''),
         is_admin: true,
         account_status: a.status || a.account_status || 'Active',
         orders_count: 0,
@@ -315,7 +315,7 @@ export const Customers = () => {
             (payload) => {
               const updated = payload.new;
               if (!updated) return;
-              const avatar = updated.avatar_url || getCachedAvatar(updated.id || updated.customer_id, updated.email);
+              const avatar = extractAvatarUrl(updated);
               if (avatar) {
                 saveCachedAvatar(updated.id || updated.customer_id, avatar, updated.email);
               }
@@ -352,7 +352,7 @@ export const Customers = () => {
             (payload) => {
               const updated = payload.new;
               if (!updated) return;
-              const avatar = updated.avatar_url || getCachedAvatar(updated.id, updated.email);
+              const avatar = extractAvatarUrl(updated);
               if (avatar) {
                 saveCachedAvatar(updated.id, avatar, updated.email);
               }

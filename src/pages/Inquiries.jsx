@@ -28,7 +28,7 @@ import { InquiryDetailModal } from '../components/forms/InquiryDetailModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
 import { getBroadcastChannel } from '../services/notificationService';
-import { getCachedAvatar } from '../utils/avatarStorage';
+import { getCachedAvatar, extractAvatarUrl } from '../utils/avatarStorage';
 
 // De-jargon and clean up numismatic grading/technical terms
 const cleanSubject = (rawTitle, lotNumber) => {
@@ -555,7 +555,7 @@ export const Inquiries = () => {
       className: 'w-[15%] px-4 py-3.5',
       render: (row) => {
         const initials = getInitials(row.inquirer_name);
-        const avatarUrl = row.avatar_url || getCachedAvatar(row.customer_id, row.email);
+        const avatarUrl = extractAvatarUrl(row);
         return (
           <div className="flex items-center gap-2.5 min-w-0">
             {avatarUrl ? (

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
 import { notificationService, getBroadcastChannel } from '../services/notificationService';
-import { getCachedAvatar, saveCachedAvatar } from '../utils/avatarStorage';
+import { getCachedAvatar, saveCachedAvatar, extractAvatarUrl } from '../utils/avatarStorage';
 
 const AuthContext = createContext(null);
 
@@ -268,7 +268,7 @@ export const AuthProvider = ({ children }) => {
         sessionAvatar = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}').avatar_url || '';
       } catch (_) {}
 
-      const avatar = adminRecord.avatar_url || authUser.user_metadata?.avatar_url || cached || sessionAvatar || '';
+      const avatar = extractAvatarUrl(adminRecord) || authUser.user_metadata?.avatar_url || cached || sessionAvatar || '';
       if (avatar) {
         saveCachedAvatar(adminRecord.id || authUser.id, avatar, authUser.email);
       }
@@ -296,7 +296,7 @@ export const AuthProvider = ({ children }) => {
     const locationDisplay = city ? `${city}${state ? `, ${state}` : ''}` : '';
 
     const cachedCust = getCachedAvatar(customerRecord?.id || authUser.id, authUser.email);
-    const custAvatar = customerRecord?.avatar_url || meta.avatar_url || cachedCust || '';
+    const custAvatar = extractAvatarUrl(customerRecord) || meta.avatar_url || cachedCust || '';
     if (custAvatar) {
       saveCachedAvatar(customerRecord?.id || authUser.id, custAvatar, authUser.email);
     }
