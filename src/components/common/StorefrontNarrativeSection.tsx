@@ -6,13 +6,37 @@ interface StorefrontNarrativeSectionProps {
   className?: string;
   id?: string;
   leftContent?: React.ReactNode;
+  settings?: any;
 }
 
 export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProps> = ({
   className = '',
   id = 'storefront-model',
-  leftContent
+  leftContent,
+  settings
 }) => {
+  // Trust anchors for left column
+  const trustItems = settings?.guarantee_badge_4
+    ? settings.guarantee_badge_4.split('|').map((s: string) => s.trim()).filter(Boolean)
+    : ["Guaranteed Instant Price", "Expert In-House Vetting", "Direct Flathead Consultation"];
+
+  const locationVal = settings?.card1_title || `${BUSINESS_INFO.street}, ${BUSINESS_INFO.city}, ${BUSINESS_INFO.state} ${BUSINESS_INFO.zip}`;
+  const locationNote = settings?.card1_desc || 'Flathead County physical facility · Private Consultations';
+
+  const phoneVal = settings?.card2_title || `${BUSINESS_INFO.phoneFormatted} (Mon–Sat)`;
+  const phoneNote = settings?.card2_desc || `Monday – Saturday · ${BUSINESS_INFO.terms.hours}`;
+
+  const taxVal = settings?.card3_title || '0% Montana State Sales Tax on All Metals';
+  const taxNote = settings?.card3_desc || '';
+
+  const settlementVal = settings?.card4_title || 'Transparent 15% Fee via PayPal or Wire';
+  const settlementNote = settings?.card4_desc || 'Comprehensive buyer protection or high-value incoming wire fee credit';
+
+  const shippingVal = settings?.guarantee_title || 'In-House Insured USPS Priority Packaging';
+  const shippingNote = settings?.guarantee_desc || 'Discreet packaging with tracking; signature required on orders exceeding $500';
+
+  const footerSecurity = settings?.guarantee_promise_text || 'Verified Storefront Security · Direct Settlement Model';
+
   return (
     <section className={`section section-warm storefront-narrative-section ${className}`} id={id}>
       <div className="container">
@@ -25,43 +49,43 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
           ) : (
             <div className="storefront-narrative-content">
               <h2 className="storefront-narrative-title">
-                A Transparent Model Built for Serious Collectors
+                {settings?.tagline || 'A Transparent Model Built for Serious Collectors'}
               </h2>
 
               <p className="storefront-narrative-lead">
-                Highlander Gold &amp; Silver was established to solve the frustrations collectors encounter with traditional auction platforms: opaque buyer premiums, bidding frenzies, artificial reserves, and prolonged listing delays.
+                {settings?.operating_hours ||
+                  'Highlander Gold & Silver was established to solve the frustrations collectors encounter with traditional auction platforms: opaque buyer premiums, bidding frenzies, artificial reserves, and prolonged listing delays.'}
               </p>
 
               <div className="storefront-narrative-body-wrap">
-                <p className="storefront-narrative-body">
-                  Operating from our physical location at Jewel Basin Armory in Bigfork, Montana, we offer an ongoing online and in-person storefront. When you find a sovereign gold trophy or certified Morgan dollar you desire, you can purchase it instantly at a guaranteed price with direct settlement.
-                </p>
-
-                <p className="storefront-narrative-body">
-                  Every single piece in our inventory is evaluated personally by our numismatic specialists for strike crispness, cartwheel luster, original surface integrity, and metal purity before being cataloged.
-                </p>
+                {settings?.bank_wire_instructions ? (
+                  settings.bank_wire_instructions.split('\n\n').map((para: string, idx: number) => (
+                    <p key={idx} className="storefront-narrative-body">
+                      {para}
+                    </p>
+                  ))
+                ) : (
+                  <>
+                    <p className="storefront-narrative-body">
+                      Operating from our physical location at Jewel Basin Armory in Bigfork, Montana, we offer an ongoing online and in-person storefront. When you find a sovereign gold trophy or certified Morgan dollar you desire, you can purchase it instantly at a guaranteed price with direct settlement.
+                    </p>
+                    <p className="storefront-narrative-body">
+                      Every single piece in our inventory is evaluated personally by our numismatic specialists for strike crispness, cartwheel luster, original surface integrity, and metal purity before being cataloged.
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Connecting Trust Anchors */}
               <div className="storefront-trust-strip">
-                <div className="storefront-trust-item">
-                  <div className="trust-check-icon">
-                    <Icons.Check size={14} strokeWidth={2.5} />
+                {trustItems.map((item: string, idx: number) => (
+                  <div key={idx} className="storefront-trust-item">
+                    <div className="trust-check-icon">
+                      <Icons.Check size={14} strokeWidth={2.5} />
+                    </div>
+                    <span>{item}</span>
                   </div>
-                  <span>Guaranteed Instant Price</span>
-                </div>
-                <div className="storefront-trust-item">
-                  <div className="trust-check-icon">
-                    <Icons.Check size={14} strokeWidth={2.5} />
-                  </div>
-                  <span>Expert In-House Vetting</span>
-                </div>
-                <div className="storefront-trust-item">
-                  <div className="trust-check-icon">
-                    <Icons.Check size={14} strokeWidth={2.5} />
-                  </div>
-                  <span>Direct Flathead Consultation</span>
-                </div>
+                ))}
               </div>
             </div>
           )}
@@ -73,12 +97,12 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                 <div className="glance-header-top">
                   <span className="glance-header-badge">
                     <Icons.Sparkles size={12} />
-                    <span>Official Armory Specifications</span>
+                    <span>{settings?.guarantee_badge || 'Official Armory Specifications'}</span>
                   </span>
                 </div>
-                <h3 className="glance-card-title">Storefront At A Glance</h3>
+                <h3 className="glance-card-title">{settings?.tagline || 'Storefront At A Glance'}</h3>
                 <p className="glance-card-subtitle">
-                  Direct physical and digital operations based in Flathead County, Montana.
+                  {settings?.operating_hours || 'Direct physical and digital operations based in Flathead County, Montana.'}
                 </p>
               </div>
 
@@ -90,8 +114,8 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                   </div>
                   <div className="glance-item-info">
                     <span className="glance-item-label">Location</span>
-                    <span className="glance-item-val">{BUSINESS_INFO.street}, {BUSINESS_INFO.city}, {BUSINESS_INFO.state} {BUSINESS_INFO.zip}</span>
-                    <span className="glance-item-note">Flathead County physical facility · Private Consultations</span>
+                    <span className="glance-item-val">{locationVal}</span>
+                    {locationNote && <span className="glance-item-note">{locationNote}</span>}
                   </div>
                 </div>
 
@@ -102,8 +126,8 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                   </div>
                   <div className="glance-item-info">
                     <span className="glance-item-label">Direct Line</span>
-                    <span className="glance-item-val">{BUSINESS_INFO.phoneFormatted} (Mon–Sat)</span>
-                    <span className="glance-item-note">Monday – Saturday · {BUSINESS_INFO.terms.hours}</span>
+                    <span className="glance-item-val">{phoneVal}</span>
+                    {phoneNote && <span className="glance-item-note">{phoneNote}</span>}
                   </div>
                 </div>
 
@@ -114,8 +138,8 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                   </div>
                   <div className="glance-item-info">
                     <span className="glance-item-label">Sales Tax</span>
-                    <span className="glance-item-val">0% Montana State Sales Tax on All Metals</span>
-
+                    <span className="glance-item-val">{taxVal}</span>
+                    {taxNote && <span className="glance-item-note">{taxNote}</span>}
                   </div>
                 </div>
 
@@ -126,8 +150,8 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                   </div>
                   <div className="glance-item-info">
                     <span className="glance-item-label">Settlement</span>
-                    <span className="glance-item-val">Transparent 15% Fee via PayPal or Wire</span>
-                    <span className="glance-item-note">Comprehensive buyer protection or high-value incoming wire fee credit</span>
+                    <span className="glance-item-val">{settlementVal}</span>
+                    {settlementNote && <span className="glance-item-note">{settlementNote}</span>}
                   </div>
                 </div>
 
@@ -138,8 +162,8 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
                   </div>
                   <div className="glance-item-info">
                     <span className="glance-item-label">Shipping</span>
-                    <span className="glance-item-val">In-House Insured USPS Priority Packaging</span>
-                    <span className="glance-item-note">Discreet packaging with tracking; signature required on orders exceeding $500</span>
+                    <span className="glance-item-val">{shippingVal}</span>
+                    {shippingNote && <span className="glance-item-note">{shippingNote}</span>}
                   </div>
                 </div>
               </div>
@@ -148,7 +172,7 @@ export const StorefrontNarrativeSection: React.FC<StorefrontNarrativeSectionProp
               <div className="glance-card-footer">
                 <div className="glance-footer-badge">
                   <Icons.Lock size={13} />
-                  <span>Verified Storefront Security · Direct Settlement Model</span>
+                  <span>{footerSecurity}</span>
                 </div>
               </div>
             </div>

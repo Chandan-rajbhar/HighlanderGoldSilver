@@ -878,6 +878,7 @@ export const initialInquiries = [
 ];
 
 export const storefrontSettings = {
+  id: "current",
   business_name: "Highlander Gold & Silver",
   tagline: "Rare Coins, Bullion & Precious Metals Marketplace",
   street: "119 Jewel Basin Ct. B3",
@@ -891,6 +892,11 @@ export const storefrontSettings = {
   buyers_premium_percent: 0.15,
   operating_hours: "Online Storefront 24/7 | Vault By Appointment",
   bank_wire_instructions: "Bigfork First National Bank | Account: Highlander Gold & Silver LLC | Routing: 092901234",
+
+  // Homepage Atmosphere & Brand Emblem
+  hero_background: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/highlander_hero_bg.png",
+  hero_logo: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/highlander_logo_original.png",
+  hero_image: "",
 
   // Website Content - Section 1: The Highlander Difference / Storefront Highlights (Image 2)
   difference_eyebrow: "The Highlander Difference · Bigfork, Montana",
@@ -921,6 +927,103 @@ export const storefrontSettings = {
   heritage_desc: "Operating from our physical location at 119 Jewel Basin Ct. B3 in Bigfork, Montana, Highlander Gold & Silver offers private collector consultations, direct telephone inquiries, and secure nationwide insured distribution.",
   heritage_btn_primary: "Learn About Our Storefront",
   heritage_btn_secondary: "Contact Our Team"
+};
+
+export const collectionStoreSettings = {
+  id: "collection",
+  business_name: "Precious Metals Collection",
+  difference_title: "Precious Metals Collection",
+  difference_subtitle: "Explore hand-selected numismatic rarities, certified Morgan dollars, sovereign gold, and fine silver bullion. Every piece features verified strike luster, certified grade accuracy, and the Highlander Sold Value Guarantee.",
+  card1_title: "0% Montana Sales Tax",
+  card1_desc: "",
+  card2_title: "In-House Insured Shipping",
+  card2_desc: "",
+  card3_title: "Guaranteed Sold Value",
+  card3_desc: "",
+  card4_title: "",
+  card4_desc: "",
+  hero_image: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/highlander_hero_precious_metals.jpg",
+  difference_eyebrow: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/highlander_hero_precious_metals.jpg",
+  heritage_title: "Vault-Certified Sovereign Coinage & Bullion",
+  heritage_desc: "Bigfork, MT",
+  guarantee_title: "Highlander Sold Value Guarantee Included with Every Piece",
+  guarantee_desc: "If at any time a customer proves that a piece purchased from our storefront was overpriced based on its current market state, Highlander Gold & Silver will refund the cost difference, or accept return of the item at its full purchased value. Montana 0% sales tax applies to all orders."
+};
+
+export const aboutStoreSettings = {
+  id: "about",
+  business_name: "About Highlander Gold & Silver",
+  tagline: "A Transparent Model Built for Serious Collectors",
+  difference_title: "Heritage, Integrity & Numismatic Precision",
+  difference_subtitle: "Founded on transparency, decades of precious metals experience, and Montana hospitality. We operate as an ongoing storefront rather than a high-pressure auction house.",
+  hero_image: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/about_heritage_hero.jpg",
+  difference_eyebrow: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/about_heritage_hero.jpg",
+  heritage_title: "Jewel Basin Armory Numismatic Heritage",
+  heritage_desc: "Est. Montana",
+  guarantee_badge_1: "Flathead County Storefront",
+  guarantee_badge_2: "Market Value Guarantee",
+  guarantee_badge_3: "Independent Grading",
+  operating_hours: "Highlander Gold & Silver was established to solve the frustrations collectors encounter with traditional auction platforms: opaque buyer premiums, bidding frenzies, artificial reserves, and prolonged listing delays.",
+  bank_wire_instructions: "Operating from our physical location at Jewel Basin Armory in Bigfork, Montana, we offer an ongoing online and in-person storefront. When you find a sovereign gold trophy or certified Morgan dollar you desire, you can purchase it instantly at a guaranteed price with direct settlement.\n\nEvery single piece in our inventory is evaluated personally by our numismatic specialists for strike crispness, cartwheel luster, original surface integrity, and metal purity before being cataloged.",
+  guarantee_badge_4: "Guaranteed Instant Price | Expert In-House Vetting | Direct Flathead Consultation",
+  card4_title: "The Three Pillars of Highlander Quality",
+  card4_desc: "Every coin and bullion bar in our vault must meet three rigorous standards before being made available for acquisition.",
+  card1_title: "Hand-Selected Eye Appeal",
+  card1_desc: "We spend numerous hours each week inspecting coins individually. We look beyond basic numeric grades to assess field cleanliness, original mint luster, peripheral toning, and sharp strike definition that true connoisseurs appreciate.",
+  card2_title: "Certified Grading & Authenticity",
+  card2_desc: "Our numismatic pieces carry certification from leading independent services including NGC, PCGS, and historical grading services, encapsulated in tamper-evident holders with guaranteed strike authenticity and pedigree.",
+  card3_title: "Precious Metal Integrity",
+  card3_desc: "From sovereign .999 pure gold strikes to 90% Morgan silver dollars and 10 oz Scottsdale bullion bars, all precious metal weights, dimensions, and alloy purities are verified with precision acoustic and magnetic testing.",
+  guarantee_badge: "Our Unconditional Customer Promise",
+  guarantee_title: "The Highlander Sold Value Guarantee",
+  guarantee_desc: "Fair Market Value Protection: We stand entirely behind every valuation in our catalog. If at any time a customer proves that a piece purchased from our storefront was overpriced based on its current market state, Highlander Gold & Silver will refund the cost difference, or accept return of the item at its full purchased value (as-sold).",
+  guarantee_promise_prefix: "In-House Insured Packaging: We do not outsource fulfillment to third-party shipping brokers. All packaging is performed in-house by our team using heavy-gauge, discrete tamper-resistant packaging. Every shipment travels via USPS Priority or Ground, fully insured with tracking. Packages valued above $500 require a signature upon delivery.",
+  guarantee_promise_text: "Montana 0% Sales Tax Advantage: Because our operations are based entirely within Flathead County, Montana, transactions are exempt from state sales tax. For large gold and bullion acquisitions, this represents hundreds or thousands in direct savings compared to out-of-state merchants.",
+  heritage_btn_primary: "Explore Storefront Inventory",
+  heritage_btn_secondary: "Contact Jewel Basin Armory"
+};
+
+export const contactStoreSettings = {
+  id: "contact",
+  business_name: "Contact Jewel Basin Armory",
+  difference_title: "Contact Jewel Basin Armory",
+  difference_subtitle: "Whether you are inquiring about a specific inventory piece, coordinating high-value bank wire settlement, or scheduling a private consultation in Flathead County, we provide direct, confidential assistance.",
+  hero_image: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/contact_cover_precious_metals.jpg",
+  difference_eyebrow: "https://azibnvfxnsrocmobzswt.supabase.co/storage/v1/object/public/inventory/brand/contact_cover_precious_metals.jpg",
+  guarantee_badge_1: "(406) 837-1426 (Mon–Sat)",
+  guarantee_badge_2: "Bigfork, Montana 59911",
+  guarantee_badge_3: "Direct PayPal / Wire Portal",
+  heritage_title: "Flathead County Private Viewing & Settlement",
+  heritage_desc: "48.06° N",
+  tagline: "Storefront At A Glance",
+  guarantee_badge: "Official Armory Specifications",
+  operating_hours: "Direct physical and digital operations based in Flathead County, Montana.",
+  card1_title: "119 Jewel Basin Ct. B3, Bigfork, MT 59911",
+  card1_desc: "Flathead County physical facility · Private Consultations",
+  card2_title: "(406) 407-0281 (Mon–Sat)",
+  card2_desc: "Monday – Saturday · 9:00 AM – 6:00 PM MST",
+  card3_title: "0% Montana State Sales Tax on All Metals",
+  card3_desc: "Exempt from state sales tax",
+  card4_title: "Transparent 15% Fee via PayPal or Wire",
+  card4_desc: "Comprehensive buyer protection or high-value incoming wire fee credit",
+  guarantee_title: "In-House Insured USPS Priority Packaging",
+  guarantee_desc: "Discreet packaging with tracking; signature required on orders exceeding $500",
+  guarantee_promise_text: "Verified Storefront Security · Direct Settlement Model",
+  street: "119 Jewel Basin Ct. B3",
+  city: "Bigfork",
+  state: "MT",
+  zip: "59911",
+  phone: "4064070281",
+  phone_formatted: "(406) 407-0281",
+  email: "Stratford1955@icloud.com",
+  paypal_url: "https://paypal.me/HighlanderGoldSilver"
+};
+
+export const defaultAllStoreSettings = {
+  current: storefrontSettings,
+  collection: collectionStoreSettings,
+  about: aboutStoreSettings,
+  contact: contactStoreSettings
 };
 
 export const liveSpotPrices = {

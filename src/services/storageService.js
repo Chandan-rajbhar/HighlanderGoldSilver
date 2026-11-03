@@ -9,6 +9,7 @@ import {
   initialAdminUsers,
   initialNotifications,
   storefrontSettings,
+  defaultAllStoreSettings,
   liveSpotPrices
 } from '../data/initialData';
 
@@ -23,6 +24,7 @@ const STORAGE_KEYS = {
   ADMIN_USERS: 'hgs_admin_users',
   NOTIFICATIONS: 'hgs_admin_notifications',
   SETTINGS: 'hgs_admin_settings',
+  ALL_SETTINGS: 'hgs_admin_all_settings',
   SPOT_PRICES: 'hgs_admin_spot_prices',
 };
 
@@ -105,6 +107,31 @@ export const localDB = {
   getSettings: () => getStoredItem(STORAGE_KEYS.SETTINGS, storefrontSettings),
   setSettings: (settings) => setStoredItem(STORAGE_KEYS.SETTINGS, settings),
 
+  getAllSectionSettings: () => getStoredItem(STORAGE_KEYS.ALL_SETTINGS, defaultAllStoreSettings),
+  setAllSectionSettings: (allSettings) => setStoredItem(STORAGE_KEYS.ALL_SETTINGS, allSettings),
+
+  getSectionSettings: (sectionId = 'current') => {
+    const normId = sectionId === 'home' ? 'current' : sectionId;
+    const all = getStoredItem(STORAGE_KEYS.ALL_SETTINGS, defaultAllStoreSettings);
+    if (all && all[normId]) return all[normId];
+    if (normId === 'current') return getStoredItem(STORAGE_KEYS.SETTINGS, storefrontSettings);
+    return defaultAllStoreSettings[normId] || {};
+  },
+
+  setSectionSettings: (sectionId = 'current', data) => {
+    const normId = sectionId === 'home' ? 'current' : sectionId;
+    const all = getStoredItem(STORAGE_KEYS.ALL_SETTINGS, defaultAllStoreSettings);
+    const updated = {
+      ...all,
+      [normId]: { ...(all[normId] || {}), ...data }
+    };
+    setStoredItem(STORAGE_KEYS.ALL_SETTINGS, updated);
+    if (normId === 'current') {
+      setStoredItem(STORAGE_KEYS.SETTINGS, updated.current);
+    }
+    return updated[normId];
+  },
+
   getSpotPrices: () => getStoredItem(STORAGE_KEYS.SPOT_PRICES, liveSpotPrices),
   setSpotPrices: (spots) => setStoredItem(STORAGE_KEYS.SPOT_PRICES, spots),
 
@@ -120,6 +147,7 @@ export const localDB = {
     localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
     localStorage.removeItem(STORAGE_KEYS.INQUIRIES);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    localStorage.removeItem(STORAGE_KEYS.ALL_SETTINGS);
     localStorage.removeItem(STORAGE_KEYS.SPOT_PRICES);
   }
 };

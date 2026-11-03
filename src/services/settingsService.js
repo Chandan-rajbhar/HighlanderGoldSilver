@@ -1,6 +1,12 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { localDB } from './storageService';
-import { storefrontSettings } from '../data/initialData';
+import { 
+  storefrontSettings, 
+  collectionStoreSettings, 
+  aboutStoreSettings, 
+  contactStoreSettings, 
+  defaultAllStoreSettings 
+} from '../data/initialData';
 
 // Supabase public.store_settings schema whitelist
 const DB_STORE_SETTINGS_COLUMNS = [
@@ -42,6 +48,9 @@ const DB_STORE_SETTINGS_COLUMNS = [
   'heritage_desc',
   'heritage_btn_primary',
   'heritage_btn_secondary',
+  'hero_background',
+  'hero_logo',
+  'hero_image',
   'updated_at'
 ];
 
@@ -55,67 +64,167 @@ function sanitizeStoreSettingsPayload(data) {
   return sanitized;
 }
 
+function getDefaultSection(sectionId) {
+  const norm = sectionId === 'home' ? 'current' : sectionId;
+  switch (norm) {
+    case 'collection':
+      return { ...collectionStoreSettings };
+    case 'about':
+      return { ...aboutStoreSettings };
+    case 'contact':
+      return { ...contactStoreSettings };
+    case 'current':
+    default:
+      return { ...storefrontSettings };
+  }
+}
+
 export const settingsService = {
-  async getSettings() {
-    const local = localDB.getSettings();
-    // Ensure all default fields exist if local was stored before these fields were added
-    const base = { ...storefrontSettings, ...local };
+  // Fetch a single section ('current'/'home', 'collection', 'about', 'contact')
+  async getSettings(sectionId = 'current') {
+    const normId = sectionId === 'home' ? 'current' : sectionId;
+    const baseDefault = getDefaultSection(normId);
+    const local = localDB.getSectionSettings(normId);
+    const base = { ...baseDefault, ...(local || {}) };
 
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('store_settings')
           .select('*')
-          .limit(1)
-          .single();
+          .eq('id', normId)
+          .maybeSingle();
+
         if (error && error.code !== 'PGRST116') {
-          console.warn('Supabase getSettings query note:', error.message);
+          console.warn(`Supabase getSettings query note for ${normId}:`, error.message);
         } else if (data) {
           const merged = { ...base, ...data };
-          localDB.setSettings(merged);
+          localDB.setSectionSettings(normId, merged);
           return merged;
         }
       } catch (err) {
-        console.warn('Supabase getSettings fallback to local storage:', err.message);
+        console.warn(`Supabase getSettings fallback to local storage for ${normId}:`, err.message);
       }
     }
     return base;
   },
 
-  async updateSettings(settingsData) {
-    const current = await this.getSettings();
-    const updated = { ...current, ...settingsData };
+  // Fetch all 4 sections simultaneously
+  async getAllSections() {
+    const defaultAll = {
+      home: { ...storefrontSettings },
+      current: { ...storefrontSettings },
+      collection: { ...collectionStoreSettings },
+      about: { ...aboutStoreSettings },
+      contact: { ...contactStoreSettings }
+    };
 
-    // Always update local database with full schema including website sections
-    localDB.setSettings(updated);
+    const localAll = localDB.getAllSectionSettings() || {};
+    const mergedAll = {
+      home: { ...defaultAll.home, ...(localAll.current || localAll.home || {}) },
+      current: { ...defaultAll.current, ...(localAll.current || localAll.home || {}) },
+      collection: { ...defaultAll.collection, ...(localAll.collection || {}) },
+      about: { ...defaultAll.about, ...(localAll.about || {}) },
+      contact: { ...defaultAll.contact, ...(localAll.contact || {}) }
+    };
 
-    // Notify any active UI listeners
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('store_settings')
+          .select('*');
+
+        if (error) {
+          console.warn('Supabase getAllSections query note:', error.message);
+        } else if (data && data.length > 0) {
+          data.forEach(row => {
+            const rowId = row.id;
+            if (rowId === 'current') {
+              mergedAll.current = { ...mergedAll.current, ...row };
+              mergedAll.home = { ...mergedAll.home, ...row };
+            } else if (mergedAll[rowId]) {
+              mergedAll[rowId] = { ...mergedAll[rowId], ...row };
+            }
+          });
+          localDB.setAllSectionSettings(mergedAll);
+          return mergedAll;
+        }
+      } catch (err) {
+        console.warn('Supabase getAllSections fallback:', err.message);
+      }
+    }
+
+    return mergedAll;
+  },
+
+  // Update a specific section in Supabase and local storage
+  async updateSettings(settingsData, sectionId = 'current') {
+    const normId = (sectionId === 'home' || !sectionId) ? 'current' : sectionId;
+    const current = await this.getSettings(normId);
+    const updated = { ...current, ...settingsData, id: normId };
+
+    // Always update local database with full schema
+    localDB.setSectionSettings(normId, updated);
+
+    // Notify any active UI listeners across the app
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('hgs:settings-updated', { detail: updated }));
+      window.dispatchEvent(new CustomEvent('hgs:settings-updated', { 
+        detail: { 
+          section: normId, 
+          id: normId, 
+          data: updated,
+          ...updated 
+        } 
+      }));
     }
 
     if (isSupabaseConfigured()) {
       try {
         const payload = sanitizeStoreSettingsPayload(updated);
-        const { data, error } = await supabase
+        
+        // 1. Try update existing row
+        let { data, error } = await supabase
           .from('store_settings')
-          .upsert([{ id: 'current', ...payload, updated_at: new Date().toISOString() }])
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', normId)
           .select()
-          .single();
+          .maybeSingle();
+
+        // 2. If update returned no row or failed, try upsert
+        if (!data || error) {
+          const upsertRes = await supabase
+            .from('store_settings')
+            .upsert([{ id: normId, ...payload, updated_at: new Date().toISOString() }])
+            .select()
+            .maybeSingle();
+
+          if (upsertRes.data) {
+            data = upsertRes.data;
+            error = null;
+          } else if (upsertRes.error && !error) {
+            error = upsertRes.error;
+          }
+        }
+
         if (error) {
-          console.warn('Supabase store_settings upsert warning:', error.message);
+          console.warn(`Supabase store_settings update warning for ${normId}:`, error.message);
         } else if (data) {
-          return { ...updated, ...data };
+          const result = { ...updated, ...data };
+          localDB.setSectionSettings(normId, result);
+          return result;
         }
       } catch (err) {
-        console.warn('Supabase updateSettings fallback to local storage:', err.message);
+        console.warn(`Supabase updateSettings fallback to local storage for ${normId}:`, err.message);
       }
     }
     return updated;
   },
 
-  getActiveStorefrontContent() {
-    return { ...storefrontSettings, ...localDB.getSettings() };
+  getActiveStorefrontContent(sectionId = 'current') {
+    const normId = sectionId === 'home' ? 'current' : sectionId;
+    const baseDefault = getDefaultSection(normId);
+    const local = localDB.getSectionSettings(normId);
+    return { ...baseDefault, ...(local || {}) };
   },
 
   getSpotPrices() {

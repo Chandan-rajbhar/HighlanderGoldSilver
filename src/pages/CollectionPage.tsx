@@ -7,6 +7,7 @@ import { CollectionSortSelect } from '../components/collection/CollectionSortSel
 import { useInventory } from '../hooks/useInventory';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Icons } from '../utils/icons';
+import { settingsService } from '../services/settingsService';
 
 export const CollectionPage: React.FC = () => {
   const {
@@ -25,6 +26,27 @@ export const CollectionPage: React.FC = () => {
 
   useScrollReveal();
 
+  const [collectionSettings, setCollectionSettings] = React.useState<any>(() => 
+    settingsService.getActiveStorefrontContent('collection')
+  );
+
+  React.useEffect(() => {
+    settingsService.getSettings('collection')
+      .then(data => {
+        if (data) setCollectionSettings((prev: any) => ({ ...prev, ...data }));
+      })
+      .catch(() => {});
+
+    const handleUpdate = (e: any) => {
+      const detail = e.detail;
+      if (detail && (detail.section === 'collection' || detail.id === 'collection')) {
+        setCollectionSettings((prev: any) => ({ ...prev, ...(detail.data || detail) }));
+      }
+    };
+    window.addEventListener('hgs:settings-updated', handleUpdate);
+    return () => window.removeEventListener('hgs:settings-updated', handleUpdate);
+  }, []);
+
   return (
     <main className="collection-page-main">
       {/* Page Header Banner with Right-Side Precious Metals Image */}
@@ -38,34 +60,38 @@ export const CollectionPage: React.FC = () => {
                 <span className="breadcrumb-current">Collection</span>
               </nav>
 
-              <h1 className="page-banner-title">Precious Metals Collection</h1>
-              <p className="page-banner-desc">
-                Explore hand-selected numismatic rarities, certified Morgan dollars, sovereign gold, and fine silver bullion. Every piece features verified strike luster, certified grade accuracy, and the Highlander Sold Value Guarantee.
-              </p>
+              <h1 className="page-banner-title">{collectionSettings.difference_title || collectionSettings.business_name || "Precious Metals Collection"}</h1>
+              <p className="page-banner-desc">{collectionSettings.difference_subtitle || "Explore hand-selected numismatic rarities, certified Morgan dollars, sovereign gold, and fine silver bullion. Every piece features verified strike luster, certified grade accuracy, and the Highlander Sold Value Guarantee."}</p>
 
               {/* Quick Stats Strip */}
               <div className="collection-stats-strip">
-                <div className="stat-pill">
-                  <Icons.ShieldCheck size={14} />
-                  <span>0% Montana Sales Tax</span>
-                </div>
-                <div className="stat-pill">
-                  <Icons.Package size={14} />
-                  <span>In-House Insured Shipping</span>
-                </div>
-                <div className="stat-pill">
-                  <Icons.Check size={14} />
-                  <span>Guaranteed Sold Value</span>
-                </div>
-
+                {collectionSettings.card1_title && (
+                  <div className="stat-pill">
+                    <Icons.ShieldCheck size={14} />
+                    <span>{collectionSettings.card1_title}</span>
+                  </div>
+                )}
+                {collectionSettings.card2_title && (
+                  <div className="stat-pill">
+                    <Icons.Package size={14} />
+                    <span>{collectionSettings.card2_title}</span>
+                  </div>
+                )}
+                {collectionSettings.card3_title && (
+                  <div className="stat-pill">
+                    <Icons.Check size={14} />
+                    <span>{collectionSettings.card3_title}</span>
+                  </div>
+                )}
               </div>
+            </div>
             </div>
 
             {/* Right-Side Relevant Image Showcase */}
             <div className="page-banner-media">
               <div className="page-banner-media-box">
                 <img
-                  src="/assets/brand/highlander_hero_precious_metals.jpg"
+                  src={collectionSettings.hero_image || collectionSettings.difference_eyebrow || "/assets/brand/highlander_hero_precious_metals.jpg"}
                   alt="Highlander Precious Metals Reserve and Certified Bullion"
                   className="page-banner-img"
                   width={1376}
@@ -77,8 +103,8 @@ export const CollectionPage: React.FC = () => {
                 <div className="banner-badge-icon">
                   <Icons.ShieldCheck size={16} />
                 </div>
-                <span className="banner-badge-text">Vault-Certified Sovereign Coinage &amp; Bullion</span>
-                <span className="banner-badge-sub">Bigfork, MT</span>
+                <span className="banner-badge-text">{collectionSettings.heritage_title || "Vault-Certified Sovereign Coinage & Bullion"}</span>
+                <span className="banner-badge-sub">{collectionSettings.heritage_desc || "Bigfork, MT"}</span>
               </div>
             </div>
           </div>

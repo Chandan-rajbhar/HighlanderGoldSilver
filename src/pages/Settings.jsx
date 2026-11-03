@@ -1,38 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Building, 
-  DollarSign, 
-  Sparkles, 
-  ShieldCheck, 
-  Compass, 
-  Layers, 
-  Check, 
-  RotateCcw, 
-  Eye, 
-  CreditCard, 
-  Package, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Clock, 
-  ExternalLink, 
-  AlertCircle, 
-  Save, 
-  CheckCircle2, 
-  Info,
-  ArrowRight,
-  Shield,
+import {
+  Home,
+  Award,
+  Layers,
+  Phone,
+  Check,
+  CheckCircle2,
+  RotateCcw,
+  ExternalLink,
+  Clock,
+  MapPin,
+  Mail,
+  DollarSign,
+  Building,
+  Sparkles,
+  ShieldCheck,
+  CreditCard,
   FileText,
-  Sliders,
-  Store,
-  Calendar
+  Loader2
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { settingsService } from '../services/settingsService';
 import { useToast } from '../context/ToastContext';
-import { storefrontSettings } from '../data/initialData';
+import { SettingsImageUploadCard } from '../components/settings/SettingsImageUploadCard';
 
 // =============================================================================
-// SUB-COMPONENT: REUSABLE SECTION HEADER
+// SUB-COMPONENT: CLEAN SECTION HEADER
 // =============================================================================
 const SectionHeader = ({ icon: Icon, title, description, badge }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
@@ -44,13 +37,15 @@ const SectionHeader = ({ icon: Icon, title, description, badge }) => (
         <h3 className="text-base font-bold font-sans text-slate-900 tracking-tight">
           {title}
         </h3>
-        <p className="text-xs text-slate-500 mt-0.5 max-w-2xl leading-relaxed">
-          {description}
-        </p>
+        {description && (
+          <p className="text-xs text-slate-500 mt-0.5 max-w-2xl leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
     </div>
     {badge && (
-      <span className="self-start sm:self-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase bg-[#071A35]/5 text-[#071A35] border border-[#071A35]/10">
+      <span className="self-start sm:self-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase bg-[#071A35]/5 text-[#071A35] border border-[#071A35]/10 font-sans">
         {badge}
       </span>
     )}
@@ -58,188 +53,306 @@ const SectionHeader = ({ icon: Icon, title, description, badge }) => (
 );
 
 // =============================================================================
-// SUB-COMPONENT: REUSABLE LIVE PREVIEW FRAME
+// SUB-COMPONENT: DYNAMIC FORM INPUT
 // =============================================================================
-const LivePreviewFrame = ({ route, label, children }) => (
-  <div className="mt-8 rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
-    {/* Browser-style Chrome Header */}
-    <div className="px-4 py-2.5 bg-slate-50/90 border-b border-slate-200/80 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-400/80 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 inline-block" />
+const FormInput = ({ label, value, onChange, placeholder, type = 'text', helper, icon: Icon, required = false }) => (
+  <div className="space-y-1.5">
+    <label className="block text-xs font-semibold text-slate-700 tracking-wide">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <div className="relative">
+      {Icon && (
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <Icon className="w-4 h-4" />
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 ml-2 px-3 py-1 rounded-md bg-white border border-slate-200/70 text-[11px] font-mono text-slate-600 shadow-2xs">
-          <Store className="w-3 h-3 text-slate-400" />
-          <span>https://highlandergoldsilver.com{route}</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#8F7220] bg-amber-50/80 border border-amber-200/60 px-2 py-0.5 rounded-md">
-          <Eye className="w-3 h-3 text-[#C9A23A]" />
-          <span>{label || 'Storefront Client Preview'}</span>
-        </span>
-      </div>
+      )}
+      <input
+        type={type}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full h-10.5 ${Icon ? 'pl-10' : 'pl-3.5'} pr-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all`}
+      />
     </div>
-
-    {/* Viewport Canvas */}
-    <div className="p-6 sm:p-8 bg-[#FAF9F5]">
-      {children}
-    </div>
+    {helper && <p className="text-[11px] text-slate-400 leading-normal">{helper}</p>}
   </div>
 );
 
 // =============================================================================
-// MAIN COMPONENT: SETTINGS
+// SUB-COMPONENT: DYNAMIC FORM TEXTAREA
+// =============================================================================
+const FormTextarea = ({ label, value, onChange, placeholder, rows = 3, helper, required = false }) => (
+  <div className="space-y-1.5">
+    <label className="block text-xs font-semibold text-slate-700 tracking-wide">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <textarea
+      rows={rows}
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full p-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all leading-relaxed"
+    />
+    {helper && <p className="text-[11px] text-slate-400 leading-normal">{helper}</p>}
+  </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT: SETTINGS (EXACTLY 4 DYNAMIC SECTIONS: HOME, ABOUT, COLLECTION, CONTACT)
 // =============================================================================
 export const Settings = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('identity');
-  const [settings, setSettings] = useState(() => ({ ...storefrontSettings }));
-  const [savedSettings, setSavedSettings] = useState(() => ({ ...storefrontSettings }));
+
+  // ONLY 4 SECTIONS AS EXPLICITLY REQUESTED
+  const [activeTab, setActiveTab] = useState('home');
+
+  // Dynamic state loaded strictly from database
+  const [sectionsData, setSectionsData] = useState({
+    home: {},
+    about: {},
+    collection: {},
+    contact: {}
+  });
+
+  const [savedSectionsData, setSavedSectionsData] = useState({
+    home: {},
+    about: {},
+    collection: {},
+    contact: {}
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load Initial Settings
+  // Maps section key to database store_settings row ID
+  const tabToRowId = {
+    home: 'current',
+    about: 'about',
+    collection: 'collection',
+    contact: 'contact'
+  };
+
+  const activeRowId = tabToRowId[activeTab] || 'current';
+
+  // Load all 4 rows directly from Supabase store_settings table
   useEffect(() => {
     let isMounted = true;
-    settingsService.getSettings()
-      .then((data) => {
-        if (isMounted) {
-          const merged = { ...storefrontSettings, ...data };
-          setSettings(merged);
-          setSavedSettings(merged);
-          setIsLoading(false);
+
+    const loadDynamicSettings = async () => {
+      setIsLoading(true);
+      try {
+        if (isSupabaseConfigured() && supabase) {
+          const { data, error } = await supabase
+            .from('store_settings')
+            .select('*');
+
+          if (error) {
+            console.error('Error querying store_settings from database:', error);
+            throw error;
+          }
+
+          if (data && isMounted) {
+            const mapped = {
+              home: {},
+              about: {},
+              collection: {},
+              contact: {}
+            };
+
+            data.forEach(row => {
+              if (row.id === 'current') mapped.home = { ...row };
+              else if (row.id === 'about') mapped.about = { ...row };
+              else if (row.id === 'collection') mapped.collection = { ...row };
+              else if (row.id === 'contact') mapped.contact = { ...row };
+            });
+
+            setSectionsData(mapped);
+            setSavedSectionsData(JSON.parse(JSON.stringify(mapped)));
+          }
+        } else {
+          // Local fallback if Supabase not configured
+          const allLocal = await settingsService.getAllSections();
+          if (isMounted) {
+            const mapped = {
+              home: allLocal.current || allLocal.home || {},
+              about: allLocal.about || {},
+              collection: allLocal.collection || {},
+              contact: allLocal.contact || {}
+            };
+            setSectionsData(mapped);
+            setSavedSectionsData(JSON.parse(JSON.stringify(mapped)));
+          }
         }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          console.error('Error fetching settings:', err);
-          setIsLoading(false);
-        }
-      });
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+        toast.error('Failed to load settings from database.');
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadDynamicSettings();
+
     return () => { isMounted = false; };
-  }, []);
+  }, [toast]);
 
-  // Detect Unsaved Changes
-  const hasUnsavedChanges = useMemo(() => {
-    return JSON.stringify(settings) !== JSON.stringify(savedSettings);
-  }, [settings, savedSettings]);
-
-  const handleChange = (field, value) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+  // Handle dynamic field changes for the current section
+  const handleFieldChange = (field, value) => {
+    setSectionsData(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        [field]: value
+      }
+    }));
   };
 
+  // Check if current active section has unsaved changes
+  const hasActiveTabUnsavedChanges = useMemo(() => {
+    return JSON.stringify(sectionsData[activeTab]) !== JSON.stringify(savedSectionsData[activeTab]);
+  }, [sectionsData, savedSectionsData, activeTab]);
+
+  // Check if any section has unsaved changes
+  const hasAnyUnsavedChanges = useMemo(() => {
+    return JSON.stringify(sectionsData) !== JSON.stringify(savedSectionsData);
+  }, [sectionsData, savedSectionsData]);
+
+  // Discard changes in active section
   const handleDiscard = () => {
-    setSettings({ ...savedSettings });
-    toast.info('Unsaved changes discarded.');
+    setSectionsData(prev => ({
+      ...prev,
+      [activeTab]: { ...savedSectionsData[activeTab] }
+    }));
+    toast.info(`Unsaved changes for ${activeTab.toUpperCase()} discarded.`);
   };
 
+  // Save changes to the specific row in Supabase store_settings table
   const handleSave = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsSaving(true);
+
     try {
-      const updated = await settingsService.updateSettings(settings);
-      const merged = { ...settings, ...updated };
-      setSettings(merged);
-      setSavedSettings(merged);
-      toast.success('Storefront & website settings saved successfully!');
+      const payload = sectionsData[activeTab];
+      const targetRow = tabToRowId[activeTab];
+
+      const updated = await settingsService.updateSettings(payload, targetRow);
+
+      setSectionsData(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], ...updated }
+      }));
+      setSavedSectionsData(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], ...updated }
+      }));
+
+      const sectionNames = {
+        home: 'Home Page',
+        about: 'About Page',
+        collection: 'Collection Page',
+        contact: 'Contact Page'
+      };
+
+      toast.success(`${sectionNames[activeTab]} settings successfully saved in database!`);
     } catch (err) {
-      console.error('Error updating settings:', err);
-      toast.error('Failed to update settings. Please try again.');
+      console.error('Error saving settings to database:', err);
+      toast.error('Failed to save settings. Please check your network connection.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleResetData = () => {
-    if (window.confirm('Reset storefront settings and website content to original Highlander Gold & Silver defaults?')) {
-      settingsService.resetStoreData();
-      const reset = { ...storefrontSettings };
-      setSettings(reset);
-      setSavedSettings(reset);
-      toast.info('Settings restored to initial factory defaults. Refreshing...');
-      setTimeout(() => window.location.reload(), 800);
+  // Reload data from database for current section
+  const handleReloadFromDatabase = async () => {
+    try {
+      const fresh = await settingsService.getSettings(activeRowId);
+      setSectionsData(prev => ({ ...prev, [activeTab]: fresh }));
+      setSavedSectionsData(prev => ({ ...prev, [activeTab]: fresh }));
+      toast.success(`Reloaded latest ${activeTab.toUpperCase()} data from database.`);
+    } catch (err) {
+      toast.error('Failed to reload data from database.');
     }
   };
 
-  // Navigation Items
-  const navSections = [
-    { 
-      id: 'identity', 
-      label: 'Storefront Identity', 
-      description: 'Physical address, contact & hours', 
-      icon: Building 
+  // ONLY 4 SECTIONS
+  const navItems = [
+    {
+      id: 'home',
+      title: 'Home',
+      description: 'Atmosphere visuals, emblem & homepage content',
+      icon: Home
     },
-    { 
-      id: 'settlement', 
-      label: 'Settlement & Terms', 
-      description: "Buyer's premium & wire instructions", 
-      icon: DollarSign 
+    {
+      id: 'about',
+      title: 'About',
+      description: 'Company heritage, inspection photo & 3 pillars',
+      icon: Award
     },
-    { 
-      id: 'difference', 
-      label: 'Difference Highlights', 
-      description: 'Homepage 4-card value proposition', 
-      icon: Sparkles 
+    {
+      id: 'collection',
+      title: 'Collection',
+      description: 'Showcase titles, badges & metals image',
+      icon: Layers
     },
-    { 
-      id: 'guarantee', 
-      label: 'Sold Value Guarantee', 
-      description: 'Authenticity & refund promise', 
-      icon: ShieldCheck 
-    },
-    { 
-      id: 'heritage', 
-      label: 'Heritage & Depository', 
-      description: 'Montana vault narrative & buttons', 
-      icon: Compass 
-    },
-    { 
-      id: 'all', 
-      label: 'Full Overview (All)', 
-      description: 'Single-page master document', 
-      icon: Layers 
+    {
+      id: 'contact',
+      title: 'Contact',
+      description: 'Showroom specs, hotline & consultation artwork',
+      icon: Phone
     }
   ];
+
+  const currentHome = sectionsData.home || {};
+  const currentAbout = sectionsData.about || {};
+  const currentCollection = sectionsData.collection || {};
+  const currentContact = sectionsData.contact || {};
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+        <Loader2 className="w-8 h-8 text-[#C9A23A] animate-spin" />
+        <p className="text-sm font-semibold text-slate-800">Loading storefront settings from database...</p>
+        <span className="text-xs text-slate-400">Fetching live rows from store_settings</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6 pb-24">
       {/* ===================================================================== */}
-      {/* PAGE HEADER */}
+      {/* 1. CLEAN & PROFESSIONAL PAGE HEADER */}
       {/* ===================================================================== */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-xl sm:text-2xl font-bold font-sans text-slate-900 tracking-tight">
-                Storefront & Website Settings
+                Storefront Settings
               </h1>
-              {hasUnsavedChanges ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 animate-in fade-in">
+              {hasActiveTabUnsavedChanges ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 animate-in fade-in">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  Unsaved Changes
+                  Unsaved Changes ({activeTab.toUpperCase()})
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  All Saved
+                  Synchronized with Database
                 </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-3xl leading-relaxed">
-              Configure Highlander Gold & Silver public identity, Montana vault operating hours, settlement terms, and live homepage storytelling sections.
+            <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+              Dynamically manage all four storefront pages (Home, About, Collection, and Contact).
             </p>
           </div>
 
           {/* Top Actions */}
           <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
-            {hasUnsavedChanges && (
+            {hasActiveTabUnsavedChanges && (
               <button
                 type="button"
                 onClick={handleDiscard}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
               >
                 Discard
               </button>
@@ -256,894 +369,843 @@ export const Settings = () => {
               ) : (
                 <Check className="w-4 h-4 text-[#C9A23A]" />
               )}
-              Save Changes
+              <span>{isSaving ? 'Saving...' : `Save ${activeTab.toUpperCase()} Changes`}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* ===================================================================== */}
-      {/* 2-COLUMN MAIN SETTINGS WORKSPACE */}
+      {/* 2. MAIN WORKSPACE (FOUR SECTIONS ONLY) */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* ----------------------------------------------------------------- */}
-        {/* LEFT COLUMN: NAVIGATION SIDEBAR */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="lg:col-span-4 xl:col-span-3 space-y-4 lg:sticky lg:top-4">
-          <nav className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs space-y-1">
-            <div className="px-3 pt-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Settings Navigation
-            </div>
-            {navSections.map((sec) => {
-              const Icon = sec.icon;
-              const isActive = activeTab === sec.id;
-              return (
-                <button
-                  key={sec.id}
-                  type="button"
-                  onClick={() => setActiveTab(sec.id)}
-                  className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all cursor-pointer group ${
-                    isActive
-                      ? 'bg-[#071A35] text-white shadow-xs'
-                      : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                    isActive
-                      ? 'bg-white/10 text-[#C9A23A]'
-                      : 'bg-slate-100 text-slate-500 group-hover:text-slate-900 group-hover:bg-slate-200/70'
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className={`block text-xs font-bold leading-tight ${
-                      isActive ? 'text-white' : 'text-slate-800'
-                    }`}>
-                      {sec.label}
-                    </span>
-                    <span className={`block text-[11px] truncate mt-0.5 ${
-                      isActive ? 'text-slate-300' : 'text-slate-400'
-                    }`}>
-                      {sec.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </nav>
 
-          {/* Quick Info & Depository Status Card */}
+        {/* ----------------------------------------------------------------- */}
+        {/* LEFT COLUMN: FOUR SECTIONS NAVIGATION */}
+        {/* ----------------------------------------------------------------- */}
+        <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+
+          {/* Desktop Navigation Card */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs">
+            <div className="px-3 py-2 border-b border-slate-100 mb-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Storefront Sections (4)
+              </span>
+            </div>
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                const isItemModified = JSON.stringify(sectionsData[item.id]) !== JSON.stringify(savedSectionsData[item.id]);
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full text-left p-3.5 rounded-xl transition-all flex items-start gap-3 cursor-pointer group ${isActive
+                        ? 'bg-[#071A35] text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isActive
+                        ? 'bg-white/10 text-[#C9A23A]'
+                        : 'bg-slate-100 text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                          {item.title}
+                        </span>
+                        {isItemModified && (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 ml-1" title="Unsaved changes" />
+                        )}
+                      </div>
+                      <p className={`text-[11px] mt-0.5 truncate leading-tight ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                        {item.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Mobile Horizontal Navigation Tabs */}
+          <div className="lg:hidden bg-white rounded-2xl border border-slate-200/80 p-2 shadow-xs overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5 min-w-max">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${isActive
+                        ? 'bg-[#071A35] text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#C9A23A]' : 'text-slate-400'}`} />
+                    <span>{item.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick Database Action Card */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-              <span className="flex items-center gap-1.5">
-                <Store className="w-3.5 h-3.5 text-[#C9A23A]" />
-                Storefront Depository
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Active
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800">Database Status</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                CONNECTED
               </span>
             </div>
-
-            <div className="text-[11px] text-slate-500 space-y-1.5 pt-1 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Jurisdiction:</span>
-                <span className="font-semibold text-slate-700">Montana (0% Tax)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Buyer's Premium:</span>
-                <span className="font-mono font-semibold text-slate-700">
-                  {Math.round((settings.buyers_premium_percent || 0.15) * 100)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Depository Vault:</span>
-                <span className="font-semibold text-slate-700 truncate max-w-[130px]">Bigfork, MT</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={handleResetData}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Factory Defaults</span>
-              </button>
-            </div>
+            <p className="text-[11px] text-slate-500 leading-normal">
+              All settings load dynamically from and persist to <code className="font-mono text-[#071A35]">store_settings</code>.
+            </p>
+            <button
+              type="button"
+              onClick={handleReloadFromDatabase}
+              className="w-full pt-2 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3 text-slate-400" />
+              <span>Reload Current Section from DB</span>
+            </button>
           </div>
         </div>
 
         {/* ----------------------------------------------------------------- */}
-        {/* RIGHT COLUMN: MAIN FORM CONTENT */}
+        {/* RIGHT COLUMN: DYNAMIC SECTION CONTENT */}
         {/* ----------------------------------------------------------------- */}
         <div className="lg:col-span-8 xl:col-span-9 space-y-6">
-          <form onSubmit={handleSave} className="space-y-6">
 
-            {/* =============================================================== */}
-            {/* SECTION 1: STOREFRONT IDENTITY & CONTACT */}
-            {/* =============================================================== */}
-            {(activeTab === 'all' || activeTab === 'identity') && (
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
-                <SectionHeader 
-                  icon={Building}
-                  title="Storefront Identity & Contact Information"
-                  description="Primary legal identity, physical storefront coordinates in Bigfork, telephone lines, and customer service email."
-                  badge="Physical Presence"
-                />
+          {/* =============================================================== */}
+          {/* SECTION 1: HOME PAGE */}
+          {/* =============================================================== */}
+          {activeTab === 'home' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8 animate-in fade-in duration-200">
+              <SectionHeader
+                icon={Home}
+                title="Home Page Settings"
+                description="Manage storefront brand emblem, atmospheric hero visuals, identity coordinates, settlement terms, and homepage storytelling."
+                badge="Home"
+              />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Business Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Business Name
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.business_name || ''}
-                      onChange={(e) => handleChange('business_name', e.target.value)}
-                      placeholder="Highlander Gold & Silver"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
+              {/* Visual Assets & Brand Emblem */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Brand Imagery & Atmospheric Visuals
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <SettingsImageUploadCard
+                    label="Storefront Brand Emblem / Logo"
+                    description="Emblem displayed at the top of the home page and header."
+                    recommended="Transparent PNG • Max 15MB"
+                    value={currentHome.hero_logo}
+                    onChange={(url) => handleFieldChange('hero_logo', url)}
+                    aspectClass="h-44"
+                    darkPreview={true}
+                  />
 
-                  {/* Tagline */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Tagline / Business Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.tagline || ''}
-                      onChange={(e) => handleChange('tagline', e.target.value)}
-                      placeholder="Rare Coins, Bullion & Precious Metals Marketplace"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
+                  <SettingsImageUploadCard
+                    label="Atmospheric Hero Background"
+                    description="Mountain visual behind the home hero section."
+                    recommended="16:9 • 1920 × 1080 px • Max 15MB"
+                    value={currentHome.hero_background}
+                    onChange={(url) => handleFieldChange('hero_background', url)}
+                    aspectClass="h-44"
+                  />
+                </div>
+              </div>
 
-                  {/* Physical Address */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Physical Storefront Street Address
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.street || ''}
-                      onChange={(e) => handleChange('street', e.target.value)}
+              {/* Storefront Identity */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Storefront Business Identity
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Business Name"
+                    value={currentHome.business_name}
+                    onChange={(val) => handleFieldChange('business_name', val)}
+                    placeholder="Highlander Gold & Silver"
+                  />
+                  <FormInput
+                    label="Tagline / Business Subtitle"
+                    value={currentHome.tagline}
+                    onChange={(val) => handleFieldChange('tagline', val)}
+                    placeholder="Rare Coins, Bullion & Precious Metals Marketplace"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-3">
+                    <FormInput
+                      label="Physical Street Address"
+                      value={currentHome.street}
+                      onChange={(val) => handleFieldChange('street', val)}
                       placeholder="119 Jewel Basin Ct. B3"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
+                      icon={MapPin}
                     />
                   </div>
-
-                  {/* City, State, Zip (Balanced 3-column subgrid) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      City, State & Zip Code
-                    </label>
-                    <div className="grid grid-cols-12 gap-2">
-                      <div className="col-span-6">
-                        <input
-                          type="text"
-                          value={settings.city || ''}
-                          onChange={(e) => handleChange('city', e.target.value)}
-                          placeholder="City (Bigfork)"
-                          className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          value={settings.state || ''}
-                          onChange={(e) => handleChange('state', e.target.value)}
-                          placeholder="State"
-                          className="w-full h-10 px-2 text-center text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans font-medium"
-                        />
-                      </div>
-                      <div className="col-span-4">
-                        <input
-                          type="text"
-                          value={settings.zip || ''}
-                          onChange={(e) => handleChange('zip', e.target.value)}
-                          placeholder="Zip Code"
-                          className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Storefront Telephone (Formatted)
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.phone_formatted || ''}
-                      onChange={(e) => handleChange('phone_formatted', e.target.value)}
-                      placeholder="(406) 407-0281"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans font-mono"
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Storefront Support Email
-                    </label>
-                    <input
-                      type="email"
-                      value={settings.email || ''}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      placeholder="Stratford1955@icloud.com"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
-
-                  {/* Operating Hours (Full Width) */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Operating Hours & Depository Schedule
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.operating_hours || ''}
-                      onChange={(e) => handleChange('operating_hours', e.target.value)}
-                      placeholder="Online Storefront 24/7 | Vault By Appointment"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                    <span className="text-[11px] text-slate-500 mt-1 block">
-                      Displayed across website header, footer, and checkout depository scheduling modal.
-                    </span>
-                  </div>
+                  <FormInput
+                    label="City"
+                    value={currentHome.city}
+                    onChange={(val) => handleFieldChange('city', val)}
+                    placeholder="Bigfork"
+                  />
+                  <FormInput
+                    label="State"
+                    value={currentHome.state}
+                    onChange={(val) => handleFieldChange('state', val)}
+                    placeholder="MT"
+                  />
+                  <FormInput
+                    label="Postal / Zip Code"
+                    value={currentHome.zip}
+                    onChange={(val) => handleFieldChange('zip', val)}
+                    placeholder="59911"
+                  />
                 </div>
-              </div>
-            )}
 
-            {/* =============================================================== */}
-            {/* SECTION 2: SETTLEMENT & BUYER'S PREMIUM TERMS */}
-            {/* =============================================================== */}
-            {(activeTab === 'all' || activeTab === 'settlement') && (
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
-                <SectionHeader 
-                  icon={DollarSign}
-                  title="Settlement & Buyer's Premium Terms"
-                  description="Standard fee percentages calculated on precious metal and coin transactions, PayPal Me gateway, and bank wire routing."
-                  badge="Financial Governance"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Storefront Telephone (Formatted)"
+                    value={currentHome.phone_formatted}
+                    onChange={(val) => handleFieldChange('phone_formatted', val)}
+                    placeholder="(406) 407-0281"
+                    icon={Phone}
+                  />
+                  <FormInput
+                    label="Storefront Support Email"
+                    value={currentHome.email}
+                    onChange={(val) => handleFieldChange('email', val)}
+                    placeholder="Stratford1955@icloud.com"
+                    icon={Mail}
+                  />
+                </div>
+
+                <FormInput
+                  label="Operating Hours & Depository Schedule"
+                  value={currentHome.operating_hours}
+                  onChange={(val) => handleFieldChange('operating_hours', val)}
+                  placeholder="Online Storefront 24/7 | Vault By Appointment"
+                  icon={Clock}
                 />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Buyer's Premium Rate */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Buyer's Premium Rate (Decimal, e.g. 0.15 = 15%)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="0.5"
-                        value={settings.buyers_premium_percent ?? 0.15}
-                        onChange={(e) => handleChange('buyers_premium_percent', Number(e.target.value))}
-                        className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-mono"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#071A35] bg-slate-100 px-2 py-0.5 rounded">
-                        {Math.round((settings.buyers_premium_percent || 0.15) * 100)}%
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 mt-1.5 block">
-                      Calculation: $1,000 hammer price + {Math.round((settings.buyers_premium_percent || 0.15) * 100)}% premium = ${(1000 * (1 + (settings.buyers_premium_percent || 0.15))).toLocaleString()} invoice settlement.
-                    </span>
-                  </div>
-
-                  {/* PayPal Me URL */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      PayPal Me Storefront Payment URL
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={settings.paypal_url || ''}
-                        onChange={(e) => handleChange('paypal_url', e.target.value)}
-                        placeholder="https://paypal.me/HighlanderGoldSilver"
-                        className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-mono"
-                      />
-                      {settings.paypal_url && (
-                        <a
-                          href={settings.paypal_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#071A35] p-1 transition-colors"
-                          title="Open PayPal Link in New Tab"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-slate-500 mt-1.5 block">
-                      Target destination for client instantaneous deposit payments.
-                    </span>
-                  </div>
-
-                  {/* Bank Wire Instructions */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Bank Wire Instructions & Settlement Details
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={settings.bank_wire_instructions || ''}
-                      onChange={(e) => handleChange('bank_wire_instructions', e.target.value)}
-                      placeholder="Bigfork First National Bank | Account: Highlander Gold & Silver LLC | Routing: 092901234"
-                      className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-mono leading-relaxed"
-                    />
-                    <span className="text-[11px] text-slate-500 mt-1 block">
-                      Provided on invoice documents and wire settlement instructions for high-value numismatic lots.
-                    </span>
-                  </div>
-                </div>
               </div>
-            )}
 
-            {/* =============================================================== */}
-            {/* SECTION 3: THE HIGHLANDER DIFFERENCE & HIGHLIGHTS */}
-            {/* =============================================================== */}
-            {(activeTab === 'all' || activeTab === 'difference') && (
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
-                <SectionHeader 
-                  icon={Sparkles}
-                  title="The Highlander Difference & Highlights"
-                  description="Homepage storytelling model: section headline, narrative overview, and the 4 value highlight cards displayed to collectors."
-                  badge="Homepage Section"
+              {/* Settlement Terms */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Settlement & Buyer Terms
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Buyer's Premium Rate"
+                    type="number"
+                    step="0.01"
+                    value={currentHome.buyers_premium_percent}
+                    onChange={(val) => handleFieldChange('buyers_premium_percent', parseFloat(val) || 0)}
+                    placeholder="0.15"
+                    icon={DollarSign}
+                  />
+                  <FormInput
+                    label="PayPal / Direct Payment Portal URL"
+                    value={currentHome.paypal_url}
+                    onChange={(val) => handleFieldChange('paypal_url', val)}
+                    placeholder="https://paypal.me/HighlanderGoldSilver"
+                    icon={ExternalLink}
+                  />
+                </div>
+                <FormTextarea
+                  label="Bank Wire Settlement Instructions"
+                  rows={3}
+                  value={currentHome.bank_wire_instructions}
+                  onChange={(val) => handleFieldChange('bank_wire_instructions', val)}
+                  placeholder="Bank wire settlement instructions..."
                 />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Eyebrow */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Section Eyebrow Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.difference_eyebrow || ''}
-                      onChange={(e) => handleChange('difference_eyebrow', e.target.value)}
-                      placeholder="The Highlander Difference · Bigfork, Montana"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
-
-                  {/* Title */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Section Main Headline
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.difference_title || ''}
-                      onChange={(e) => handleChange('difference_title', e.target.value)}
-                      placeholder="A Dedicated Storefront for Numismatic Collectors"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
-
-                  {/* Overview Narrative */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Section Overview Narrative / Body Text
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={settings.difference_subtitle || ''}
-                      onChange={(e) => handleChange('difference_subtitle', e.target.value)}
-                      placeholder="We operate as a direct storefront rather than an auction house..."
-                      className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* The 4 Feature Cards */}
-                <div className="pt-4 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      The 4 Value Proposition Cards
-                    </h4>
-                    <span className="text-[11px] text-slate-400 font-medium">Standard 4-Column Grid</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Card 1: Direct Storefront Purchase */}
-                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <CreditCard className="w-4 h-4 text-[#C9A23A]" />
-                        <span>Card 1: Direct Purchase</span>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Title</label>
-                        <input
-                          type="text"
-                          value={settings.card1_title || ''}
-                          onChange={(e) => handleChange('card1_title', e.target.value)}
-                          placeholder="Direct Storefront Purchase"
-                          className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Description</label>
-                        <textarea
-                          rows="2"
-                          value={settings.card1_desc || ''}
-                          onChange={(e) => handleChange('card1_desc', e.target.value)}
-                          placeholder="Browse verified inventory and purchase immediately..."
-                          className="w-full p-2.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35] leading-relaxed"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Card 2: Sold Value Guarantee */}
-                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <ShieldCheck className="w-4 h-4 text-[#C9A23A]" />
-                        <span>Card 2: Value Guarantee</span>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Title</label>
-                        <input
-                          type="text"
-                          value={settings.card2_title || ''}
-                          onChange={(e) => handleChange('card2_title', e.target.value)}
-                          placeholder="Sold Value Guarantee"
-                          className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Description</label>
-                        <textarea
-                          rows="2"
-                          value={settings.card2_desc || ''}
-                          onChange={(e) => handleChange('card2_desc', e.target.value)}
-                          placeholder="Every piece is evaluated for true luster..."
-                          className="w-full p-2.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35] leading-relaxed"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Card 3: In-House Insured Delivery */}
-                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <Package className="w-4 h-4 text-[#C9A23A]" />
-                        <span>Card 3: Insured Delivery</span>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Title</label>
-                        <input
-                          type="text"
-                          value={settings.card3_title || ''}
-                          onChange={(e) => handleChange('card3_title', e.target.value)}
-                          placeholder="In-House Insured Delivery"
-                          className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Description</label>
-                        <textarea
-                          rows="2"
-                          value={settings.card3_desc || ''}
-                          onChange={(e) => handleChange('card3_desc', e.target.value)}
-                          placeholder="All packaging is performed in-house from Jewel Basin Armory..."
-                          className="w-full p-2.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35] leading-relaxed"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Card 4: 0% Montana Sales Tax */}
-                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <Check className="w-4 h-4 text-[#C9A23A]" />
-                        <span>Card 4: Montana Sales Tax</span>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Title</label>
-                        <input
-                          type="text"
-                          value={settings.card4_title || ''}
-                          onChange={(e) => handleChange('card4_title', e.target.value)}
-                          placeholder="0% Montana Sales Tax"
-                          className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">Card Description</label>
-                        <textarea
-                          rows="2"
-                          value={settings.card4_desc || ''}
-                          onChange={(e) => handleChange('card4_desc', e.target.value)}
-                          placeholder="Take advantage of Montana's 0% state sales tax on precious metals..."
-                          className="w-full p-2.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35] leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Visual Preview */}
-                <LivePreviewFrame route="/#difference" label="Difference Live Section">
-                  <div className="text-center max-w-2xl mx-auto space-y-2 mb-6">
-                    <p className="text-[11px] uppercase tracking-widest text-[#C9A23A] font-bold">
-                      — {settings.difference_eyebrow || 'THE HIGHLANDER DIFFERENCE'} —
-                    </p>
-                    <h3 className="text-lg sm:text-xl font-serif font-bold text-[#071A35] tracking-tight">
-                      {settings.difference_title || 'A Dedicated Storefront for Numismatic Collectors'}
-                    </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                      {settings.difference_subtitle}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs text-center space-y-1.5 flex flex-col justify-between">
-                      <div>
-                        <CreditCard className="w-5 h-5 mx-auto text-[#071A35] mb-2" />
-                        <p className="text-xs font-bold font-serif text-[#071A35] uppercase tracking-wide">
-                          {settings.card1_title || 'Direct Purchase'}
-                        </p>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-normal line-clamp-3">
-                        {settings.card1_desc}
-                      </p>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs text-center space-y-1.5 flex flex-col justify-between">
-                      <div>
-                        <ShieldCheck className="w-5 h-5 mx-auto text-[#071A35] mb-2" />
-                        <p className="text-xs font-bold font-serif text-[#071A35] uppercase tracking-wide">
-                          {settings.card2_title || 'Value Guarantee'}
-                        </p>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-normal line-clamp-3">
-                        {settings.card2_desc}
-                      </p>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs text-center space-y-1.5 flex flex-col justify-between">
-                      <div>
-                        <Package className="w-5 h-5 mx-auto text-[#071A35] mb-2" />
-                        <p className="text-xs font-bold font-serif text-[#071A35] uppercase tracking-wide">
-                          {settings.card3_title || 'Insured Delivery'}
-                        </p>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-normal line-clamp-3">
-                        {settings.card3_desc}
-                      </p>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs text-center space-y-1.5 flex flex-col justify-between">
-                      <div>
-                        <Check className="w-5 h-5 mx-auto text-[#071A35] mb-2" />
-                        <p className="text-xs font-bold font-serif text-[#071A35] uppercase tracking-wide">
-                          {settings.card4_title || 'Montana Sales Tax'}
-                        </p>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-normal line-clamp-3">
-                        {settings.card4_desc}
-                      </p>
-                    </div>
-                  </div>
-                </LivePreviewFrame>
               </div>
-            )}
 
-            {/* =============================================================== */}
-            {/* SECTION 4: SOLD VALUE GUARANTEE */}
-            {/* =============================================================== */}
-            {(activeTab === 'all' || activeTab === 'guarantee') && (
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
-                <SectionHeader 
-                  icon={ShieldCheck}
-                  title="The Highlander Sold Value Guarantee"
-                  description="Authenticity promise, market value difference refund commitment, numismatic curation criteria, and 4 trust badges."
-                  badge="Trust & Guarantee"
+              {/* Homepage Storytelling */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Difference Highlights & Storytelling
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Section Eyebrow"
+                    value={currentHome.difference_eyebrow}
+                    onChange={(val) => handleFieldChange('difference_eyebrow', val)}
+                  />
+                  <FormInput
+                    label="Main Headline"
+                    value={currentHome.difference_title}
+                    onChange={(val) => handleFieldChange('difference_title', val)}
+                  />
+                  <FormInput
+                    label="Highlight 1"
+                    value={currentHome.card1_title}
+                    onChange={(val) => handleFieldChange('card1_title', val)}
+                  />
+                  <FormInput
+                    label="Highlight 2"
+                    value={currentHome.card2_title}
+                    onChange={(val) => handleFieldChange('card2_title', val)}
+                  />
+                  <FormInput
+                    label="Highlight 3"
+                    value={currentHome.card3_title}
+                    onChange={(val) => handleFieldChange('card3_title', val)}
+                  />
+                  <FormInput
+                    label="Highlight 4"
+                    value={currentHome.card4_title}
+                    onChange={(val) => handleFieldChange('card4_title', val)}
+                  />
+                </div>
+              </div>
+
+              {/* Guarantee & Depository */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Sold Value Guarantee & Depository Heritage
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Guarantee Title"
+                    value={currentHome.guarantee_title}
+                    onChange={(val) => handleFieldChange('guarantee_title', val)}
+                  />
+                  <FormInput
+                    label="Guarantee Badge"
+                    value={currentHome.guarantee_badge}
+                    onChange={(val) => handleFieldChange('guarantee_badge', val)}
+                  />
+                  <FormInput
+                    label="Heritage Headline"
+                    value={currentHome.heritage_title}
+                    onChange={(val) => handleFieldChange('heritage_title', val)}
+                  />
+                  <FormInput
+                    label="Primary Button Label"
+                    value={currentHome.heritage_btn_primary}
+                    onChange={(val) => handleFieldChange('heritage_btn_primary', val)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* SECTION 2: ABOUT PAGE */}
+          {/* =============================================================== */}
+          {activeTab === 'about' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8 animate-in fade-in duration-200">
+              <SectionHeader
+                icon={Award}
+                title="About Page Settings"
+                description="Manage the company heritage narrative, historical background descriptions, the 3 numismatic excellence pillars, and the hand-selected inspection photograph."
+                badge="About"
+              />
+
+              {/* Inspection Photo Upload */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Hand-Selected Inspection Photograph
+                </h4>
+                <SettingsImageUploadCard
+                  label="Inspection & Heritage Photograph"
+                  description="High-resolution numismatic inspection photograph displayed on the about page narrative."
+                  recommended="3:2 • 1200 × 800 px • Max 15MB"
+                  value={currentAbout.hero_image}
+                  onChange={(url) => handleFieldChange('hero_image', url)}
+                  aspectClass="h-52 sm:h-64"
                 />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Badge Text */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Badge / Eyebrow Text
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.guarantee_badge || ''}
-                      onChange={(e) => handleChange('guarantee_badge', e.target.value)}
-                      placeholder="Authentic Value & Authenticity Promise"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
-
-                  {/* Section Title */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Guarantee Section Title
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.guarantee_title || ''}
-                      onChange={(e) => handleChange('guarantee_title', e.target.value)}
-                      placeholder="The Highlander Sold Value Guarantee"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
-                    />
-                  </div>
-
-                  {/* Numismatic Standard Narrative */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Numismatic Standard & Curation Narrative
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={settings.guarantee_desc || ''}
-                      onChange={(e) => handleChange('guarantee_desc', e.target.value)}
-                      placeholder="Highlander Gold & Silver hand-selects coins and precious metals for superior eye appeal..."
-                      className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Direct Promise Text */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Direct Promise Text (Refund & Market Value Integrity)
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={settings.guarantee_promise_text || ''}
-                      onChange={(e) => handleChange('guarantee_promise_text', e.target.value)}
-                      placeholder="If at any time a customer proves that a piece they purchased was overpriced based on its current market state..."
-                      className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* 4 Trust Badges */}
-                <div className="pt-4 border-t border-slate-100 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    The 4 Authenticity Trust Badges
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Badge 1</label>
-                      <input
-                        type="text"
-                        value={settings.guarantee_badge_1 || ''}
-                        onChange={(e) => handleChange('guarantee_badge_1', e.target.value)}
-                        placeholder="Verified Guarantee"
-                        className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Badge 2</label>
-                      <input
-                        type="text"
-                        value={settings.guarantee_badge_2 || ''}
-                        onChange={(e) => handleChange('guarantee_badge_2', e.target.value)}
-                        placeholder="Hand-Selected Eye Appeal"
-                        className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Badge 3</label>
-                      <input
-                        type="text"
-                        value={settings.guarantee_badge_3 || ''}
-                        onChange={(e) => handleChange('guarantee_badge_3', e.target.value)}
-                        placeholder="Difference Refund Protection"
-                        className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Badge 4</label>
-                      <input
-                        type="text"
-                        value={settings.guarantee_badge_4 || ''}
-                        onChange={(e) => handleChange('guarantee_badge_4', e.target.value)}
-                        placeholder="0% Montana State Sales Tax"
-                        className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-[#071A35]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Visual Preview */}
-                <LivePreviewFrame route="/#guarantee" label="Guarantee Certificate Preview">
-                  <div className="bg-white rounded-2xl border-l-4 border-l-[#C9A23A] border-y border-r border-slate-200/90 p-6 sm:p-7 shadow-xs space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8F7220]">
-                      <ShieldCheck className="w-4 h-4 text-[#C9A23A]" />
-                      <span>{settings.guarantee_badge || 'AUTHENTIC VALUE & AUTHENTICITY PROMISE'}</span>
-                    </div>
-
-                    <h3 className="text-lg font-serif font-bold text-[#071A35]">
-                      {settings.guarantee_title || 'THE HIGHLANDER SOLD VALUE GUARANTEE'}
-                    </h3>
-
-                    <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                      {settings.guarantee_desc}
-                    </p>
-
-                    <div className="bg-[#FAF6EC] border border-[#E9DCB8] rounded-xl p-4 text-xs text-slate-700 leading-relaxed">
-                      <strong className="text-slate-900 font-bold block mb-1">Our Direct Promise:</strong>
-                      {settings.guarantee_promise_text}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {[
-                        settings.guarantee_badge_1, 
-                        settings.guarantee_badge_2, 
-                        settings.guarantee_badge_3, 
-                        settings.guarantee_badge_4
-                      ].filter(Boolean).map((badge, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8F7220] bg-[#FAF3E0] px-3 py-1 rounded-md border border-[#E9DCB8]">
-                          <Check className="w-3 h-3 text-[#C9A23A]" />
-                          {badge}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </LivePreviewFrame>
               </div>
-            )}
 
-            {/* =============================================================== */}
-            {/* SECTION 5: HERITAGE & PHYSICAL DEPOSITORY */}
-            {/* =============================================================== */}
-            {(activeTab === 'all' || activeTab === 'heritage') && (
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
-                <SectionHeader 
-                  icon={Compass}
-                  title="Heritage & Physical Depository"
-                  description="Bigfork, Montana physical location callout banner, heritage narrative, and primary/secondary storefront call-to-actions."
-                  badge="Depository Banner"
+              {/* Company Heritage Story */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Company Heritage Narrative
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Main Heritage Headline"
+                    value={currentAbout.heritage_title}
+                    onChange={(val) => handleFieldChange('heritage_title', val)}
+                  />
+                  <FormInput
+                    label="Heritage Location / Subtitle"
+                    value={currentAbout.heritage_desc}
+                    onChange={(val) => handleFieldChange('heritage_desc', val)}
+                  />
+                  <div className="sm:col-span-2">
+                    <FormInput
+                      label="Narrative Headline"
+                      value={currentAbout.difference_title}
+                      onChange={(val) => handleFieldChange('difference_title', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Historical Background Description"
+                      rows={3}
+                      value={currentAbout.difference_subtitle}
+                      onChange={(val) => handleFieldChange('difference_subtitle', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Storefront Problem Statement & Founding Model"
+                      rows={4}
+                      value={currentAbout.operating_hours}
+                      onChange={(val) => handleFieldChange('operating_hours', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Storefront Inspection & Operational Description"
+                      rows={5}
+                      value={currentAbout.bank_wire_instructions}
+                      onChange={(val) => handleFieldChange('bank_wire_instructions', val)}
+                    />
+                  </div>
+                  <FormInput
+                    label="Explore Inventory Button Label"
+                    value={currentAbout.heritage_btn_primary}
+                    onChange={(val) => handleFieldChange('heritage_btn_primary', val)}
+                  />
+                  <FormInput
+                    label="Contact Button Label"
+                    value={currentAbout.heritage_btn_secondary}
+                    onChange={(val) => handleFieldChange('heritage_btn_secondary', val)}
+                  />
+                </div>
+              </div>
+
+              {/* Three Pillars of Numismatic Excellence */}
+              <div className="space-y-6 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  The Three Core Standards of Numismatic Excellence
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Standards Section Title"
+                    value={currentAbout.card4_title}
+                    onChange={(val) => handleFieldChange('card4_title', val)}
+                  />
+                  <FormInput
+                    label="Standards Section Subtitle"
+                    value={currentAbout.card4_desc}
+                    onChange={(val) => handleFieldChange('card4_desc', val)}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  {/* Pillar 1 */}
+                  <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
+                    <span className="text-xs font-bold text-[#071A35]">Standard 1: Hand-Selected Eye Appeal</span>
+                    <FormInput
+                      label="Standard Title"
+                      value={currentAbout.card1_title}
+                      onChange={(val) => handleFieldChange('card1_title', val)}
+                    />
+                    <FormTextarea
+                      label="Standard Description"
+                      rows={3}
+                      value={currentAbout.card1_desc}
+                      onChange={(val) => handleFieldChange('card1_desc', val)}
+                    />
+                  </div>
+
+                  {/* Pillar 2 */}
+                  <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
+                    <span className="text-xs font-bold text-[#071A35]">Standard 2: Certified Grading & Authenticity</span>
+                    <FormInput
+                      label="Standard Title"
+                      value={currentAbout.card2_title}
+                      onChange={(val) => handleFieldChange('card2_title', val)}
+                    />
+                    <FormTextarea
+                      label="Standard Description"
+                      rows={3}
+                      value={currentAbout.card2_desc}
+                      onChange={(val) => handleFieldChange('card2_desc', val)}
+                    />
+                  </div>
+
+                  {/* Pillar 3 */}
+                  <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-3">
+                    <span className="text-xs font-bold text-[#071A35]">Standard 3: Precious Metal Integrity</span>
+                    <FormInput
+                      label="Standard Title"
+                      value={currentAbout.card3_title}
+                      onChange={(val) => handleFieldChange('card3_title', val)}
+                    />
+                    <FormTextarea
+                      label="Standard Description"
+                      rows={3}
+                      value={currentAbout.card3_desc}
+                      onChange={(val) => handleFieldChange('card3_desc', val)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Market Value Guarantee & Terms */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Full Market Value Guarantee & Quality Badges
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Guarantee Badge"
+                    value={currentAbout.guarantee_badge}
+                    onChange={(val) => handleFieldChange('guarantee_badge', val)}
+                  />
+                  <FormInput
+                    label="Guarantee Headline"
+                    value={currentAbout.guarantee_title}
+                    onChange={(val) => handleFieldChange('guarantee_title', val)}
+                  />
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Fair Market Value Protection Promise"
+                      rows={3}
+                      value={currentAbout.guarantee_desc}
+                      onChange={(val) => handleFieldChange('guarantee_desc', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="In-House Insured Packaging Promise"
+                      rows={3}
+                      value={currentAbout.guarantee_promise_prefix}
+                      onChange={(val) => handleFieldChange('guarantee_promise_prefix', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Montana 0% Sales Tax Advantage"
+                      rows={3}
+                      value={currentAbout.guarantee_promise_text}
+                      onChange={(val) => handleFieldChange('guarantee_promise_text', val)}
+                    />
+                  </div>
+                  <FormInput
+                    label="Pillar Badge 1"
+                    value={currentAbout.guarantee_badge_1}
+                    onChange={(val) => handleFieldChange('guarantee_badge_1', val)}
+                  />
+                  <FormInput
+                    label="Pillar Badge 2"
+                    value={currentAbout.guarantee_badge_2}
+                    onChange={(val) => handleFieldChange('guarantee_badge_2', val)}
+                  />
+                  <FormInput
+                    label="Pillar Badge 3"
+                    value={currentAbout.guarantee_badge_3}
+                    onChange={(val) => handleFieldChange('guarantee_badge_3', val)}
+                  />
+                  <FormInput
+                    label="Summary Trust Line"
+                    value={currentAbout.guarantee_badge_4}
+                    onChange={(val) => handleFieldChange('guarantee_badge_4', val)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* SECTION 3: COLLECTION PAGE */}
+          {/* =============================================================== */}
+          {activeTab === 'collection' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8 animate-in fade-in duration-200">
+              <SectionHeader
+                icon={Layers}
+                title="Collection Page Settings"
+                description="Manage main titles, introductory descriptions, quality guarantee statements, promotional badges, and the featured precious metals showcase image."
+                badge="Collection"
+              />
+
+              {/* Featured Showcase Artwork */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Featured Precious Metals Showcase Artwork
+                </h4>
+                <SettingsImageUploadCard
+                  label="Showcase Artwork"
+                  description="Curated precious metals showcase image featured on the collection page banner."
+                  recommended="3:2 • 1200 × 800 px • Max 15MB"
+                  value={currentCollection.hero_image}
+                  onChange={(url) => handleFieldChange('hero_image', url)}
+                  aspectClass="h-52 sm:h-64"
                 />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Headline */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Banner Headline
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.heritage_title || ''}
-                      onChange={(e) => handleChange('heritage_title', e.target.value)}
-                      placeholder="Rooted in Flathead Valley Numismatic Tradition"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
+              {/* Collection Showcase Presentation */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Collection Presentation Titles & Descriptions
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Collection Main Title"
+                    value={currentCollection.difference_title}
+                    onChange={(val) => handleFieldChange('difference_title', val)}
+                  />
+                  <FormInput
+                    label="Vault Certification Header"
+                    value={currentCollection.heritage_title}
+                    onChange={(val) => handleFieldChange('heritage_title', val)}
+                  />
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Introductory Description"
+                      rows={3}
+                      value={currentCollection.difference_subtitle}
+                      onChange={(val) => handleFieldChange('difference_subtitle', val)}
                     />
                   </div>
+                  <FormInput
+                    label="Depository Location Tag"
+                    value={currentCollection.heritage_desc}
+                    onChange={(val) => handleFieldChange('heritage_desc', val)}
+                  />
+                </div>
+              </div>
 
-                  {/* Narrative */}
-                  <div className="col-span-full">
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Depository & Physical Location Narrative
-                    </label>
-                    <textarea
-                      rows="3"
-                      value={settings.heritage_desc || ''}
-                      onChange={(e) => handleChange('heritage_desc', e.target.value)}
-                      placeholder="Operating from our physical location at 119 Jewel Basin Ct. B3 in Bigfork, Montana..."
-                      className="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans leading-relaxed"
+              {/* Guarantees & Badges */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Quality Guarantee Statement & Promotional Badges
+                </h4>
+                <div className="space-y-4">
+                  <FormInput
+                    label="Guarantee Headline"
+                    value={currentCollection.guarantee_title}
+                    onChange={(val) => handleFieldChange('guarantee_title', val)}
+                  />
+                  <FormTextarea
+                    label="Quality Guarantee Statement"
+                    rows={3}
+                    value={currentCollection.guarantee_desc}
+                    onChange={(val) => handleFieldChange('guarantee_desc', val)}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <FormInput
+                      label="Promotional Badge 1"
+                      value={currentCollection.card1_title}
+                      onChange={(val) => handleFieldChange('card1_title', val)}
                     />
-                  </div>
-
-                  {/* Primary CTA */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Primary Button Label
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.heritage_btn_primary || ''}
-                      onChange={(e) => handleChange('heritage_btn_primary', e.target.value)}
-                      placeholder="Learn About Our Storefront"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
+                    <FormInput
+                      label="Promotional Badge 2"
+                      value={currentCollection.card2_title}
+                      onChange={(val) => handleFieldChange('card2_title', val)}
                     />
-                  </div>
-
-                  {/* Secondary CTA */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 tracking-wide mb-1.5">
-                      Secondary Button Label
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.heritage_btn_secondary || ''}
-                      onChange={(e) => handleChange('heritage_btn_secondary', e.target.value)}
-                      placeholder="Contact Our Team"
-                      className="w-full h-10 px-3.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#071A35] focus:ring-2 focus:ring-[#071A35]/10 transition-all font-sans"
+                    <FormInput
+                      label="Promotional Badge 3"
+                      value={currentCollection.card3_title}
+                      onChange={(val) => handleFieldChange('card3_title', val)}
                     />
                   </div>
                 </div>
-
-                {/* Live Visual Preview */}
-                <LivePreviewFrame route="/#heritage" label="Depository Callout Banner">
-                  <div className="bg-white rounded-2xl border border-slate-200/90 p-7 sm:p-8 shadow-xs space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8F7220]">
-                      <MapPin className="w-4 h-4 text-[#C9A23A]" />
-                      <span>Flathead Valley Physical Depository</span>
-                    </div>
-
-                    <h3 className="text-lg sm:text-xl font-serif font-bold text-[#071A35] tracking-wide uppercase">
-                      {settings.heritage_title || 'ROOTED IN FLATHEAD VALLEY NUMISMATIC TRADITION'}
-                    </h3>
-
-                    <p className="text-xs text-slate-600 leading-relaxed max-w-3xl font-sans">
-                      {settings.heritage_desc}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-3 pt-3">
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#C9A23A] hover:bg-[#b8912e] text-slate-950 shadow-xs transition-colors cursor-pointer"
-                      >
-                        <span>{settings.heritage_btn_primary || 'Learn About Our Storefront'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-slate-200 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-                      >
-                        {settings.heritage_btn_secondary || 'Contact Our Team'}
-                      </button>
-                    </div>
-                  </div>
-                </LivePreviewFrame>
               </div>
-            )}
-          </form>
+            </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* SECTION 4: CONTACT PAGE */}
+          {/* =============================================================== */}
+          {activeTab === 'contact' && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8 animate-in fade-in duration-200">
+              <SectionHeader
+                icon={Phone}
+                title="Contact Page Settings"
+                description="Manage inquiry headlines, private viewing consultation artwork, Montana showroom address, consultation hotline, state tax advantage, and insured packaging standards."
+                badge="Contact"
+              />
+
+              {/* Consultation Artwork */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Private Viewing Consultation Artwork
+                </h4>
+                <SettingsImageUploadCard
+                  label="Consultation Artwork"
+                  description="Served through cloud storage to ensure fast, pristine viewing on the inquiry screen."
+                  recommended="3:2 • 1200 × 800 px • Max 15MB"
+                  value={currentContact.hero_image}
+                  onChange={(url) => handleFieldChange('hero_image', url)}
+                  aspectClass="h-52 sm:h-64"
+                />
+              </div>
+
+              {/* Inquiry Overview */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Inquiry Headline & Overview Narrative
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <FormInput
+                      label="Inquiry Headline"
+                      value={currentContact.difference_title}
+                      onChange={(val) => handleFieldChange('difference_title', val)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormTextarea
+                      label="Overview Narrative"
+                      rows={3}
+                      value={currentContact.difference_subtitle}
+                      onChange={(val) => handleFieldChange('difference_subtitle', val)}
+                    />
+                  </div>
+                  <FormInput
+                    label="Consultation Badge Title"
+                    value={currentContact.heritage_title}
+                    onChange={(val) => handleFieldChange('heritage_title', val)}
+                  />
+                  <FormInput
+                    label="Consultation Badge Subtitle"
+                    value={currentContact.heritage_desc}
+                    onChange={(val) => handleFieldChange('heritage_desc', val)}
+                  />
+                  <FormInput
+                    label="Quick Contact 1 (Phone Strip)"
+                    value={currentContact.guarantee_badge_1}
+                    onChange={(val) => handleFieldChange('guarantee_badge_1', val)}
+                  />
+                  <FormInput
+                    label="Quick Contact 2 (Location Strip)"
+                    value={currentContact.guarantee_badge_2}
+                    onChange={(val) => handleFieldChange('guarantee_badge_2', val)}
+                  />
+                  <div className="sm:col-span-2">
+                    <FormInput
+                      label="Quick Contact 3 (Settlement Portal)"
+                      value={currentContact.guarantee_badge_3}
+                      onChange={(val) => handleFieldChange('guarantee_badge_3', val)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Storefront Specifications Summary Card */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Storefront Specifications Card (Storefront at a Glance)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Card Title"
+                    value={currentContact.tagline}
+                    onChange={(val) => handleFieldChange('tagline', val)}
+                  />
+                  <FormInput
+                    label="Header Badge"
+                    value={currentContact.guarantee_badge}
+                    onChange={(val) => handleFieldChange('guarantee_badge', val)}
+                  />
+                  <div className="sm:col-span-2">
+                    <FormInput
+                      label="Specifications Subtitle"
+                      value={currentContact.operating_hours}
+                      onChange={(val) => handleFieldChange('operating_hours', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-[#071A35]">Specification 1: Montana Showroom Address</span>
+                    <FormInput
+                      label="Address Line"
+                      value={currentContact.card1_title}
+                      onChange={(val) => handleFieldChange('card1_title', val)}
+                    />
+                    <FormInput
+                      label="Facility Detail"
+                      value={currentContact.card1_desc}
+                      onChange={(val) => handleFieldChange('card1_desc', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-[#071A35]">Specification 2: Consultation Direct Line & Schedule</span>
+                    <FormInput
+                      label="Telephone Line"
+                      value={currentContact.card2_title}
+                      onChange={(val) => handleFieldChange('card2_title', val)}
+                    />
+                    <FormInput
+                      label="Schedule Hours"
+                      value={currentContact.card2_desc}
+                      onChange={(val) => handleFieldChange('card2_desc', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-[#071A35]">Specification 3: State Tax Advantages</span>
+                    <FormInput
+                      label="Tax Rate Advantage"
+                      value={currentContact.card3_title}
+                      onChange={(val) => handleFieldChange('card3_title', val)}
+                    />
+                    <FormInput
+                      label="Exemption Detail"
+                      value={currentContact.card3_desc}
+                      onChange={(val) => handleFieldChange('card3_desc', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-[#071A35]">Specification 4: Payment Terms & Settlement</span>
+                    <FormInput
+                      label="Payment Terms"
+                      value={currentContact.card4_title}
+                      onChange={(val) => handleFieldChange('card4_title', val)}
+                    />
+                    <FormInput
+                      label="Settlement Protection Detail"
+                      value={currentContact.card4_desc}
+                      onChange={(val) => handleFieldChange('card4_desc', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl space-y-2">
+                    <span className="text-xs font-bold text-[#071A35]">Specification 5: Insured Priority Packaging Standards</span>
+                    <FormInput
+                      label="Packaging Guarantee"
+                      value={currentContact.guarantee_title}
+                      onChange={(val) => handleFieldChange('guarantee_title', val)}
+                    />
+                    <FormInput
+                      label="Tracking & Signature Detail"
+                      value={currentContact.guarantee_desc}
+                      onChange={(val) => handleFieldChange('guarantee_desc', val)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <FormInput
+                      label="Card Security Footer Badge"
+                      value={currentContact.guarantee_promise_text}
+                      onChange={(val) => handleFieldChange('guarantee_promise_text', val)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
-
-      {/* ===================================================================== */}
-      {/* STICKY BOTTOM FLOATING SAVE BAR (WHEN UNSAVED CHANGES EXIST) */}
-      {/* ===================================================================== */}
-      {hasUnsavedChanges && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-2xl bg-[#071A35] text-white rounded-2xl shadow-elevated border border-white/10 p-3 sm:p-4 flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
-          <div className="flex items-center gap-3 pl-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-bold leading-tight">
-                Unsaved Changes Detected
-              </p>
-              <p className="text-[11px] text-slate-300 hidden sm:block">
-                Your modifications have not been committed to the live database.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDiscard}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-            >
-              Discard
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-bold font-sans uppercase tracking-wider text-slate-950 bg-[#C9A23A] hover:bg-[#b8912e] rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isSaving ? (
-                <span className="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
-              ) : (
-                <Check className="w-3.5 h-3.5 text-slate-950" />
-              )}
-              Save Now
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

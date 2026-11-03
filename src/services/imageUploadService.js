@@ -100,3 +100,12 @@ export const uploadMultipleInventoryImages = async (files, prefix = 'items') => 
   return Promise.all(uploadPromises);
 };
 
+/**
+ * Uploads a settings or brand image to the 'settings' directory in Supabase storage
+ * and returns the permanent public HTTPS link.
+ */
+export const uploadSettingsImage = async (file) => {
+  return uploadInventoryImage(file, 'settings');
+};
+
+

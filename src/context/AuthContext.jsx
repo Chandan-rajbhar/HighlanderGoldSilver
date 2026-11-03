@@ -12,14 +12,18 @@ export const AuthProvider = ({ children }) => {
   // Session and user state (instantly restore from localStorage with cached avatar to eliminate refresh wipeout)
   const [adminUser, setAdminUser] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (stored) {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || 'null');
+      if (stored && stored.is_admin && (stored.account_status === 'Active' || stored.status === 'Active')) {
         const cached = getCachedAvatar(stored.id, stored.email);
         return {
           ...stored,
           avatar_url: stored.avatar_url || cached || ''
         };
       }
+    } catch (_) {}
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch (_) {}
     return null;
   });
@@ -247,6 +251,17 @@ export const AuthProvider = ({ children }) => {
           .limit(1);
         adminRecord = adminData?.[0];
 
+        // Ensure auth_user_id is linked to admin record if it was unlinked
+        if (adminRecord && (!adminRecord.auth_user_id || adminRecord.auth_user_id !== authUser.id)) {
+          try {
+            await supabase
+              .from('admin_users')
+              .update({ auth_user_id: authUser.id })
+              .eq('id', adminRecord.id);
+            adminRecord.auth_user_id = authUser.id;
+          } catch (_) {}
+        }
+
         // 2. If not admin, check customer profile
         if (!adminRecord) {
           const { data: custData } = await supabase
@@ -284,7 +299,8 @@ export const AuthProvider = ({ children }) => {
         badge: adminRecord.role || 'Super Admin',
         avatar_url: avatar,
         is_admin: true,
-        account_status: adminRecord.status || 'Active'
+        account_status: adminRecord.status || 'Active',
+        status: adminRecord.status || 'Active'
       };
     }
 
@@ -315,7 +331,8 @@ export const AuthProvider = ({ children }) => {
       avatar_url: custAvatar,
       interest: customerRecord?.interest || meta.interest || 'Precious Metals',
       is_admin: false,
-      account_status: customerRecord?.account_status || 'Active'
+      account_status: customerRecord?.account_status || 'Active',
+      status: customerRecord?.account_status || 'Active'
     };
   };
 
@@ -340,14 +357,24 @@ export const AuthProvider = ({ children }) => {
         if (existingSession?.user && isMounted) {
           const profile = await buildUserProfile(existingSession.user);
           if (isMounted) {
-            setSession(existingSession);
-            setAdminUser(profile);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+            if (profile && profile.is_admin && (profile.account_status === 'Active' || profile.status === 'Active')) {
+              setSession(existingSession);
+              setAdminUser(profile);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+            } else {
+              // Unauthorized user (customer or non-admin): clear admin session
+              await supabase.auth.signOut().catch(() => {});
+              setSession(null);
+              setAdminUser(null);
+              localStorage.removeItem(STORAGE_KEY);
+              sessionStorage.removeItem(STORAGE_KEY);
+            }
           }
         } else if (isMounted) {
           setAdminUser(null);
           setSession(null);
           localStorage.removeItem(STORAGE_KEY);
+          sessionStorage.removeItem(STORAGE_KEY);
         }
       } catch (err) {
         console.warn('Error verifying Supabase auth session:', err);
@@ -372,10 +399,20 @@ export const AuthProvider = ({ children }) => {
           if (newSession?.user && isMounted) {
             const profile = await buildUserProfile(newSession.user);
             if (isMounted) {
-              setSession(newSession);
-              setAdminUser(profile);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-              setIsLoadingAuth(false);
+              if (profile && profile.is_admin && (profile.account_status === 'Active' || profile.status === 'Active')) {
+                setSession(newSession);
+                setAdminUser(profile);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+                setIsLoadingAuth(false);
+              } else {
+                // Customer or unauthorized role: clear admin session
+                await supabase.auth.signOut().catch(() => {});
+                setSession(null);
+                setAdminUser(null);
+                localStorage.removeItem(STORAGE_KEY);
+                sessionStorage.removeItem(STORAGE_KEY);
+                setIsLoadingAuth(false);
+              }
             }
           }
         } else if (event === 'SIGNED_OUT') {
@@ -450,6 +487,35 @@ export const AuthProvider = ({ children }) => {
       }
 
       const profile = await buildUserProfile(data.user);
+
+      // Strict Role-Based Access Control (RBAC):
+      // Only authorized administrators from `admin_users` table can access the admin dashboard.
+      if (!profile || !profile.is_admin) {
+        await supabase.auth.signOut().catch(() => {});
+        setSession(null);
+        setAdminUser(null);
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        return {
+          success: false,
+          error: 'Access denied. Administrative privileges are required to access the dashboard. Customer accounts cannot log in to the admin panel.'
+        };
+      }
+
+      // Check account status
+      const accountStatus = (profile.account_status || profile.status || 'Active').toLowerCase();
+      if (accountStatus !== 'active') {
+        await supabase.auth.signOut().catch(() => {});
+        setSession(null);
+        setAdminUser(null);
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        return {
+          success: false,
+          error: `Administrator account is currently ${profile.account_status || 'inactive'}. Please contact system administration.`
+        };
+      }
+
       setSession(data.session);
       setAdminUser(profile);
 
@@ -614,9 +680,11 @@ export const AuthProvider = ({ children }) => {
 
       if (hasSession && authUser) {
         profile = await buildUserProfile(authUser);
-        setSession(authData.session);
-        setAdminUser(profile);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+        if (profile && profile.is_admin) {
+          setSession(authData.session);
+          setAdminUser(profile);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+        }
       }
 
       return {
@@ -635,13 +703,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isAuthActiveAdmin = Boolean(
+    adminUser &&
+    adminUser.is_admin &&
+    (adminUser.account_status === 'Active' || adminUser.status === 'Active')
+  );
+
   return (
     <AuthContext.Provider
       value={{
         adminUser,
         session,
         setAdminUser,
-        isAuthenticated: Boolean(adminUser),
+        isAuthenticated: isAuthActiveAdmin,
+        isAdmin: isAuthActiveAdmin,
         isLoadingAuth,
         login,
         signup,

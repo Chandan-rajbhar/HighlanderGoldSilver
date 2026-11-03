@@ -25,11 +25,11 @@ import { NotFound } from './pages/NotFound';
 
 // Protected route guard for console administration
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { isAuthenticated, adminUser, isLoadingAuth } = useAuth();
   if (isLoadingAuth) {
     return <LoadingScreen fullScreen={true} message="Authenticating session..." />;
   }
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !adminUser?.is_admin || (adminUser?.account_status !== 'Active' && adminUser?.status !== 'Active')) {
     return <Navigate to="/login" replace />;
   }
   return children;

@@ -31,7 +31,7 @@ export const HomePage: React.FC = () => {
   return (
     <main>
       {/* 1. Preserved Homepage Hero Section */}
-      <HeroSection />
+      <HeroSection heroLogo={settings.hero_logo} heroBackground={settings.hero_background} />
 
       {/* 2. Featured Precious Metals Horizontal Carousel */}
       <section className="section section-body" id="featured-collection">

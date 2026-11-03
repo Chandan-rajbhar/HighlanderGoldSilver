@@ -2,14 +2,21 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Icons } from '../../utils/icons';
 
-export const HeroSection: React.FC = () => {
+interface HeroSectionProps {
+  heroLogo?: string;
+  heroBackground?: string;
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = ({ heroLogo, heroBackground }) => {
+  const bgStyle = heroBackground ? { backgroundImage: `url('${heroBackground}')` } : undefined;
+
   return (
-    <section className="hero-section" id="hero">
+    <section className="hero-section" id="hero" style={bgStyle}>
       <div className="container hero-container">
         {/* Enlarged Original Logo with Pop-Up Animation */}
         <div className="hero-logo-showcase">
           <img
-            src="/assets/brand/highlander_logo_original.png"
+            src={heroLogo || "/assets/brand/highlander_logo_original.png"}
             alt="Highlander Gold & Silver"
             className="hero-enlarged-logo"
             width={1024}
@@ -32,3 +39,5 @@ export const HeroSection: React.FC = () => {
     </section>
   );
 };
+
+export default HeroSection;
