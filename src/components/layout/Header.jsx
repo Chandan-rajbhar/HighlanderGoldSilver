@@ -6,7 +6,6 @@ import {
   ChevronDown, 
   LogOut, 
   ShieldCheck, 
-  ExternalLink,
   CheckCheck,
   Building
 } from 'lucide-react';
@@ -192,15 +191,6 @@ export const Header = ({ onMobileMenuClick }) => {
                   <Building className="w-3.5 h-3.5 text-[#D6AD45]" />
                   <span>Bigfork, MT Storefront</span>
                 </div>
-                <a
-                  href="/storefront"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-[#D6AD45]" />
-                  <span>Public Website</span>
-                </a>
               </div>
 
               <div className="pt-1 border-t border-[#DCE5F0]">
