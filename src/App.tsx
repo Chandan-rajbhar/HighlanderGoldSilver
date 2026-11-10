@@ -13,8 +13,13 @@ import { ContactPage } from './pages/ContactPage';
 import { CartPage } from './pages/CartPage';
 
 export const App: React.FC = () => {
+  const basename =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/storefront')
+      ? '/storefront'
+      : '/';
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <CartProvider>
         <ScrollToTop />
         <div className="site-wrapper">

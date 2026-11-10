@@ -161,27 +161,45 @@ export const Customers = () => {
         ? adminRes
         : (localDB?.getAdminUsers?.()?.length ? localDB.getAdminUsers() : initialAdminUsers);
 
-      const adminList = (rawAdminList || []).map(a => ({
-        ...a,
-        id: a.id,
-        full_name: a.name || a.full_name || 'Alexander MacLeod',
-        email: a.email || 'stratford1955@icloud.com',
-        phone: a.phone || '(406) 883-2210',
-        city: a.location ? a.location.split(' ')[0] : 'Bigfork',
-        state: 'MT',
-        address: 'Highlander Vault HQ, Montana',
-        customer_id: a.customer_id || `STAFF-${a.id?.replace(/[^0-9]/g, '').padStart(3, '0') || '001'}`,
-        role: 'Admin',
-        admin_role: a.role || a.admin_role || 'Super Admin',
-        title: a.title || 'Senior Numismatist & Vault Director',
-        avatar_url: extractAvatarUrl(a) || (adminUser && (adminUser.id === a.id || adminUser.email === a.email) ? adminUser.avatar_url : ''),
-        is_admin: true,
-        account_status: a.status || a.account_status || 'Active',
-        orders_count: 0,
-        total_spent: 0,
-        notes: a.notes || 'Full administrative access and cryptographic vault keyholder authority.',
-        created_at: a.created_at || '2026-01-10T00:00:00Z'
-      }));
+      const adminList = (rawAdminList || []).map(a => {
+        const isCurrentAdmin = Boolean(
+          adminUser && (
+            adminUser.id === a.id ||
+            (a.email && adminUser.email && a.email.toLowerCase() === adminUser.email.toLowerCase())
+          )
+        );
+        const rawCity = a.city !== undefined && a.city !== null
+          ? a.city
+          : (isCurrentAdmin && adminUser?.city) || (a.location ? a.location.split(',')[0].replace(/\s+Storefront.*$/i, '').trim() : '');
+        const rawState = a.state !== undefined && a.state !== null
+          ? a.state
+          : (isCurrentAdmin && adminUser?.state) || (a.location && a.location.includes(',') ? a.location.split(',').slice(1).join(',').trim() : '');
+        const rawPhone = a.phone !== undefined && a.phone !== null
+          ? a.phone
+          : (isCurrentAdmin && adminUser?.phone !== undefined ? adminUser.phone : '');
+
+        return {
+          ...a,
+          id: a.id,
+          full_name: a.name || a.full_name || 'Alexander MacLeod',
+          email: a.email || 'stratford1955@icloud.com',
+          phone: rawPhone,
+          city: rawCity,
+          state: rawState,
+          address: 'Highlander Vault HQ, Montana',
+          customer_id: a.customer_id || `STAFF-${a.id?.replace(/[^0-9]/g, '').padStart(3, '0') || '001'}`,
+          role: 'Admin',
+          admin_role: a.role || a.admin_role || 'Super Admin',
+          title: a.title || 'Senior Numismatist & Vault Director',
+          avatar_url: extractAvatarUrl(a) || (isCurrentAdmin ? adminUser.avatar_url : ''),
+          is_admin: true,
+          account_status: a.status || a.account_status || 'Active',
+          orders_count: 0,
+          total_spent: 0,
+          notes: a.notes || 'Full administrative access and cryptographic vault keyholder authority.',
+          created_at: a.created_at || '2026-01-10T00:00:00Z'
+        };
+      });
 
       const allUsers = [...adminList, ...custList];
 
@@ -422,9 +440,9 @@ export const Customers = () => {
           id: adminUser?.id || staffRef.id || 'adm-001',
           full_name: adminUser?.name || staffRef.name || 'Alexander MacLeod',
           email: adminUser?.email || staffRef.email || 'stratford1955@icloud.com',
-          phone: adminUser?.phone || '(406) 883-2210',
-          city: 'Bigfork',
-          state: 'MT',
+          phone: adminUser?.phone ?? '',
+          city: adminUser?.city ?? '',
+          state: adminUser?.state ?? '',
           location: adminUser?.location || staffRef.location || 'Bigfork Storefront & Vault, MT',
           address: 'Highlander Vault HQ, Montana',
           customer_id: 'STAFF-1001',
@@ -591,29 +609,59 @@ export const Customers = () => {
     try {
       if (selectedUser) {
         if (selectedUser.is_admin) {
-          await adminUserService.updateAdminUser(selectedUser.id, formData);
-          if (setAdminUser) {
+          const cityClean = String(formData.city || '').trim();
+          const stateClean = String(formData.state || '').trim();
+          const updatedLocation = cityClean
+            ? (stateClean ? `${cityClean}, ${stateClean}` : cityClean)
+            : (formData.location || selectedUser.location || '');
+
+          const savedAdmin = await adminUserService.updateAdminUser(selectedUser.id, {
+            ...formData,
+            auth_user_id: selectedUser.auth_user_id || adminUser?.auth_user_id,
+            location: updatedLocation,
+          });
+
+          const isEditingCurrentAdmin = Boolean(
+            adminUser && (
+              selectedUser.id === adminUser.id ||
+              (selectedUser.email && adminUser.email && selectedUser.email.toLowerCase() === adminUser.email.toLowerCase())
+            )
+          );
+
+          if (isEditingCurrentAdmin && setAdminUser) {
             setAdminUser(prev => ({
               ...(prev || {}),
               name: formData.full_name || formData.name || prev?.name,
               email: formData.email || prev?.email,
+              phone: formData.phone !== undefined ? formData.phone : prev?.phone,
+              city: cityClean || prev?.city,
+              state: stateClean || prev?.state,
               avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : prev?.avatar_url,
               role: formData.admin_role || formData.role || prev?.role,
               title: formData.title || prev?.title,
-              location: formData.location || prev?.location
+              location: updatedLocation || prev?.location
             }));
           }
-          try {
-            const stored = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
-            localStorage.setItem('hgs_admin_session', JSON.stringify({
-              ...stored,
-              name: formData.full_name || formData.name || stored.name,
-              email: formData.email || stored.email,
-              avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : stored.avatar_url,
-              role: formData.admin_role || formData.role || stored.role,
-              title: formData.title || stored.title
-            }));
-          } catch (_) {}
+          if (isEditingCurrentAdmin) {
+            try {
+              const stored = JSON.parse(localStorage.getItem('hgs_admin_session') || '{}');
+              localStorage.setItem('hgs_admin_session', JSON.stringify({
+                ...stored,
+                name: formData.full_name || formData.name || stored.name,
+                email: formData.email || stored.email,
+                phone: formData.phone !== undefined ? formData.phone : stored.phone,
+                city: cityClean || stored.city,
+                state: stateClean || stored.state,
+                avatar_url: formData.avatar_url !== undefined ? formData.avatar_url : stored.avatar_url,
+                role: formData.admin_role || formData.role || stored.role,
+                title: formData.title || stored.title,
+                location: updatedLocation || stored.location
+              }));
+            } catch (_) {}
+          }
+          if (savedAdmin?._schemaMissingContactCols && formData.phone !== undefined) {
+            toast.info('Contact updated in session. Run supabase/migrations/20261110_add_phone_to_admin_users.sql in Supabase SQL Editor to add admin_users.phone.');
+          }
         } else {
           await customerService.updateCustomer(selectedUser.id, {
             ...formData,
@@ -923,7 +971,7 @@ export const Customers = () => {
 
                   <div className="flex items-center gap-1.5 font-mono">
                     <Phone className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{viewUser.phone || '(406) 883-2210'}</span>
+                    <span>{viewUser.phone || '—'}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -981,7 +1029,7 @@ export const Customers = () => {
 
                 <div>
                   <span className="text-slate-400 block font-medium">Direct Extension / Secure Phone</span>
-                  <span className="font-mono text-slate-800 mt-0.5 block">{viewUser.phone || '(406) 883-2210'}</span>
+                  <span className="font-mono text-slate-800 mt-0.5 block">{viewUser.phone || '—'}</span>
                 </div>
 
                 <div>

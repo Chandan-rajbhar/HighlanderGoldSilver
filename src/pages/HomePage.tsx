@@ -4,6 +4,8 @@ import { HeroSection } from './Home/HeroSection';
 import { FeaturedCarousel } from '../components/collection/FeaturedCarousel';
 import { SectionHeading } from '../components/common/SectionHeading';
 import { INVENTORY_ITEMS } from '../data/inventory';
+import { InventoryItem } from '../types';
+import { InventoryService } from '../services/inventoryService';
 import { BUSINESS_INFO } from '../data/businessInfo';
 import { Icons } from '../utils/icons';
 import { useScrollReveal } from '../hooks/useScrollReveal';
@@ -14,18 +16,40 @@ export const HomePage: React.FC = () => {
   useScrollReveal();
 
   const [settings, setSettings] = useState(() => settingsService.getActiveStorefrontContent());
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
 
   useEffect(() => {
+    let isMounted = true;
+
     settingsService.getSettings()
-      .then((data) => setSettings(prev => ({ ...prev, ...data })))
+      .then((data) => {
+        if (isMounted) setSettings(prev => ({ ...prev, ...data }));
+      })
       .catch(() => {});
+
+    const loadInventory = () => {
+      InventoryService.getInventory()
+        .then((items) => {
+          if (isMounted && Array.isArray(items) && items.length > 0) {
+            setInventoryItems(items);
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadInventory();
 
     const handleUpdate = (e: any) => {
       if (e.detail) setSettings((prev: any) => ({ ...prev, ...e.detail }));
     };
 
     window.addEventListener('hgs:settings-updated', handleUpdate);
-    return () => window.removeEventListener('hgs:settings-updated', handleUpdate);
+    window.addEventListener('hgs:inventory-updated', loadInventory);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('hgs:settings-updated', handleUpdate);
+      window.removeEventListener('hgs:inventory-updated', loadInventory);
+    };
   }, []);
 
   return (
@@ -37,12 +61,12 @@ export const HomePage: React.FC = () => {
       <section className="section section-body" id="featured-collection">
         <div className="container">
           <FeaturedCarousel
-            items={INVENTORY_ITEMS}
+            items={inventoryItems}
           />
 
           <div className="mobile-cta-center" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
             <Link to="/collection" className="btn btn-gold btn-browse-collection" style={{ display: 'inline-flex' }}>
-              <span>Browse All {INVENTORY_ITEMS.length} Certified Pieces</span>
+              <span>Browse All {inventoryItems.length} Certified Pieces</span>
               <Icons.ArrowRight size={16} />
             </Link>
           </div>

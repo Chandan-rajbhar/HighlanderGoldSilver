@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
 import { notificationService, getBroadcastChannel } from '../services/notificationService';
@@ -35,35 +35,48 @@ export const AuthProvider = ({ children }) => {
   // Administrative Notifications loaded from service
   const [notifications, setNotifications] = useState(() => notificationService.getNotifications());
 
-  const markAllNotificationsRead = async () => {
+  const markAllNotificationsRead = useCallback(async () => {
     const updated = await notificationService.markAllAsRead();
     setNotifications(updated);
-  };
+  }, []);
 
-  const markNotificationRead = async (id) => {
+  const markNotificationRead = useCallback(async (id) => {
     const updated = await notificationService.markAsRead(id);
     setNotifications(updated);
-  };
+  }, []);
 
-  const deleteNotification = async (id) => {
+  const deleteNotification = useCallback(async (id) => {
     const updated = await notificationService.deleteNotification(id);
     setNotifications(updated);
-  };
+  }, []);
 
   // Real-time synchronization & live toast notification subscription
   useEffect(() => {
+    let isMounted = true;
+
+    const areNotificationsEqual = (prev, next) => {
+      if (prev === next) return true;
+      if (!Array.isArray(prev) || !Array.isArray(next) || prev.length !== next.length) return false;
+      for (let i = 0; i < prev.length; i++) {
+        if (prev[i].id !== next[i].id || Boolean(prev[i].read) !== Boolean(next[i].read)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     // 1. Initial live fetch from Supabase
     notificationService.fetchNotifications()
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setNotifications(data);
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setNotifications(prev => (areNotificationsEqual(prev, data) ? prev : data));
         }
       })
       .catch(() => {});
 
     // Common notification handler for all incoming sources
     const handleIncomingNotification = (newNotif) => {
-      if (!newNotif || !newNotif.id) return;
+      if (!isMounted || !newNotif || !newNotif.id) return;
       setNotifications(prev => {
         if (prev.some(n => n.id === newNotif.id)) return prev;
         return [newNotif, ...prev];
@@ -80,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       if (event?.data?.type === 'NEW_NOTIFICATION' && event.data.payload) {
         handleIncomingNotification(event.data.payload);
       } else if (event?.data?.type === 'NOTIFICATIONS_UPDATED' && Array.isArray(event.data.payload)) {
-        setNotifications(event.data.payload);
+        setNotifications(prev => (areNotificationsEqual(prev, event.data.payload) ? prev : event.data.payload));
       }
     };
     if (bc) {
@@ -156,12 +169,13 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 6. Polling fallback (runs every 4s to catch any external submissions)
+    // 6. Lightweight polling fallback (runs every 30s; skips state update when unchanged)
     const pollTimer = setInterval(() => {
       notificationService.fetchNotifications()
         .then(latestList => {
-          if (Array.isArray(latestList) && latestList.length > 0) {
+          if (isMounted && Array.isArray(latestList) && latestList.length > 0) {
             setNotifications(prev => {
+              if (areNotificationsEqual(prev, latestList)) return prev;
               const prevIds = new Set(prev.map(p => p.id));
               const freshNotifs = latestList.filter(n => !prevIds.has(n.id) && !n.read);
               if (freshNotifs.length > 0) {
@@ -174,9 +188,10 @@ export const AuthProvider = ({ children }) => {
           }
         })
         .catch(() => {});
-    }, 4000);
+    }, 30000);
 
     return () => {
+      isMounted = false;
       if (bc) {
         bc.removeEventListener('message', handleBroadcastMessage);
       }
@@ -240,16 +255,23 @@ export const AuthProvider = ({ children }) => {
     const email = (authUser.email || '').toLowerCase();
     let adminRecord = null;
     let customerRecord = null;
+    let adminQueryError = false;
 
     if (isSupabaseConfigured() && supabase) {
       try {
         // 1. Check if user is staff/admin
-        const { data: adminData } = await supabase
+        const { data: adminData, error: adminErr } = await supabase
           .from('admin_users')
           .select('*')
           .or(`auth_user_id.eq.${authUser.id},email.ilike.${email}`)
           .limit(1);
-        adminRecord = adminData?.[0];
+
+        if (adminErr) {
+          adminQueryError = true;
+          console.warn('Admin check query error:', adminErr);
+        } else {
+          adminRecord = adminData?.[0];
+        }
 
         // Ensure auth_user_id is linked to admin record if it was unlinked
         if (adminRecord && (!adminRecord.auth_user_id || adminRecord.auth_user_id !== authUser.id)) {
@@ -262,8 +284,8 @@ export const AuthProvider = ({ children }) => {
           } catch (_) {}
         }
 
-        // 2. If not admin, check customer profile
-        if (!adminRecord) {
+        // 2. If not admin (and query succeeded), check customer profile
+        if (!adminRecord && !adminQueryError) {
           const { data: custData } = await supabase
             .from('customers')
             .select('*')
@@ -272,6 +294,7 @@ export const AuthProvider = ({ children }) => {
           customerRecord = custData?.[0];
         }
       } catch (err) {
+        adminQueryError = true;
         console.warn('Could not query user record from database:', err);
       }
     }
@@ -293,14 +316,33 @@ export const AuthProvider = ({ children }) => {
         auth_user_id: authUser.id,
         email: authUser.email,
         name: adminRecord.name || authUser.user_metadata?.full_name || 'Staff Administrator',
+        phone: adminRecord.phone !== undefined && adminRecord.phone !== null
+          ? adminRecord.phone
+          : (authUser.user_metadata?.phone ?? ''),
+        city: adminRecord.city !== undefined && adminRecord.city !== null
+          ? adminRecord.city
+          : (authUser.user_metadata?.city ?? ''),
+        state: adminRecord.state !== undefined && adminRecord.state !== null
+          ? adminRecord.state
+          : (authUser.user_metadata?.state ?? ''),
         role: adminRecord.role || 'Super Admin',
         title: adminRecord.title || 'Senior Numismatist & Vault Director',
-        location: adminRecord.location || 'Bigfork Storefront & Vault, MT',
+        location: adminRecord.location || authUser.user_metadata?.location || 'Bigfork Storefront & Vault, MT',
         badge: adminRecord.role || 'Super Admin',
         avatar_url: avatar,
         is_admin: true,
         account_status: adminRecord.status || 'Active',
         status: adminRecord.status || 'Active'
+      };
+    }
+
+    if (adminQueryError) {
+      return {
+        id: authUser.id,
+        auth_user_id: authUser.id,
+        email: authUser.email,
+        is_admin: false,
+        __transientError: true
       };
     }
 
@@ -340,6 +382,47 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let isMounted = true;
 
+    const verifyAndApplySession = async (targetSession) => {
+      if (!targetSession?.user || !isMounted) return;
+      const profile = await buildUserProfile(targetSession.user);
+      if (!isMounted || !profile) return;
+
+      if (profile.__transientError) {
+        // Keep existing verified admin session if present during transient network blips
+        setSession(targetSession);
+        return;
+      }
+
+      if (profile.is_admin && (profile.account_status === 'Active' || profile.status === 'Active')) {
+        setSession(targetSession);
+        setAdminUser(prev => {
+          if (
+            prev &&
+            prev.auth_user_id === profile.auth_user_id &&
+            prev.role === profile.role &&
+            prev.name === profile.name &&
+            prev.phone === profile.phone &&
+            prev.city === profile.city &&
+            prev.state === profile.state &&
+            prev.location === profile.location &&
+            prev.account_status === profile.account_status &&
+            prev.avatar_url === profile.avatar_url
+          ) {
+            return prev;
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+          return profile;
+        });
+      } else {
+        // Unauthorized user (customer or inactive admin): clear admin session
+        await supabase.auth.signOut().catch(() => {});
+        setSession(null);
+        setAdminUser(null);
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    };
+
     const initializeAuth = async () => {
       if (!isSupabaseConfigured() || !supabase) {
         if (isMounted) {
@@ -355,21 +438,7 @@ export const AuthProvider = ({ children }) => {
         if (error) throw error;
 
         if (existingSession?.user && isMounted) {
-          const profile = await buildUserProfile(existingSession.user);
-          if (isMounted) {
-            if (profile && profile.is_admin && (profile.account_status === 'Active' || profile.status === 'Active')) {
-              setSession(existingSession);
-              setAdminUser(profile);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-            } else {
-              // Unauthorized user (customer or non-admin): clear admin session
-              await supabase.auth.signOut().catch(() => {});
-              setSession(null);
-              setAdminUser(null);
-              localStorage.removeItem(STORAGE_KEY);
-              sessionStorage.removeItem(STORAGE_KEY);
-            }
-          }
+          await verifyAndApplySession(existingSession);
         } else if (isMounted) {
           setAdminUser(null);
           setSession(null);
@@ -392,37 +461,40 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
 
-    // Listen to live auth changes (login, logout, token refresh)
+    // Listen to live auth changes without awaiting Supabase inside GoTrue lock callback
     if (isSupabaseConfigured() && supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          if (newSession?.user && isMounted) {
-            const profile = await buildUserProfile(newSession.user);
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+        if (!isMounted) return;
+
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setAdminUser(null);
+          localStorage.removeItem(STORAGE_KEY);
+          sessionStorage.removeItem(STORAGE_KEY);
+          setIsLoadingAuth(false);
+          return;
+        }
+
+        if (event === 'TOKEN_REFRESHED' && newSession?.user) {
+          setSession(newSession);
+          // Avoid deadlocking GoTrue _acquireLock or triggering extra re-renders if user is unchanged
+          setTimeout(() => {
+            if (isMounted) verifyAndApplySession(newSession).catch(() => {});
+          }, 0);
+          return;
+        }
+
+        if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && newSession?.user) {
+          // Defer async DB queries out of onAuthStateChange so GoTrue _acquireLock releases immediately
+          setTimeout(() => {
             if (isMounted) {
-              if (profile && profile.is_admin && (profile.account_status === 'Active' || profile.status === 'Active')) {
-                setSession(newSession);
-                setAdminUser(profile);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-                setIsLoadingAuth(false);
-              } else {
-                // Customer or unauthorized role: clear admin session
-                await supabase.auth.signOut().catch(() => {});
-                setSession(null);
-                setAdminUser(null);
-                localStorage.removeItem(STORAGE_KEY);
-                sessionStorage.removeItem(STORAGE_KEY);
-                setIsLoadingAuth(false);
-              }
+              verifyAndApplySession(newSession)
+                .catch(() => {})
+                .finally(() => {
+                  if (isMounted) setIsLoadingAuth(false);
+                });
             }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          if (isMounted) {
-            setSession(null);
-            setAdminUser(null);
-            localStorage.removeItem(STORAGE_KEY);
-            sessionStorage.removeItem(STORAGE_KEY);
-            setIsLoadingAuth(false);
-          }
+          }, 0);
         }
       });
 
@@ -487,6 +559,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       const profile = await buildUserProfile(data.user);
+
+      if (profile?.__transientError) {
+        return {
+          success: false,
+          error: 'Unable to verify administrator role due to a network error. Please try again.'
+        };
+      }
 
       // Strict Role-Based Access Control (RBAC):
       // Only authorized administrators from `admin_users` table can access the admin dashboard.
@@ -709,25 +788,34 @@ export const AuthProvider = ({ children }) => {
     (adminUser.account_status === 'Active' || adminUser.status === 'Active')
   );
 
+  const authContextValue = useMemo(() => ({
+    adminUser,
+    session,
+    setAdminUser,
+    isAuthenticated: isAuthActiveAdmin,
+    isAdmin: isAuthActiveAdmin,
+    isLoadingAuth,
+    login,
+    signup,
+    requestPasswordReset,
+    logout,
+    notifications,
+    markAllNotificationsRead,
+    markNotificationRead,
+    deleteNotification
+  }), [
+    adminUser,
+    session,
+    isAuthActiveAdmin,
+    isLoadingAuth,
+    notifications,
+    markAllNotificationsRead,
+    markNotificationRead,
+    deleteNotification
+  ]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        adminUser,
-        session,
-        setAdminUser,
-        isAuthenticated: isAuthActiveAdmin,
-        isAdmin: isAuthActiveAdmin,
-        isLoadingAuth,
-        login,
-        signup,
-        requestPasswordReset,
-        logout,
-        notifications,
-        markAllNotificationsRead,
-        markNotificationRead,
-        deleteNotification
-      }}
-    >
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );

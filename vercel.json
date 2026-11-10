@@ -17,7 +17,15 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/).*)",
+      "source": "/storefront",
+      "destination": "/storefront.html"
+    },
+    {
+      "source": "/storefront/:path*",
+      "destination": "/storefront.html"
+    },
+    {
+      "source": "/((?!assets/|storefront).*)",
       "destination": "/index.html"
     }
   ]

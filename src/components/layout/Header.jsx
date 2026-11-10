@@ -193,7 +193,7 @@ export const Header = ({ onMobileMenuClick }) => {
                   <span>Bigfork, MT Storefront</span>
                 </div>
                 <a
-                  href="https://highlander-gold-silver.vercel.app/"
+                  href="/storefront"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-3 py-2 text-xs text-[#111827] hover:bg-[#F5F8FC] rounded-lg transition-colors"

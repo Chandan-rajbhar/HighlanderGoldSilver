@@ -19,9 +19,47 @@ const computeLocalCategories = () => {
   });
 };
 
+const fetchLiveInventoryMetrics = async () => {
+  if (!isSupabaseConfigured()) return null;
+
+  const counts = {};
+  const valuations = {};
+  const batchSize = 1000;
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('category, price')
+      .range(offset, offset + batchSize - 1);
+
+    if (error) throw error;
+    const rows = data || [];
+    for (const row of rows) {
+      const key = String(row.category || '').trim().toLowerCase();
+      if (!key) continue;
+      counts[key] = (counts[key] || 0) + 1;
+      valuations[key] = (valuations[key] || 0) + (Number(row.price) || 0);
+    }
+    if (rows.length < batchSize) break;
+    offset += batchSize;
+  }
+
+  return { counts, valuations };
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('hgs:inventory-updated', () => {
+    _cachedCategories = null;
+  });
+}
+
 export const categoryService = {
   // Synchronous cache for instant 0ms initial render
   getCategoriesSync() {
+    if (isSupabaseConfigured()) {
+      return _cachedCategories || [];
+    }
     if (!_cachedCategories) {
       _cachedCategories = computeLocalCategories();
     }
@@ -31,19 +69,34 @@ export const categoryService = {
   async getCategories() {
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select(LIST_COLUMNS)
-          .order('display_order', { ascending: true })
-          .order('created_at', { ascending: true });
+        const [{ data, error }, metrics] = await Promise.all([
+          supabase
+            .from('categories')
+            .select(LIST_COLUMNS)
+            .order('display_order', { ascending: true })
+            .order('created_at', { ascending: true }),
+          fetchLiveInventoryMetrics().catch((metricsErr) => {
+            console.warn('Unable to compute live category item counts:', metricsErr);
+            return null;
+          }),
+        ]);
         if (error) throw error;
-        if (data && data.length > 0) {
-          _cachedCategories = data;
-          localDB.setCategories(_cachedCategories);
-          return _cachedCategories;
-        }
+
+        const enriched = (data || []).map((cat) => {
+          const key = String(cat.name || '').trim().toLowerCase();
+          return {
+            ...cat,
+            item_count: metrics ? (metrics.counts[key] ?? 0) : (cat.item_count ?? 0),
+            total_valuation: metrics ? (metrics.valuations[key] ?? 0) : (cat.total_valuation ?? 0),
+          };
+        });
+
+        _cachedCategories = enriched;
+        localDB.setCategories(enriched);
+        return _cachedCategories;
       } catch (err) {
         console.error('Supabase getCategories error:', err);
+        throw err;
       }
     }
 
@@ -68,7 +121,7 @@ export const categoryService = {
   async createCategory(catData) {
     const newCat = {
       ...catData,
-      id: catData.id || `cat-${Date.now().toString().slice(-4)}`,
+      id: catData.id || `cat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       item_count: 0,
       total_valuation: 0,
       is_active: catData.is_active ?? true,

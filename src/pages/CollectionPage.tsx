@@ -85,7 +85,6 @@ export const CollectionPage: React.FC = () => {
                 )}
               </div>
             </div>
-            </div>
 
             {/* Right-Side Relevant Image Showcase */}
             <div className="page-banner-media">

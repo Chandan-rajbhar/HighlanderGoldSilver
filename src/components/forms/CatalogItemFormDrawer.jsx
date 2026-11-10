@@ -20,7 +20,7 @@ import { uploadMultipleInventoryImages, normalizeImageToLink } from '../../servi
 
 const CATEGORIES = [
   'Gold',
-  'Morgan Dollars',
+  'Morgan Dollar',
   'Commemorative',
   'Silver Bullion',
   'Ancient'
@@ -29,6 +29,54 @@ const CATEGORIES = [
 const METALS = ['Gold', 'Silver', 'Platinum', 'Palladium', 'Copper', 'Other'];
 const CERTIFICATIONS = ['NGC', 'PCGS', 'CAC', 'PCI', 'Mint Certified', 'Raw / Uncertified'];
 const STATUSES = ['Active', 'Draft', 'Sold', 'Out of Stock', 'Hidden'];
+
+const createEmptyNewItemForm = () => ({
+  title: '',
+  lot_number: '',
+  sku: '',
+  category: '',
+  metal: '',
+  coin_type: '',
+  grade: '',
+  cert_company: '',
+  purity: '',
+  weight: '',
+  price: '',
+  inventory: 1,
+  description: '',
+  storefront_status: 'Active',
+  featured_image: '',
+});
+
+const mapExistingItemToForm = (item) => {
+  const rawImgs = Array.isArray(item.additional_images) && item.additional_images.length > 0
+    ? item.additional_images
+    : (Array.isArray(item.images) && item.images.length > 0
+        ? item.images
+        : (item.featured_image ? [item.featured_image] : []));
+  const initialImgs = rawImgs.map(normalizeImageToLink).filter(Boolean);
+
+  return {
+    initialImgs,
+    fields: {
+      title: item.title || '',
+      lot_number: item.lot_number ?? '',
+      sku: item.sku || '',
+      category: item.category || '',
+      metal: item.metal || '',
+      coin_type: item.coin_type || '',
+      grade: item.grade || '',
+      cert_company: item.cert_company || '',
+      purity: item.purity || '',
+      weight: item.weight || '',
+      price: item.price ?? '',
+      inventory: item.inventory ?? item.stock_quantity ?? 1,
+      description: item.description || '',
+      storefront_status: item.storefront_status || item.status || 'Active',
+      featured_image: initialImgs[0] || (item.featured_image ? normalizeImageToLink(item.featured_image) : ''),
+    }
+  };
+};
 
 export const CatalogItemFormDrawer = ({
   isOpen,
@@ -42,82 +90,51 @@ export const CatalogItemFormDrawer = ({
   const isEdit = mode === 'edit';
   const fileInputRef = useRef(null);
 
-  const defaultFormData = {
-    title: '',
-    lot_number: '',
-    sku: '',
-    category: 'Gold',
-    metal: 'Gold',
-    coin_type: 'Private Issue Gold Pattern',
-    grade: 'NGC Ultra Cameo Gem Proof',
-    cert_company: 'NGC',
-    purity: '.999 Pure Gold',
-    weight: '1 Troy Oz (31.10g)',
-    price: 4850,
-    inventory: 1,
-    description: '',
-    storefront_status: 'Active',
-    featured_image: normalizeImageToLink('/assets/items/lot1_morgan_gold_gem.jpg'),
-  };
-
-  const [formData, setFormData] = useState(defaultFormData);
-  const [selectedMetal, setSelectedMetal] = useState('Gold');
+  const [formData, setFormData] = useState(createEmptyNewItemForm);
+  const [selectedMetal, setSelectedMetal] = useState('');
   const [customMetal, setCustomMetal] = useState('');
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
   const [images, setImages] = useState([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       if (isEdit && item) {
-        const rawImgs = Array.isArray(item.additional_images) && item.additional_images.length > 0
-          ? item.additional_images
-          : (Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.featured_image ? [item.featured_image] : []));
-        const initialImgs = (rawImgs.length > 0 ? rawImgs : ['/assets/items/lot1_morgan_gold_gem.jpg']).map(normalizeImageToLink);
+        const { initialImgs, fields } = mapExistingItemToForm(item);
         setImages(initialImgs);
 
         const standardMetals = ['Gold', 'Silver', 'Platinum', 'Palladium', 'Copper'];
-        const isStandard = standardMetals.includes(item.metal);
-        const isOther = item.metal && !isStandard;
-        setSelectedMetal(isOther ? 'Other' : (item.metal || 'Gold'));
-        setCustomMetal(isOther ? (item.metal === 'Other' ? '' : item.metal) : '');
-
-        setFormData({
-          title: item.title || '',
-          lot_number: item.lot_number || '',
-          sku: item.sku || `HGS-${(item.category || 'GOLD').slice(0, 4).toUpperCase()}-${item.lot_number || '001'}`,
-          category: item.category || 'Gold',
-          metal: item.metal || 'Gold',
-          coin_type: item.coin_type || 'Private Issue Pattern',
-          grade: item.grade || 'NGC Ultra Cameo Gem Proof',
-          cert_company: item.cert_company || 'NGC',
-          purity: item.purity || '.999 Pure Gold',
-          weight: item.weight || '1 Troy Oz (31.10g)',
-          price: item.price ?? 4850,
-          inventory: item.inventory ?? item.stock_quantity ?? 1,
-          description: item.description || '',
-          storefront_status: item.storefront_status || item.status || 'Active',
-          featured_image: initialImgs[0] || normalizeImageToLink(item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg'),
-        });
+        const itemMetal = item.metal || '';
+        const isStandard = standardMetals.includes(itemMetal);
+        const isOther = Boolean(itemMetal) && !isStandard;
+        setSelectedMetal(isOther ? 'Other' : itemMetal);
+        setCustomMetal(isOther ? (itemMetal === 'Other' ? '' : itemMetal) : '');
+        setFormData(fields);
       } else {
-        const randomNum = Math.floor(1 + Math.random() * 99);
-        const defaultImgs = [normalizeImageToLink('/assets/items/lot1_morgan_gold_gem.jpg')];
-        setImages(defaultImgs);
-        setSelectedMetal('Gold');
+        setImages([]);
+        setSelectedMetal('');
         setCustomMetal('');
-        setFormData({
-          ...defaultFormData,
-          lot_number: String(randomNum),
-          sku: `HGS-GOLD-${randomNum}`,
-          featured_image: defaultImgs[0]
-        });
+        setFormData(createEmptyNewItemForm());
       }
+      setImageUrlInput('');
+      setIsUploadingImages(false);
+      setUploadError('');
       setErrors({});
       setIsDirty(false);
       document.body.style.overflow = 'hidden';
     } else {
+      setFormData(createEmptyNewItemForm());
+      setImages([]);
+      setImageUrlInput('');
+      setSelectedMetal('');
+      setCustomMetal('');
+      setErrors({});
+      setIsDirty(false);
+      setIsUploadingImages(false);
+      setUploadError('');
       document.body.style.overflow = 'unset';
     }
 
@@ -125,6 +142,13 @@ export const CatalogItemFormDrawer = ({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, isEdit, item]);
+
+  // Keep featured_image synchronized cleanly with images[0] without nested state updaters
+  useEffect(() => {
+    if (!isOpen) return;
+    const primaryImg = images[0] || '';
+    setFormData((prev) => (prev.featured_image === primaryImg ? prev : { ...prev, featured_image: primaryImg }));
+  }, [images, isOpen]);
 
   // Handle ESC key
   useEffect(() => {
@@ -163,6 +187,10 @@ export const CatalogItemFormDrawer = ({
 
   const handleMetalChange = (val) => {
     setSelectedMetal(val);
+    setIsDirty(true);
+    if (errors.metal) {
+      setErrors(prev => ({ ...prev, metal: null }));
+    }
     if (val === 'Other') {
       updateField('metal', customMetal.trim() || 'Other');
     } else {
@@ -180,16 +208,18 @@ export const CatalogItemFormDrawer = ({
     if (files.length === 0) return;
 
     setIsUploadingImages(true);
+    setUploadError('');
     try {
       const uploadedLinks = await uploadMultipleInventoryImages(files, 'items');
-      setImages(prev => {
-        const updated = [...prev, ...uploadedLinks];
-        updateField('featured_image', updated[0]);
-        return updated;
-      });
+      const cleanLinks = (uploadedLinks || []).map(normalizeImageToLink).filter(Boolean);
+      if (cleanLinks.length === 0) {
+        throw new Error('No image URL was returned from storage.');
+      }
+      setImages(prev => [...prev, ...cleanLinks]);
       setIsDirty(true);
     } catch (err) {
       console.error('Image upload error:', err);
+      setUploadError(err?.message || 'Image upload failed. Please try again.');
     } finally {
       setIsUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -199,21 +229,15 @@ export const CatalogItemFormDrawer = ({
   const handleAddUrlImage = () => {
     if (!imageUrlInput.trim()) return;
     const cleanLink = normalizeImageToLink(imageUrlInput.trim());
-    setImages(prev => {
-      const updated = [...prev, cleanLink];
-      updateField('featured_image', updated[0]);
-      return updated;
-    });
+    if (!cleanLink) return;
+    setImages(prev => [...prev, cleanLink]);
     setImageUrlInput('');
+    setUploadError('');
     setIsDirty(true);
   };
 
   const handleRemoveImageIndex = (indexToRemove) => {
-    setImages(prev => {
-      const updated = prev.filter((_, idx) => idx !== indexToRemove);
-      updateField('featured_image', updated[0] || '');
-      return updated;
-    });
+    setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
     setIsDirty(true);
   };
 
@@ -222,17 +246,18 @@ export const CatalogItemFormDrawer = ({
       if (index === 0) return prev;
       const target = prev[index];
       const rest = prev.filter((_, idx) => idx !== index);
-      const updated = [target, ...rest];
-      updateField('featured_image', updated[0]);
-      return updated;
+      return [target, ...rest];
     });
     setIsDirty(true);
   };
 
   const validate = () => {
     const errs = {};
-    if (!formData.title.trim()) errs.title = 'Product name is required';
-    if (!formData.lot_number.trim()) errs.lot_number = 'Item number is required';
+    if (!String(formData.title || '').trim()) errs.title = 'Product name is required';
+    if (!String(formData.lot_number || '').trim()) errs.lot_number = 'Item number is required';
+    if (!String(formData.category || '').trim()) errs.category = 'Category is required';
+    const resolvedMetal = selectedMetal === 'Other' ? customMetal.trim() : selectedMetal;
+    if (!String(resolvedMetal || '').trim()) errs.metal = 'Metal type is required';
     if (formData.price === '' || isNaN(formData.price) || Number(formData.price) < 0) {
       errs.price = 'Valid price is required';
     }
@@ -245,15 +270,18 @@ export const CatalogItemFormDrawer = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isUploadingImages) return;
     if (!validate()) return;
 
-    const rawImgs = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : ['/assets/items/lot1_morgan_gold_gem.jpg']);
-    const finalImages = rawImgs.map(normalizeImageToLink);
+    const pendingUrl = imageUrlInput.trim() ? [imageUrlInput.trim()] : [];
+    const baseImgs = images.length > 0 ? images : (formData.featured_image ? [formData.featured_image] : []);
+    const rawImgs = [...baseImgs, ...pendingUrl];
+    const finalImages = Array.from(new Set(rawImgs.map(normalizeImageToLink).filter(Boolean)));
     const finalMetal = selectedMetal === 'Other' ? (customMetal.trim() || 'Other') : selectedMetal;
     onSave({
       ...formData,
       metal: finalMetal,
-      featured_image: finalImages[0],
+      featured_image: finalImages[0] || '',
       additional_images: finalImages,
       price: Number(formData.price),
       inventory: Number(formData.inventory),
@@ -266,7 +294,7 @@ export const CatalogItemFormDrawer = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden font-sans">
       {/* Backdrop overlay with luxury glass blur */}
       <div 
         className="fixed inset-0 glass-overlay transition-opacity animate-in fade-in duration-200"
@@ -274,7 +302,7 @@ export const CatalogItemFormDrawer = ({
         aria-hidden="true"
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-4 sm:pl-10">
         {/* Slide-over Drawer Panel */}
         <div className="w-screen max-w-2xl bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out animate-in slide-in-from-right duration-300 border-l border-[#C9A23A]/30">
           
@@ -283,7 +311,7 @@ export const CatalogItemFormDrawer = ({
             style={{ background: 'linear-gradient(135deg, #0B2B4E 0%, #114275 100%)' }}>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
+                <span className="text-xs font-sans uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">
                   {isEdit ? 'Edit Product' : 'Add Product'}
                 </span>
                 {formData.lot_number && (
@@ -292,10 +320,10 @@ export const CatalogItemFormDrawer = ({
                   </span>
                 )}
               </div>
-              <h2 className="text-lg font-bold font-sans tracking-wide text-white mt-1">
+              <h2 className="text-lg font-bold font-sans tracking-normal text-white mt-1">
                 {isEdit ? 'Edit Product' : 'Add Product'}
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs font-normal font-sans text-slate-300 mt-0.5">
                 {isEdit 
                   ? `Update details for Item #${formData.lot_number}: ${formData.title}`
                   : 'Add precious metals, rare coins, gold, silver, or bullion to the inventory.'}
@@ -348,7 +376,8 @@ export const CatalogItemFormDrawer = ({
                         src={images[0]} 
                         alt="Product preview" 
                         className="w-full h-full object-cover" 
-                        onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
+                        onLoad={(e) => { e.currentTarget.style.display = ''; }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                       <span className="absolute bottom-1 left-1 right-1 text-[9px] font-bold font-sans bg-[#071A35]/85 text-[#E5C365] py-0.5 rounded text-center tracking-wider uppercase">
                         Cover Photo
@@ -418,7 +447,8 @@ export const CatalogItemFormDrawer = ({
                           src={img} 
                           alt={`Photo ${idx + 1}`} 
                           className="w-full h-full object-cover" 
-                          onError={(e) => { e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg'; }}
+                          onLoad={(e) => { e.currentTarget.style.display = ''; }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
 
                         {/* Tag */}
@@ -496,6 +526,12 @@ export const CatalogItemFormDrawer = ({
                 </div>
               )}
 
+              {uploadError && (
+                <div className="px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+                  {uploadError}
+                </div>
+              )}
+
               {/* Add by Direct Web Link */}
               <div className="p-3 rounded-xl bg-[#F8F6F1] border border-[#E4E0D8] space-y-1.5">
                 <div className="flex items-center gap-1.5 text-slate-600">
@@ -532,112 +568,118 @@ export const CatalogItemFormDrawer = ({
 
             {/* 2. Core Product Information */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
+              <div className="flex items-center gap-2 text-[#0B2B4E] border-b border-[#E4E0D8] pb-2">
                 <Coins className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2B4E]">
                   Product Information
                 </h3>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                   Product Name *
                 </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => updateField('title', e.target.value)}
-                  placeholder="e.g. 1876 George T. Morgan Proposed $100 Gold Union™"
-                  className={`w-full px-3 py-2 text-sm rounded-lg border ${
+                  placeholder="e.g. 1889 Morgan Silver Dollar MS-65"
+                  className={`w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border ${
                     errors.title ? 'border-rose-400 bg-rose-50' : 'border-[#E4E0D8] bg-white'
                   } focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none`}
                 />
-                {errors.title && <p className="text-[11px] text-rose-500 mt-1">{errors.title}</p>}
+                {errors.title && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.title}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Item Number *
                   </label>
                   <input
                     type="text"
                     value={formData.lot_number}
                     onChange={(e) => updateField('lot_number', e.target.value)}
-                    placeholder="e.g. 1"
-                    className={`w-full px-3 py-2 text-sm font-mono rounded-lg border ${
+                    placeholder="e.g. 101"
+                    className={`w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 tabular-nums rounded-lg border ${
                       errors.lot_number ? 'border-rose-400 bg-rose-50' : 'border-[#E4E0D8] bg-white'
                     } focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none`}
                   />
-                  {errors.lot_number && <p className="text-[11px] text-rose-500 mt-1">{errors.lot_number}</p>}
+                  {errors.lot_number && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.lot_number}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Item Code
                   </label>
                   <input
                     type="text"
                     value={formData.sku}
                     onChange={(e) => updateField('sku', e.target.value)}
-                    placeholder="e.g. HGS-GOLD-001"
-                    className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#E4E0D8] bg-white focus:ring-1 focus:ring-[#C9A23A] focus:outline-none"
+                    placeholder="e.g. HGS-Silver-101"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Category *
                   </label>
                   <Select
                     value={formData.category}
                     onChange={(e) => updateField('category', e.target.value)}
+                    placeholder="Select category..."
                     options={categories.map(cat => {
                       const name = typeof cat === 'string' ? cat : cat.name;
                       return { value: name, label: name };
                     })}
-                    className="w-full"
+                    triggerClassName={errors.category ? 'border-rose-400 bg-rose-50' : ''}
+                    className="w-full font-sans"
                   />
+                  {errors.category && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.category}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Metal Type *
                   </label>
                   <Select
                     value={selectedMetal}
                     onChange={(e) => handleMetalChange(e.target.value)}
+                    placeholder="Select metal..."
                     options={METALS.map(m => ({ value: m, label: m }))}
-                    className="w-full"
+                    triggerClassName={errors.metal ? 'border-rose-400 bg-rose-50' : ''}
+                    className="w-full font-sans"
                   />
+                  {errors.metal && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.metal}</p>}
                   {selectedMetal === 'Other' && (
                     <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                      <label className="block text-[11px] font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                      <label className="block text-[11px] font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1">
                         Specify Metal Name *
                       </label>
                       <input
                         type="text"
                         value={customMetal}
                         onChange={(e) => handleCustomMetalChange(e.target.value)}
-                        placeholder="e.g. White Gold, Bronze, Brass, Rhodium..."
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                        placeholder="e.g. White Gold, Bronze, Brass..."
+                        className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                       />
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Coin Type
                   </label>
                   <input
                     type="text"
                     value={formData.coin_type}
                     onChange={(e) => updateField('coin_type', e.target.value)}
-                    placeholder="e.g. Pattern, Bullion"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                    placeholder="e.g. Morgan Dollar, Bullion"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                   />
                 </div>
               </div>
@@ -645,56 +687,57 @@ export const CatalogItemFormDrawer = ({
 
             {/* 3. Numismatic Specifications */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
+              <div className="flex items-center gap-2 text-[#0B2B4E] border-b border-[#E4E0D8] pb-2">
                 <Award className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2B4E]">
                   Numismatic Specifications
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Grade
                   </label>
                   <input
                     type="text"
                     value={formData.grade}
                     onChange={(e) => updateField('grade', e.target.value)}
-                    placeholder="e.g. NGC Ultra Cameo Gem Proof"
-                    className="w-full px-3 py-2 text-sm font-semibold rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                    placeholder="e.g. MS-65 PL"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Certification
                   </label>
                   <Select
                     value={formData.cert_company}
                     onChange={(e) => updateField('cert_company', e.target.value)}
+                    placeholder="Select certification..."
                     options={CERTIFICATIONS.map(cert => ({ value: cert, label: cert }))}
-                    className="w-full"
+                    className="w-full font-sans"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Metal Purity
                   </label>
                   <input
                     type="text"
                     value={formData.purity}
                     onChange={(e) => updateField('purity', e.target.value)}
-                    placeholder="e.g. .999 Pure Gold"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                    placeholder="e.g. .999 Fine Silver"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Weight
                   </label>
                   <input
@@ -702,7 +745,7 @@ export const CatalogItemFormDrawer = ({
                     value={formData.weight}
                     onChange={(e) => updateField('weight', e.target.value)}
                     placeholder="e.g. 1 Troy Oz (31.10g)"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                   />
                 </div>
               </div>
@@ -710,37 +753,37 @@ export const CatalogItemFormDrawer = ({
 
             {/* 4. Pricing & Inventory Quantity */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#0B2348] border-b border-[#E4E0D8] pb-2">
+              <div className="flex items-center gap-2 text-[#0B2B4E] border-b border-[#E4E0D8] pb-2">
                 <DollarSign className="w-4 h-4 text-[#C9A23A]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2348]">
+                <h3 className="text-xs font-bold uppercase tracking-wider font-sans text-[#0B2B4E]">
                   Price & Inventory
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Price ($ USD) *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400 font-semibold">$</span>
+                    <span className="absolute left-3 top-2 text-slate-400 font-medium font-sans">$</span>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
                       value={formData.price}
                       onChange={(e) => updateField('price', e.target.value)}
-                      placeholder="4850.00"
-                      className={`w-full pl-7 pr-3 py-2 text-sm font-bold font-mono rounded-lg border ${
+                      placeholder="0.00"
+                      className={`w-full pl-7 pr-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 tabular-nums rounded-lg border ${
                         errors.price ? 'border-rose-400 bg-rose-50' : 'border-[#E4E0D8] bg-white'
                       } focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none`}
                     />
                   </div>
-                  {errors.price && <p className="text-[11px] text-rose-500 mt-1">{errors.price}</p>}
+                  {errors.price && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.price}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Inventory Quantity *
                   </label>
                   <input
@@ -748,20 +791,20 @@ export const CatalogItemFormDrawer = ({
                     min="0"
                     value={formData.inventory}
                     onChange={(e) => updateField('inventory', e.target.value)}
-                    className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
+                    className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 tabular-nums rounded-lg border border-[#E4E0D8] bg-white focus:outline-none focus:border-[#C9A23A]"
                   />
-                  {errors.inventory && <p className="text-[11px] text-rose-500 mt-1">{errors.inventory}</p>}
+                  {errors.inventory && <p className="text-[11px] font-normal font-sans text-rose-500 mt-1">{errors.inventory}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider mb-1.5">
                     Product Status
                   </label>
                   <Select
                     value={formData.storefront_status}
                     onChange={(e) => updateField('storefront_status', e.target.value)}
                     options={STATUSES.map(s => ({ value: s, label: s }))}
-                    className="w-full"
+                    className="w-full font-sans"
                   />
                 </div>
               </div>
@@ -769,7 +812,7 @@ export const CatalogItemFormDrawer = ({
 
             {/* 5. Product Description */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-[#0B2348] uppercase tracking-wider">
+              <label className="block text-xs font-semibold font-sans text-[#0B2B4E] uppercase tracking-wider">
                 Product Description
               </label>
               <textarea
@@ -777,17 +820,17 @@ export const CatalogItemFormDrawer = ({
                 value={formData.description}
                 onChange={(e) => updateField('description', e.target.value)}
                 placeholder="Provenance, historical significance, minting details, and condition..."
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#E4E0D8] bg-white focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none leading-relaxed"
+                className="w-full px-3 py-2 text-sm font-normal font-sans text-slate-900 placeholder:text-slate-400 rounded-lg border border-[#E4E0D8] bg-white focus:ring-1 focus:ring-[#C9A23A] focus:border-[#C9A23A] focus:outline-none leading-relaxed"
               />
             </div>
           </form>
 
           {/* Sticky Footer Actions */}
-          <div className="px-6 py-4 bg-[#F8F6F1] border-t border-[#E4E0D8] flex items-center justify-between shrink-0">
+          <div className="px-6 py-4 bg-[#F8F6F1] border-t border-[#E4E0D8] flex items-center justify-between shrink-0 font-sans">
             <button
               type="button"
               onClick={handleAttemptClose}
-              className="px-4 py-2 text-xs font-semibold text-[#0B2348] bg-white border border-[#E4E0D8] hover:bg-[#E8F0F8] rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-semibold font-sans text-[#0B2B4E] bg-white border border-[#E4E0D8] hover:bg-[#E8F0F8] rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -795,15 +838,15 @@ export const CatalogItemFormDrawer = ({
             <button
               type="submit"
               form="product-form-drawer"
-              disabled={isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9A23A] hover:bg-[#B58D27] text-[#071A35] text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
+              disabled={isLoading || isUploadingImages}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#C9A23A] hover:bg-[#B58D27] text-[#071A35] text-xs font-bold font-sans uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
             >
-              {isLoading ? (
+              {isLoading || isUploadingImages ? (
                 <span className="w-4 h-4 border-2 border-[#071A35]/30 border-t-[#071A35] rounded-full animate-spin" />
               ) : (
                 <Check className="w-4 h-4 text-[#071A35]" />
               )}
-              Save Product
+              {isUploadingImages ? 'Uploading Images...' : 'Save Product'}
             </button>
           </div>
         </div>

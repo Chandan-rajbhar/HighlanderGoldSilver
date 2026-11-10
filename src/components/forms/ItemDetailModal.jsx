@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   DollarSign,
@@ -7,9 +7,11 @@ import {
   Package,
   Layers,
   Award,
-  Edit3
+  Edit3,
+  Image as ImageIcon
 } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
+import { resolveInventoryImageUrl } from '../../services/imageUploadService';
 
 export const ItemDetailModal = ({
   isOpen,
@@ -17,19 +19,34 @@ export const ItemDetailModal = ({
   item,
   onEdit
 }) => {
-  if (!isOpen || !item) return null;
-
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState({});
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    setFailedImages({});
+  }, [item?.id, isOpen]);
+
+  if (!isOpen || !item) return null;
 
   const basePrice = Number(item.price) || 0;
   const settlementFee = (basePrice * 1.15).toFixed(2);
-  const rawImages = Array.isArray(item.additional_images) && item.additional_images.length > 0
+  const rawAdditional = Array.isArray(item.additional_images) && item.additional_images.length > 0
     ? item.additional_images
-    : (Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.featured_image || '/assets/items/lot1_morgan_gold_gem.jpg']);
+    : (Array.isArray(item.images) && item.images.length > 0 ? item.images : []);
 
-  const cleanImg = (img) => typeof img === 'string' ? img.replace(/^https?:\/\/highlander-gold(?:and|-)?silver\.vercel\.app\//i, '/') : img;
-  const images = rawImages.map(cleanImg);
-  const activeImage = images[activeImageIndex] || cleanImg(item.featured_image) || '/assets/items/lot1_morgan_gold_gem.jpg';
+  const images = Array.from(
+    new Set(
+      [
+        ...(item.featured_image ? [item.featured_image] : []),
+        ...rawAdditional,
+      ]
+        .map(resolveInventoryImageUrl)
+        .filter(Boolean)
+    )
+  );
+  const activeImage = images[activeImageIndex] || images[0] || '';
+  const isMainImageMissing = !activeImage || Boolean(failedImages[activeImage]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -80,15 +97,21 @@ export const ItemDetailModal = ({
             {/* Visuals Gallery */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
               <div className="w-full aspect-[4/3] sm:aspect-[16/10] max-h-80 rounded-xl bg-[#FAF8F5] border border-slate-200/80 overflow-hidden flex items-center justify-center p-3 relative group">
-                <img
-                  src={activeImage}
-                  alt={item.title}
-                  className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg';
-                  }}
-                />
+                {!isMainImageMissing ? (
+                  <img
+                    src={activeImage}
+                    alt={item.title}
+                    className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                    onError={() => {
+                      setFailedImages((prev) => (prev[activeImage] ? prev : { ...prev, [activeImage]: true }));
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400 gap-2 py-8">
+                    <ImageIcon className="w-10 h-10 text-slate-300" />
+                    <span className="text-xs font-sans text-slate-400">No image preview available</span>
+                  </div>
+                )}
                 <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#071A35]/85 text-[#E5C365] border border-[#C9A23A]/30 shadow-xs">
                   {images.length > 1 ? `Image ${activeImageIndex + 1} of ${images.length}` : 'Highlander Catalog Visual'}
                 </span>
@@ -102,21 +125,24 @@ export const ItemDetailModal = ({
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`w-14 h-14 rounded-lg overflow-hidden border-2 bg-white shrink-0 transition-all cursor-pointer ${
+                      className={`w-14 h-14 rounded-lg overflow-hidden border-2 bg-white shrink-0 transition-all cursor-pointer flex items-center justify-center ${
                         activeImageIndex === idx 
                           ? 'border-[#C9A23A] shadow-xs ring-2 ring-[#C9A23A]/25 scale-105' 
                           : 'border-slate-200 opacity-70 hover:opacity-100 hover:border-slate-300'
                       }`}
                     >
-                      <img 
-                        src={img} 
-                        alt={`View ${idx + 1}`} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = '/assets/items/lot1_morgan_gold_gem.jpg';
-                        }}
-                      />
+                      {!failedImages[img] ? (
+                        <img 
+                          src={img} 
+                          alt={`View ${idx + 1}`} 
+                          className="w-full h-full object-cover"
+                          onError={() => {
+                            setFailedImages((prev) => (prev[img] ? prev : { ...prev, [img]: true }));
+                          }}
+                        />
+                      ) : (
+                        <ImageIcon className="w-5 h-5 text-slate-300" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -132,9 +158,11 @@ export const ItemDetailModal = ({
                 <span className="text-2xl font-bold font-mono text-slate-900 block mt-0.5">
                   ${basePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-xs text-slate-500 block mt-0.5">
-                  Market Range: {item.estimate_range || '$4,250.00 – $5,700.00 USD'}
-                </span>
+                {item.estimate_range && (
+                  <span className="text-xs text-slate-500 block mt-0.5 font-sans">
+                    Market Range: {item.estimate_range}
+                  </span>
+                )}
               </div>
 
               <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0 border-[#EBE3D7]">
@@ -144,7 +172,7 @@ export const ItemDetailModal = ({
                 <span className="text-2xl font-bold font-mono text-[#C9A23A] block mt-0.5">
                   ${Number(settlementFee).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-xs text-emerald-700 font-medium block mt-0.5">
+                <span className="text-xs text-emerald-700 font-medium block mt-0.5 font-sans">
                   Montana 0% State Sales Tax
                 </span>
               </div>
@@ -159,39 +187,46 @@ export const ItemDetailModal = ({
                 <StatusBadge status={item.storefront_status || item.status || 'Active'} />
               </div>
 
-              <div className="divide-y divide-slate-100 text-xs">
+              <div className="divide-y divide-slate-100 text-xs font-sans">
                 <div className="grid grid-cols-3 p-3">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Item #</span>
-                  <span className="col-span-2 text-slate-800 font-semibold font-mono">Item #{item.lot_number}</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Item Number</span>
+                  <span className="col-span-2 text-slate-800 font-semibold font-mono">Item #{item.lot_number || '—'}</span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3 bg-slate-50/40">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Classification</span>
-                  <span className="col-span-2 text-slate-800 font-semibold">{item.category} ({item.metal || item.category})</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Item Code</span>
+                  <span className="col-span-2 text-slate-800 font-medium font-mono">{item.sku || '—'}</span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Purity / Metal</span>
-                  <span className="col-span-2 text-slate-800 font-semibold">{item.purity || '.999 Pure Gold (1 Troy Oz)'}</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Classification</span>
+                  <span className="col-span-2 text-slate-800 font-medium">
+                    {item.category || '—'}{item.metal ? ` (${item.metal})` : ''}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3 bg-slate-50/40">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Certified Grade</span>
-                  <span className="col-span-2 text-slate-800 font-semibold">{item.grade || 'NGC Ultra Cameo Gem Proof'}</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Purity / Metal</span>
+                  <span className="col-span-2 text-slate-800 font-medium">{item.purity || '—'}</span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Mintage / Issue</span>
-                  <span className="col-span-2 text-slate-800 font-semibold">{item.mintage || '999 Units Worldwide'}</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Certified Grade</span>
+                  <span className="col-span-2 text-slate-800 font-medium">{item.grade || '—'}</span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3 bg-slate-50/40">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Fulfillment</span>
-                  <span className="col-span-2 text-slate-800 font-semibold">{item.fulfillment || 'In-House Insured USPS Priority Packaging'}</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Weight / Mintage</span>
+                  <span className="col-span-2 text-slate-800 font-medium">{item.weight || item.mintage || '—'}</span>
                 </div>
 
                 <div className="grid grid-cols-3 p-3">
-                  <span className="text-slate-500 font-bold uppercase tracking-wider font-mono text-[10px]">Stock Count</span>
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Fulfillment</span>
+                  <span className="col-span-2 text-slate-800 font-medium">{item.fulfillment || 'In-House Insured USPS Priority Packaging'}</span>
+                </div>
+
+                <div className="grid grid-cols-3 p-3 bg-slate-50/40">
+                  <span className="text-slate-500 font-semibold uppercase tracking-wider font-sans text-[11px]">Stock Count</span>
                   <span className="col-span-2 text-slate-800 font-semibold font-mono">
                     {item.inventory ?? item.stock_quantity ?? 1} unit(s) available
                   </span>
@@ -204,8 +239,8 @@ export const ItemDetailModal = ({
               <span className="text-xs font-bold font-sans text-slate-800 uppercase tracking-wider block">
                 Catalog Description
               </span>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {item.description || item.lead || 'Premium collector numismatic lot certified and authenticated under Highlander Gold & Silver standards.'}
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                {item.description || item.lead || 'No catalog description provided.'}
               </p>
             </div>
 

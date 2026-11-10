@@ -35,8 +35,6 @@ export const OrderFormModal = ({
   availableItems = [],
   isLoading = false
 }) => {
-  if (!isOpen) return null;
-
   const isEditing = Boolean(initialData);
 
   const [registeredCustomers, setRegisteredCustomers] = useState([]);
@@ -215,6 +213,8 @@ export const OrderFormModal = ({
       order_status: formData.order_status
     });
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

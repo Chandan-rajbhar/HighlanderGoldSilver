@@ -134,9 +134,15 @@ CREATE TABLE IF NOT EXISTS public.coupons (
 -- 8. ADMIN USERS & STAFF ROLES TABLE (Distinct from Storefront Customers)
 CREATE TABLE IF NOT EXISTS public.admin_users (
     id TEXT PRIMARY KEY,
+    auth_user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
+    phone TEXT,
+    city TEXT,
+    state TEXT,
     role TEXT NOT NULL CHECK (role IN ('Super Admin', 'Vault Director', 'Inventory Manager', 'Order Manager', 'Auditor')),
+    title TEXT DEFAULT 'Senior Numismatist & Vault Director',
+    location TEXT DEFAULT 'Bigfork Storefront & Vault, MT',
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Suspended')),
     two_factor_enabled BOOLEAN DEFAULT true,
     avatar_url TEXT,

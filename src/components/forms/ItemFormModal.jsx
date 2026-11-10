@@ -24,66 +24,52 @@ export const ItemFormModal = ({
 }) => {
   const isEditing = Boolean(initialData);
 
-  const [formData, setFormData] = useState({
+  const createEmptyItemForm = () => ({
     lot_number: '',
     title: '',
     lead: '',
     description: '',
-    category: 'Gold',
-    metal: 'Gold',
-    purity: '.999 Pure Gold',
-    grade: 'Gem Proof',
-    mintage: 'Limited Mintage',
-    price: 1000,
-    estimate_range: '$900.00 – $1,200.00 USD',
-    payment_note: 'Direct bank wire or instant PayPal checkout.',
+    category: '',
+    metal: '',
+    purity: '',
+    grade: '',
+    mintage: '',
+    price: '',
+    estimate_range: '',
+    payment_note: '',
     featured_image: '',
     is_featured: false,
     status: 'Available',
     stock_quantity: 1,
   });
 
+  const [formData, setFormData] = useState(createEmptyItemForm);
+
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    if (!isOpen) return;
     if (initialData) {
       setFormData({
         lot_number: initialData.lot_number || '',
         title: initialData.title || '',
         lead: initialData.lead || '',
         description: initialData.description || '',
-        category: initialData.category || 'Gold',
-        metal: initialData.metal || 'Gold',
+        category: initialData.category || '',
+        metal: initialData.metal || '',
         purity: initialData.purity || '',
         grade: initialData.grade || '',
         mintage: initialData.mintage || '',
-        price: initialData.price || 0,
+        price: initialData.price ?? '',
         estimate_range: initialData.estimate_range || '',
-        payment_note: initialData.payment_note || 'Direct checkout or bank wire.',
+        payment_note: initialData.payment_note || '',
         featured_image: initialData.featured_image || '',
         is_featured: Boolean(initialData.is_featured),
         status: initialData.status || 'Available',
         stock_quantity: initialData.stock_quantity ?? 1,
       });
     } else {
-      setFormData({
-        lot_number: '',
-        title: '',
-        lead: '',
-        description: '',
-        category: 'Gold',
-        metal: 'Gold',
-        purity: '.999 Pure Gold (1 Troy Oz)',
-        grade: 'NGC MS-65',
-        mintage: 'Limited Release',
-        price: 950,
-        estimate_range: '$850.00 – $1,100.00 USD',
-        payment_note: 'Direct bank wire or PayPal checkout.',
-        featured_image: '/assets/items/lot1_morgan_gold_gem.jpg',
-        is_featured: false,
-        status: 'Available',
-        stock_quantity: 1,
-      });
+      setFormData(createEmptyItemForm());
     }
     setErrors({});
   }, [initialData, isOpen]);
@@ -136,7 +122,7 @@ export const ItemFormModal = ({
               value={formData.lot_number}
               onChange={(e) => setFormData({ ...formData, lot_number: e.target.value })}
               placeholder="e.g. 1"
-              className={`w-full px-3 py-2 text-sm rounded-lg border font-mono ${
+              className={`w-full px-3 py-2 text-sm font-sans rounded-lg border ${
                 errors.lot_number ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-white'
               } focus:ring-2 focus:ring-aubergine-muted focus:outline-none`}
             />
@@ -152,7 +138,7 @@ export const ItemFormModal = ({
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. 1876 George T. Morgan Proposed $100 Gold Union™"
-              className={`w-full px-3 py-2 text-sm rounded-lg border ${
+              className={`w-full px-3 py-2 text-sm font-sans rounded-lg border ${
                 errors.title ? 'border-rose-400 bg-rose-50' : 'border-slate-200 bg-white'
               } focus:ring-2 focus:ring-aubergine-muted focus:outline-none`}
             />
@@ -167,8 +153,10 @@ export const ItemFormModal = ({
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Select category..."
               className="w-full"
             />
+            {errors.category && <p className="text-[11px] text-rose-500 mt-1">{errors.category}</p>}
           </div>
         </div>
 
@@ -182,7 +170,7 @@ export const ItemFormModal = ({
             value={formData.lead}
             onChange={(e) => setFormData({ ...formData, lead: e.target.value })}
             placeholder="e.g. 1876 Private Issue George T. Morgan Ultra High Relief Gold Union .999 Gem Proof"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
+            className="w-full px-3 py-2 text-sm font-sans rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
           />
         </div>
 
@@ -196,8 +184,10 @@ export const ItemFormModal = ({
               value={formData.metal}
               onChange={(e) => setFormData({ ...formData, metal: e.target.value })}
               options={METALS.map(m => ({ value: m, label: m }))}
+              placeholder="Select metal..."
               className="w-full"
             />
+            {errors.metal && <p className="text-[11px] text-rose-500 mt-1">{errors.metal}</p>}
           </div>
 
           <div>
@@ -260,7 +250,7 @@ export const ItemFormModal = ({
                   min="0"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full pl-7 pr-3 py-2 text-sm font-semibold rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-gold focus:outline-none font-mono"
+                  className="w-full pl-7 pr-3 py-2 text-sm font-semibold rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-gold focus:outline-none font-sans tabular-nums"
                 />
               </div>
               {errors.price && <p className="text-[11px] text-rose-500 mt-1">{errors.price}</p>}
@@ -268,14 +258,14 @@ export const ItemFormModal = ({
 
             <div className="p-2.5 rounded-lg bg-white/80 border border-slate-200">
               <span className="text-[11px] text-slate-500 block">Buyer's Premium (15%)</span>
-              <span className="text-base font-bold text-slate-800 font-mono mt-0.5 block">
+              <span className="text-base font-bold text-slate-800 font-sans tabular-nums mt-0.5 block">
                 +${buyersPremium.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
 
             <div className="p-2.5 rounded-lg bg-white/90 border border-gold/40 shadow-sm">
               <span className="text-[11px] text-gold-dark font-semibold block">Total Settlement</span>
-              <span className="text-lg font-bold text-aubergine font-mono mt-0.5 block">
+              <span className="text-lg font-bold text-aubergine font-sans tabular-nums mt-0.5 block">
                 ${totalSettlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -320,15 +310,16 @@ export const ItemFormModal = ({
               value={formData.featured_image}
               onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
               placeholder="https://..."
-              className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none font-mono text-xs"
+              className="flex-1 px-3 py-2 text-sm font-sans rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-aubergine-muted focus:outline-none"
             />
             {formData.featured_image && (
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
                 <img
-                  src={formData.featured_image}
+                  src={normalizeImageToLink(formData.featured_image)}
                   alt="Preview"
                   className="w-full h-full object-cover"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                  onLoad={(e) => { e.currentTarget.style.display = ''; }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               </div>
             )}
@@ -372,7 +363,7 @@ export const ItemFormModal = ({
               min="0"
               value={formData.stock_quantity}
               onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white font-mono"
+              className="w-full px-3 py-2 text-sm font-sans tabular-nums rounded-lg border border-slate-200 bg-white"
             />
           </div>
 

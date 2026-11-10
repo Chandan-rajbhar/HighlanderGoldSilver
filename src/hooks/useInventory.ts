@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { InventoryItem } from '../types';
-import { InventoryService } from '../services/inventoryService';
+import { InventoryService, compareByLotNumber } from '../services/inventoryService';
 import { categoryService } from '../services/categoryService';
 
 export function useInventory() {
@@ -118,17 +118,23 @@ export function useInventory() {
     result.sort((a, b) => {
       switch (currentSort) {
         case 'lot-asc':
-          return Number(a.lotNumber) - Number(b.lotNumber);
+          return compareByLotNumber(a, b);
         case 'lot-desc':
-          return Number(b.lotNumber) - Number(a.lotNumber);
-        case 'price-asc':
-          return a.price - b.price;
-        case 'price-desc':
-          return b.price - a.price;
-        case 'title-asc':
-          return a.title.localeCompare(b.title);
+          return compareByLotNumber(b, a);
+        case 'price-asc': {
+          const diff = a.price - b.price;
+          return diff !== 0 ? diff : compareByLotNumber(a, b);
+        }
+        case 'price-desc': {
+          const diff = b.price - a.price;
+          return diff !== 0 ? diff : compareByLotNumber(a, b);
+        }
+        case 'title-asc': {
+          const cmp = a.title.localeCompare(b.title);
+          return cmp !== 0 ? cmp : compareByLotNumber(a, b);
+        }
         default:
-          return 0;
+          return compareByLotNumber(a, b);
       }
     });
 

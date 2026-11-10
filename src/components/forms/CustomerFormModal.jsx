@@ -11,8 +11,6 @@ export const CustomerFormModal = ({
   initialData = null,
   isLoading = false
 }) => {
-  if (!isOpen) return null;
-
   const isEditing = Boolean(initialData);
 
   const [formData, setFormData] = useState({
@@ -107,6 +105,8 @@ export const CustomerFormModal = ({
       orders_count: Number(formData.orders_count) || 0
     });
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

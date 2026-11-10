@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { INVENTORY_ITEMS } from '../data/inventory';
+import { InventoryItem } from '../types';
+import { InventoryService } from '../services/inventoryService';
 import { BUSINESS_INFO } from '../data/businessInfo';
 import { findProductBySlug, getProductPath } from '../utils/slug';
 import { calculateSettlement, generatePayPalPaymentUrl } from '../utils/payment';
@@ -13,12 +15,38 @@ export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart, updateQuantity } = useCart();
 
+  const [allItems, setAllItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showAddedNotice, setShowAddedNotice] = useState(false);
 
-  // Find product dynamically by slug or ID
-  const item = findProductBySlug(slug);
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadItems = () => {
+      InventoryService.getInventory()
+        .then((items) => {
+          if (isMounted && Array.isArray(items) && items.length > 0) {
+            setAllItems(items);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
+    };
+
+    loadItems();
+    window.addEventListener('hgs:inventory-updated', loadItems);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('hgs:inventory-updated', loadItems);
+    };
+  }, []);
+
+  // Find product dynamically by slug, ID, or item number across live database catalog
+  const item = useMemo(() => findProductBySlug(slug, allItems), [slug, allItems]);
 
   // Scroll to top and reset image index when item changes
   useEffect(() => {
@@ -29,10 +57,20 @@ export const ProductDetailPage: React.FC = () => {
 
     if (item) {
       document.title = `${item.title} — Highlander Gold & Silver`;
-    } else {
+    } else if (!isLoading) {
       document.title = 'Piece Not Found — Highlander Gold & Silver';
     }
-  }, [item, slug]);
+  }, [item, slug, isLoading]);
+
+  if (!item && isLoading) {
+    return (
+      <main className="product-detail-main">
+        <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+          <p className="text-sm text-slate-500">Loading certified storefront specification...</p>
+        </div>
+      </main>
+    );
+  }
 
   // If item is not found, display a graceful not-found state
   if (!item) {
@@ -92,9 +130,9 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   // Find related pieces (same category, or other featured pieces, excluding current item)
-  const relatedItems = INVENTORY_ITEMS
+  const relatedItems = allItems
     .filter((inv) => inv.id !== item.id)
-    .sort((a, b) => (a.category === item.category ? -1 : 1))
+    .sort((a, b) => (a.category === item.category ? -1 : b.category === item.category ? 1 : 0))
     .slice(0, 3);
 
   return (

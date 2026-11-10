@@ -144,7 +144,7 @@ export const CategoryFormModal = ({
           >
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30 font-sans">
+                <span className="text-xs font-sans uppercase tracking-wider text-[#C9A23A] font-bold px-2 py-0.5 rounded bg-[#C9A23A]/15 border border-[#C9A23A]/30">
                   {isEditing ? 'Edit Category' : 'New Category'}
                 </span>
               </div>
@@ -206,7 +206,7 @@ export const CategoryFormModal = ({
                   min="1"
                   value={formData.display_order}
                   onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white font-mono focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all"
+                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white font-sans tabular-nums focus:ring-2 focus:ring-[#C9A23A]/50 focus:border-[#C9A23A] focus:outline-none transition-all"
                 />
               </div>
             </div>

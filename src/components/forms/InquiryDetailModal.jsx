@@ -22,9 +22,7 @@ export const InquiryDetailModal = ({
   onUpdateStatus,
   onDelete
 }) => {
-  if (!isOpen || !inquiry) return null;
-
-  const [selectedStatus, setSelectedStatus] = useState(inquiry.status || 'New');
+  const [selectedStatus, setSelectedStatus] = useState(inquiry?.status || 'New');
   const [copiedField, setCopiedField] = useState(null);
 
   useEffect(() => {
@@ -55,6 +53,8 @@ export const InquiryDetailModal = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  if (!isOpen || !inquiry) return null;
 
   const handleCopy = (text, fieldName) => {
     if (!text) return;

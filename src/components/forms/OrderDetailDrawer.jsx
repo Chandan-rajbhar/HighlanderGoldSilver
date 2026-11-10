@@ -25,9 +25,7 @@ export const OrderDetailDrawer = ({
   onUpdateStatus,
   onCancelOrder
 }) => {
-  if (!isOpen || !order) return null;
-
-  const [currentStatus, setCurrentStatus] = useState(order.order_status || order.fulfillment_status || 'Processing');
+  const [currentStatus, setCurrentStatus] = useState(order?.order_status || order?.fulfillment_status || 'Processing');
   const [isUpdating, setIsUpdating] = useState(false);
 
   React.useEffect(() => {
@@ -35,6 +33,8 @@ export const OrderDetailDrawer = ({
       setCurrentStatus(order.order_status || order.fulfillment_status || 'Processing');
     }
   }, [order]);
+
+  if (!isOpen || !order) return null;
 
   const handleStatusSelect = (status) => {
     setCurrentStatus(status);

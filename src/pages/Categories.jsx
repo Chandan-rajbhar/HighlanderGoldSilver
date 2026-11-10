@@ -33,6 +33,14 @@ export const Categories = () => {
 
   useEffect(() => {
     fetchCategories(categories.length === 0);
+
+    const handleRefresh = () => fetchCategories(false);
+    window.addEventListener('hgs:inventory-updated', handleRefresh);
+    window.addEventListener('hgs:categories-updated', handleRefresh);
+    return () => {
+      window.removeEventListener('hgs:inventory-updated', handleRefresh);
+      window.removeEventListener('hgs:categories-updated', handleRefresh);
+    };
   }, []);
 
   const handleAddNew = () => {
@@ -55,7 +63,7 @@ export const Categories = () => {
     try {
       if (selectedCategory) {
         const updated = await categoryService.updateCategory(selectedCategory.id, formData);
-        setCategories(prev => prev.map(c => c.id === updated.id ? updated : c));
+        setCategories(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
         toast.success(`Category "${updated.name}" updated!`);
       } else {
         const created = await categoryService.createCategory(formData);
@@ -64,9 +72,10 @@ export const Categories = () => {
       }
       setIsFormOpen(false);
       setSelectedCategory(null);
+      await fetchCategories(false);
     } catch (err) {
       console.error('Error saving category:', err);
-      toast.error('Failed to save category.');
+      toast.error(err?.message || 'Failed to save category.');
     } finally {
       setIsSaving(false);
     }
@@ -81,9 +90,10 @@ export const Categories = () => {
       toast.success(`Category "${selectedCategory.name}" deleted.`);
       setIsConfirmOpen(false);
       setSelectedCategory(null);
+      await fetchCategories(false);
     } catch (err) {
       console.error('Error deleting category:', err);
-      toast.error('Failed to delete category.');
+      toast.error(err?.message || 'Failed to delete category.');
     } finally {
       setIsSaving(false);
     }
@@ -99,7 +109,7 @@ export const Categories = () => {
   const columns = [
     {
       key: 'name',
-      header: 'Category Name',
+      header: 'CATEGORY NAME',
       className: 'font-medium text-slate-900 min-w-[260px]',
       render: (row) => (
         <div className="flex flex-col">
@@ -116,7 +126,7 @@ export const Categories = () => {
     },
     {
       key: 'metal_type',
-      header: 'Metal Type',
+      header: 'METAL TYPE',
       className: 'w-48 text-left',
       render: (row) => {
         const metal = row.metal_type || 'Unspecified';
@@ -141,17 +151,17 @@ export const Categories = () => {
     },
     {
       key: 'item_count',
-      header: 'Total Items',
+      header: 'TOTAL ITEMS',
       className: 'w-36 text-left',
       render: (row) => (
-        <span className="font-mono font-bold text-slate-900 text-xs block pl-1">
+        <span className="font-sans font-semibold tabular-nums text-slate-900 text-sm block pl-1">
           {row.item_count ?? 0}
         </span>
       )
     },
     {
       key: 'is_active',
-      header: 'Visibility',
+      header: 'VISIBILITY',
       className: 'w-36 text-left',
       render: (row) => (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${

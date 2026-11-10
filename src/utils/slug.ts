@@ -24,11 +24,15 @@ export function getProductPath(item: InventoryItem): string {
 /**
  * Finds a product from the inventory list by slug, item ID, or lot number.
  */
-export function findProductBySlug(slugOrId: string | undefined): InventoryItem | undefined {
+export function findProductBySlug(
+  slugOrId: string | undefined,
+  itemsList: InventoryItem[] = INVENTORY_ITEMS
+): InventoryItem | undefined {
   if (!slugOrId) return undefined;
   const normalized = decodeURIComponent(slugOrId).toLowerCase().trim();
+  const source = Array.isArray(itemsList) && itemsList.length > 0 ? itemsList : INVENTORY_ITEMS;
 
-  return INVENTORY_ITEMS.find((item) => {
+  return source.find((item) => {
     const slug = createProductSlug(item.title);
     return (
       slug === normalized ||
