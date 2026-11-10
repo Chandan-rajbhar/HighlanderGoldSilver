@@ -58,13 +58,46 @@ export const Dashboard = () => {
 
   const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
 
-  const totalCategoryValuation = summary?.categoryBreakdown?.reduce((sum, c) => sum + (Number(c.value) || 0), 0) || 0;
+  const categoryList = summary?.categoryBreakdown || [];
+  const totalCategoryValuation = categoryList.reduce((sum, c) => sum + (Number(c.value) || 0), 0);
 
   const hasCategoryData = Boolean(
-    summary?.categoryBreakdown &&
-    summary.categoryBreakdown.length > 0 &&
-    summary.categoryBreakdown.some(c => (Number(c.value) || 0) > 0)
+    categoryList.length > 0 &&
+    categoryList.some(c => (Number(c.value) || 0) > 0)
   );
+
+  const shouldAngleLabels = categoryList.length > 5;
+  const chartMinWidth = shouldAngleLabels ? Math.max(categoryList.length * 64, 560) : 0;
+
+  const CustomCategoryTick = ({ x, y, payload }) => {
+    const raw = String(payload?.value || '');
+    const label = raw.length > 22 ? `${raw.slice(0, 20)}…` : raw;
+    if (shouldAngleLabels) {
+      return (
+        <g transform={`translate(${x},${y + 6})`}>
+          <text
+            x={0}
+            y={0}
+            dy={4}
+            textAnchor="end"
+            fill="#475569"
+            fontSize={11}
+            fontWeight={500}
+            transform="rotate(-35)"
+          >
+            {label}
+          </text>
+        </g>
+      );
+    }
+    return (
+      <g transform={`translate(${x},${y + 6})`}>
+        <text x={0} y={0} dy={10} textAnchor="middle" fill="#475569" fontSize={11} fontWeight={500}>
+          {label}
+        </text>
+      </g>
+    );
+  };
 
   const CustomCategoryTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -257,7 +290,7 @@ export const Dashboard = () => {
       {/* Top Grid: Catalog Overview (Left) + Latest Inquiries (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* A. Catalog Overview / Valuation by Category */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 border border-[#E2EEF8] shadow-[0_2px_10px_rgba(11,45,82,0.03)] flex flex-col justify-between">
+        <div className="lg:col-span-8 min-w-0 bg-white rounded-2xl p-5 sm:p-6 border border-[#E2EEF8] shadow-[0_2px_10px_rgba(11,45,82,0.03)] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#F1F5F9]">
               <div>
@@ -282,12 +315,16 @@ export const Dashboard = () => {
               {isLoading ? (
                 <div className="text-[#64748B] text-xs py-8">Loading analytics...</div>
               ) : hasCategoryData ? (
-                <div className="w-full h-60 sm:h-64 pt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={summary.categoryBreakdown}
-                      margin={{ top: 12, right: 10, left: -10, bottom: 10 }}
-                    >
+                <div className="w-full overflow-x-auto pt-2">
+                  <div
+                    className={`w-full ${shouldAngleLabels ? 'h-72 sm:h-[296px]' : 'h-60 sm:h-64'}`}
+                    style={chartMinWidth ? { minWidth: `${chartMinWidth}px` } : undefined}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={categoryList}
+                        margin={{ top: 12, right: 14, left: 0, bottom: shouldAngleLabels ? 8 : 6 }}
+                      >
                       <defs>
                         {/* Primary Highlander Mountain Blue to Deep Navy Gradient */}
                         <linearGradient id="barGradientPrimary" x1="0" y1="0" x2="0" y2="1">
@@ -312,12 +349,14 @@ export const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }}
+                        tick={<CustomCategoryTick />}
                         interval={0}
+                        height={shouldAngleLabels ? 74 : 34}
                         tickLine={false}
                         axisLine={{ stroke: '#E2EEF8' }}
                       />
                       <YAxis
+                        width={54}
                         tick={{ fontSize: 10, fill: '#64748B', fontFamily: 'monospace' }}
                         tickFormatter={(val) => `$${val >= 1000 ? `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k` : val}`}
                         tickLine={false}
@@ -353,6 +392,7 @@ export const Dashboard = () => {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 </div>
               ) : (
                 <div className="py-7 px-4 flex flex-col items-center justify-center text-center">
